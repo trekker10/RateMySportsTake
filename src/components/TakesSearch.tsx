@@ -40,12 +40,12 @@ export default function TakesSearch() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by player, team, or keyword…"
-          className="flex-1 rounded-lg bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-zinc-50 placeholder-zinc-600 focus:border-emerald-500 focus:outline-none"
+          className="flex-1 rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
         />
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-zinc-800 px-5 py-2.5 text-zinc-300 hover:bg-zinc-700 transition-colors disabled:opacity-50"
+          className="rounded-lg bg-gray-800 px-5 py-2.5 text-gray-200 hover:bg-gray-700 transition-colors disabled:opacity-50"
         >
           {isPending ? "…" : "Search"}
         </button>
@@ -53,24 +53,23 @@ export default function TakesSearch() {
           <button
             type="button"
             onClick={clearFilters}
-            className="rounded-lg border border-zinc-700 px-4 py-2.5 text-zinc-500 hover:text-zinc-300 transition-colors text-sm"
+            className="rounded-lg border border-gray-300 px-4 py-2.5 text-gray-500 hover:text-gray-700 transition-colors text-sm"
           >
             Clear
           </button>
         )}
       </div>
 
-      {/* Sport filter pills */}
       <div className="flex flex-wrap gap-2">
         {SPORTS.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setSport(sport === s ? "" : s)}
-            className={`rounded-full px-3 py-1 text-xs transition-colors ${
+            className={`rounded-full px-3 py-1 text-xs transition-colors border ${
               sport === s
-                ? "bg-emerald-500 text-black font-semibold"
-                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                ? "bg-emerald-500 text-white border-emerald-500 font-semibold"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
             }`}
           >
             {s}

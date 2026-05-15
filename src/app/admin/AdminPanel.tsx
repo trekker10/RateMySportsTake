@@ -19,19 +19,19 @@ function Toggle({
   onToggle: (key: string, enabled: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-zinc-800 last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-gray-200 last:border-0">
       <div>
-        <p className="font-medium text-zinc-100">
+        <p className="font-medium text-gray-900">
           {FLAG_LABELS[flag.key] ?? flag.key}
         </p>
         {flag.description && (
-          <p className="text-sm text-zinc-500 mt-0.5">{flag.description}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{flag.description}</p>
         )}
       </div>
       <button
         onClick={() => onToggle(flag.key, !flag.enabled)}
         className={`relative ml-6 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          flag.enabled ? "bg-emerald-500" : "bg-zinc-700"
+          flag.enabled ? "bg-emerald-500" : "bg-gray-300"
         }`}
       >
         <span
@@ -68,10 +68,10 @@ export default function AdminPanel({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="mt-1 text-zinc-400">Control site-wide features and access.</p>
+          <p className="mt-1 text-gray-500">Control site-wide features and access.</p>
         </div>
         {isPending && (
-          <span className="text-sm text-zinc-500">Saving…</span>
+          <span className="text-sm text-gray-500">Saving…</span>
         )}
         {!isPending && lastSaved && (
           <span className="text-sm text-emerald-400">✓ Saved</span>
@@ -80,10 +80,10 @@ export default function AdminPanel({
 
       {/* Feature flags */}
       <section className="space-y-1">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
           Feature Flags
         </h2>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 divide-y divide-zinc-800">
+        <div className="rounded-xl border border-gray-200 bg-white px-5 divide-y divide-gray-200">
           {flags.map((flag) => (
             <Toggle key={flag.key} flag={flag} onToggle={handleToggle} />
           ))}
@@ -92,7 +92,7 @@ export default function AdminPanel({
 
       {/* Quick links */}
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
           Quick Links
         </h2>
         <div className="grid grid-cols-2 gap-3">
@@ -106,7 +106,7 @@ export default function AdminPanel({
             <a
               key={href}
               href={href}
-              className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-zinc-300 hover:border-zinc-600 hover:text-zinc-50 transition-colors"
+              className="rounded-xl border border-gray-200 bg-white px-5 py-4 text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
             >
               {label} →
             </a>

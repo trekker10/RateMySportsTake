@@ -13,7 +13,7 @@ export default async function ExpertsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Experts</h1>
-        <p className="mt-1 text-zinc-400">
+        <p className="mt-1 text-gray-500">
           {experts?.length ?? 0} pundit{experts?.length !== 1 ? "s" : ""} tracked
         </p>
       </div>
@@ -22,7 +22,7 @@ export default async function ExpertsPage() {
         {experts && experts.length > 0 ? (
           experts.map((expert) => <ExpertCard key={expert.expert_id} expert={expert} />)
         ) : (
-          <div className="col-span-3 rounded-xl border border-zinc-800 bg-zinc-900 p-12 text-center text-zinc-500">
+          <div className="col-span-3 rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-400">
             No experts yet — they're created automatically when you submit a take.
           </div>
         )}

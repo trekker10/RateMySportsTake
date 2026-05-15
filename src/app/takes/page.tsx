@@ -35,7 +35,7 @@ export default async function TakesPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Browse Takes</h1>
-        <p className="mt-1 text-zinc-400">
+        <p className="mt-1 text-gray-500">
           {takes?.length ?? 0} take{takes?.length !== 1 ? "s" : ""}
           {activeFilters.length > 0 ? " matching your search" : " submitted"}
         </p>
@@ -50,7 +50,7 @@ export default async function TakesPage({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           takes.map((take) => <TakeCard key={take.take_id} take={take as any} showExpert />)
         ) : (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-12 text-center text-zinc-500">
+          <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-400">
             {activeFilters.length > 0
               ? "No takes matched your search. Try different keywords."
               : "No takes submitted yet. Be the first!"}

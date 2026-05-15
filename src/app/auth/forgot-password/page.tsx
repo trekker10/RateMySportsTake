@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
-  "w-full rounded-lg bg-zinc-900 border border-zinc-700 px-4 py-2.5 text-zinc-50 placeholder-zinc-600 focus:border-emerald-500 focus:outline-none";
+  "w-full rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");

@@ -28,9 +28,7 @@ export default async function TakePage({
 
   const sourceLabel = take.source_type.replace("_", " ");
   const dateMade = new Date(take.date_made).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
+    month: "long", day: "numeric", year: "numeric",
   });
 
   return (
@@ -38,16 +36,16 @@ export default async function TakePage({
 
       {/* Expert */}
       <div>
-        <p className="text-lg font-semibold">{expert?.name}</p>
+        <p className="text-lg font-semibold text-gray-900">{expert?.name}</p>
         {expert?.outlet && (
-          <p className="text-sm text-zinc-500">{expert.outlet}</p>
+          <p className="text-sm text-gray-500">{expert.outlet}</p>
         )}
       </div>
 
       {/* The take */}
-      <blockquote className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-        <p className="text-lg leading-relaxed">"{take.raw_text}"</p>
-        <footer className="mt-4 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+      <blockquote className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <p className="text-lg leading-relaxed text-gray-800">"{take.raw_text}"</p>
+        <footer className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-400">
           <span className="capitalize">{sourceLabel}</span>
           <span>·</span>
           <span>{dateMade}</span>
@@ -64,7 +62,7 @@ export default async function TakePage({
                 href={take.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-500 hover:underline"
+                className="text-emerald-600 hover:underline"
               >
                 Source ↗
               </a>
@@ -77,47 +75,41 @@ export default async function TakePage({
       {take.rating_status === "rated" && (
         <>
           {take.summary && (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
                 AI Summary
               </p>
-              <p className="text-zinc-300">{take.summary}</p>
+              <p className="text-gray-700">{take.summary}</p>
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-4">
             {(["difficulty_score", "falsifiability_score", "confidence_claimed"] as const).map(
               (key) => (
-                <div
-                  key={key}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-center"
-                >
-                  <p className="text-3xl font-bold text-emerald-400">
+                <div key={key} className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+                  <p className="text-3xl font-bold text-emerald-600">
                     {take[key] ?? "—"}
-                    <span className="text-sm text-zinc-600">/10</span>
+                    <span className="text-sm text-gray-400">/10</span>
                   </p>
-                  <p className="mt-1 text-xs text-zinc-500">{SCORE_LABELS[key]}</p>
+                  <p className="mt-1 text-xs text-gray-500">{SCORE_LABELS[key]}</p>
                 </div>
               )
             )}
           </div>
 
           {take.grading_criteria && (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
                 Grading Criteria
               </p>
-              <p className="text-zinc-300">{take.grading_criteria}</p>
+              <p className="text-gray-700">{take.grading_criteria}</p>
             </div>
           )}
 
           {take.flags && take.flags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {take.flags.map((flag: string) => (
-                <span
-                  key={flag}
-                  className="rounded-full bg-zinc-800 px-3 py-1 text-xs text-zinc-400 capitalize"
-                >
+                <span key={flag} className="rounded-full bg-gray-100 border border-gray-200 px-3 py-1 text-xs text-gray-600 capitalize">
                   {flag.replace(/_/g, " ")}
                 </span>
               ))}
@@ -127,28 +119,28 @@ export default async function TakePage({
       )}
 
       {take.rating_status === "pending" && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-center text-zinc-500">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-400 shadow-sm">
           AI rating in progress…
         </div>
       )}
 
       {take.rating_status === "failed" && (
-        <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-6 text-center text-amber-400">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center text-amber-600">
           AI rating failed — the take was saved and will be retried.
         </div>
       )}
 
-      {/* Outcome badge */}
+      {/* Outcome */}
       {take.outcome_status !== "pending" && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
             Outcome
           </p>
-          <p className="capitalize text-zinc-300">
+          <p className="capitalize text-gray-800">
             {take.outcome_status.replace(/_/g, " ")}
           </p>
           {take.outcome_notes && (
-            <p className="mt-2 text-sm text-zinc-500">{take.outcome_notes}</p>
+            <p className="mt-2 text-sm text-gray-500">{take.outcome_notes}</p>
           )}
         </div>
       )}

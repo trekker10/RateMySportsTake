@@ -11,21 +11,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-zinc-950 text-zinc-50 antialiased">
-        <header className="border-b border-zinc-800 px-6 py-4">
+      <body className="min-h-screen bg-gray-100 text-gray-900 antialiased">
+        <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
           <div className="mx-auto flex max-w-5xl items-center justify-between">
-            <a href="/" className="text-xl font-bold tracking-tight">
+            <a href="/" className="text-xl font-bold tracking-tight text-white">
               🎯 RateMySportsTake
             </a>
             <div className="flex items-center gap-6">
-              <nav className="flex gap-6 text-sm text-zinc-400">
-                <a href="/takes"   className="hover:text-zinc-50 transition-colors">Takes</a>
-                <a href="/experts" className="hover:text-zinc-50 transition-colors">Experts</a>
-                <a href="/submit"  className="hover:text-zinc-50 transition-colors">Submit</a>
-                <a href="/import"  className="hover:text-zinc-50 transition-colors">Import</a>
-                <a href="/grade"   className="hover:text-zinc-50 transition-colors">Grade</a>
+              <nav className="flex gap-6 text-sm text-gray-300">
+                <a href="/takes"   className="hover:text-white transition-colors">Takes</a>
+                <a href="/experts" className="hover:text-white transition-colors">Experts</a>
+                <a href="/submit"  className="hover:text-white transition-colors">Submit</a>
+                <a href="/import"  className="hover:text-white transition-colors">Import</a>
+                <a href="/grade"   className="hover:text-white transition-colors">Grade</a>
               </nav>
-              <Suspense fallback={<div className="w-16 h-7 rounded bg-zinc-800 animate-pulse" />}>
+              <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-700 animate-pulse" />}>
                 <AuthButton />
               </Suspense>
             </div>

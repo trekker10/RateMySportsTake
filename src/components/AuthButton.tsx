@@ -18,13 +18,13 @@ export default async function AuthButton() {
             Admin
           </a>
         )}
-        <span className="text-xs text-zinc-600 hidden sm:block">
+        <span className="text-xs text-gray-500 hidden sm:block">
           {user.email}
         </span>
         <form action={signOut}>
           <button
             type="submit"
-            className="text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
+            className="text-sm text-gray-300 hover:text-white transition-colors"
           >
             Sign out
           </button>
@@ -36,7 +36,7 @@ export default async function AuthButton() {
   return (
     <a
       href="/auth/login"
-      className="rounded-lg bg-zinc-800 px-4 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 transition-colors"
+      className="rounded-lg bg-gray-700 px-4 py-1.5 text-sm text-gray-200 hover:bg-gray-600 transition-colors"
     >
       Sign in
     </a>

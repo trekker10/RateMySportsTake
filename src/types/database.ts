@@ -41,7 +41,7 @@ export interface Expert {
 export type ExpertInsert = Pick<Expert, "name"> &
   Partial<Pick<Expert, "twitter_handle" | "outlet" | "sport_focus" | "bio" | "avatar_url">>;
 
-export type ExpertUpdate = Partial<ExpertInsert>;
+export type ExpertUpdate = Partial<Pick<Expert, "name" | "twitter_handle" | "outlet" | "sport_focus" | "bio" | "avatar_url">>;
 
 // ─── Grade breakdown (jsonb) ──────────────────────────────────────────────────
 
@@ -120,12 +120,36 @@ export interface Database {
         Row: Expert;
         Insert: ExpertInsert;
         Update: ExpertUpdate;
+        Relationships: [];
       };
       takes: {
         Row: Take;
         Insert: TakeInsert;
         Update: TakeUpdate;
+        Relationships: [];
+      };
+      profiles: {
+        Row: { user_id: string; created_at: string; display_name: string | null; bio: string | null; avatar_url: string | null };
+        Insert: { user_id: string; display_name?: string | null; bio?: string | null; avatar_url?: string | null };
+        Update: { display_name?: string | null; bio?: string | null; avatar_url?: string | null };
+        Relationships: [];
+      };
+      follows: {
+        Row: { user_id: string; expert_id: string; created_at: string };
+        Insert: { user_id: string; expert_id: string };
+        Update: { user_id?: string; expert_id?: string };
+        Relationships: [];
+      };
+      feature_flags: {
+        Row: { key: string; enabled: boolean; description: string | null; updated_at: string };
+        Insert: { key: string; enabled?: boolean; description?: string | null };
+        Update: { enabled?: boolean; description?: string | null; updated_at?: string };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

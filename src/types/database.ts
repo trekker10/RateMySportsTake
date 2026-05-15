@@ -6,6 +6,113 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+export type SourceType = "tweet" | "article" | "tv_segment" | "podcast" | "radio" | "other";
+export type TakeType = "prediction" | "opinion" | "narrative" | "criticism" | "praise" | "stat_claim";
+export type TimeHorizon = "immediate" | "this_season" | "this_year" | "multi_year" | "career" | "unresolvable";
+export type RatingStatus = "pending" | "rated" | "failed";
+export type OutcomeStatus = "pending" | "confirmed_true" | "confirmed_false" | "partially_true" | "unresolvable";
+export type AgingVerdict = "aged_well" | "aged_poorly" | "neutral" | "too_soon";
+
+// ─── Expert ───────────────────────────────────────────────────────────────────
+
+export interface Expert {
+  expert_id: string;
+  date_added: string;
+
+  name: string;
+  twitter_handle: string | null;
+  outlet: string | null;
+  sport_focus: string[];
+  bio: string | null;
+  avatar_url: string | null;
+
+  // rolling stats
+  overall_rating: number;
+  total_takes: number;
+  graded_takes: number;
+  accuracy_rate: number;
+  boldness_avg: number;
+  accountability_score: number;
+  flip_count: number;
+}
+
+export type ExpertInsert = Pick<Expert, "name"> &
+  Partial<Pick<Expert, "twitter_handle" | "outlet" | "sport_focus" | "bio" | "avatar_url">>;
+
+export type ExpertUpdate = Partial<ExpertInsert>;
+
+// ─── Grade breakdown (jsonb) ──────────────────────────────────────────────────
+
+export interface GradeBreakdown {
+  accuracy_score: number;      // base correctness 0–100
+  difficulty_bonus: number;    // added for bold/hard takes
+  confidence_penalty: number;  // subtracted for overclaiming
+  [key: string]: number;       // extensible for future components
+}
+
+// ─── Take ─────────────────────────────────────────────────────────────────────
+
+export interface Take {
+  take_id: string;
+  expert_id: string;
+  date_submitted: string;
+
+  // Core
+  raw_text: string;
+  source_url: string | null;
+  source_type: SourceType;
+  date_made: string;           // ISO date string
+
+  // AI-generated rating fields
+  take_type: TakeType | null;
+  sport: string | null;
+  subjects: string[];
+  difficulty_score: number | null;       // 1–10
+  falsifiability_score: number | null;   // 1–10
+  confidence_claimed: number | null;     // 1–10
+  time_horizon: TimeHorizon | null;
+  time_horizon_date: string | null;      // ISO date string
+  summary: string | null;
+  grading_criteria: string | null;
+  flags: string[];                       // e.g. ["bold_call", "guaranteed", "flip_risk"]
+  rating_status: RatingStatus;
+
+  // Outcome
+  outcome_status: OutcomeStatus;
+  outcome_date: string | null;           // ISO date string
+  outcome_notes: string | null;
+  outcome_source_url: string | null;
+
+  // Grading
+  grade: number | null;                  // 0–100
+  grade_breakdown: GradeBreakdown | null;
+  grade_notes: string | null;
+  aging_verdict: AgingVerdict | null;
+
+  // Flip tracking
+  related_take_ids: string[];
+  is_flip: boolean;
+}
+
+export type TakeInsert = Pick<Take, "expert_id" | "raw_text" | "source_type" | "date_made"> &
+  Partial<Pick<Take, "source_url" | "sport">>;
+
+export type TakeUpdate = Partial<
+  Pick<Take,
+    | "take_type" | "sport" | "subjects"
+    | "difficulty_score" | "falsifiability_score" | "confidence_claimed"
+    | "time_horizon" | "time_horizon_date"
+    | "summary" | "grading_criteria" | "flags" | "rating_status"
+    | "outcome_status" | "outcome_date" | "outcome_notes" | "outcome_source_url"
+    | "grade" | "grade_breakdown" | "grade_notes" | "aging_verdict"
+    | "related_take_ids" | "is_flip"
+  >
+>;
+
+// ─── Supabase Database type map ───────────────────────────────────────────────
+
 export interface Database {
   public: {
     Tables: {
@@ -22,80 +129,3 @@ export interface Database {
     };
   };
 }
-
-// ─── Expert ──────────────────────────────────────────────────────────────────
-
-export interface Expert {
-  id: string;
-  created_at: string;
-  updated_at: string;
-
-  name: string;
-  slug: string;
-  bio: string | null;
-  avatar_url: string | null;
-  twitter_handle: string | null;
-  organization: string | null; // ESPN, The Athletic, etc.
-
-  // Computed / cached stats (updated via trigger or background job)
-  total_takes: number;
-  graded_takes: number;
-  accuracy_score: number | null; // 0–100 average grade on resolved takes
-  boldness_score: number | null; // average difficulty/boldness of their takes
-  flip_rate: number | null;      // 0–1 fraction of takes they later contradicted
-}
-
-export type ExpertInsert = Omit<Expert, "id" | "created_at" | "updated_at" | "total_takes" | "graded_takes" | "accuracy_score" | "boldness_score" | "flip_rate">;
-export type ExpertUpdate = Partial<ExpertInsert>;
-
-// ─── Take ────────────────────────────────────────────────────────────────────
-
-export type TakeStatus = "pending_ai_rating" | "rated" | "pending_outcome" | "graded" | "contested";
-export type TakeSource = "twitter" | "tv" | "podcast" | "article" | "other";
-export type Sport = "nfl" | "nba" | "mlb" | "nhl" | "soccer" | "college_football" | "college_basketball" | "other";
-
-export interface Take {
-  id: string;
-  created_at: string;
-  updated_at: string;
-
-  expert_id: string;
-  submitted_by: string | null; // auth user id, nullable for anonymous
-
-  // The take itself
-  content: string;           // the exact quote / take text
-  source: TakeSource;
-  source_url: string | null;
-  sport: Sport;
-  taken_at: string;          // when the take was originally made
-
-  // AI-generated ratings (filled after Claude processes the take)
-  status: TakeStatus;
-  difficulty_score: number | null;       // 1–10: how risky/bold is this take?
-  falsifiability_score: number | null;   // 1–10: can this clearly be proven right/wrong?
-  confidence_score: number | null;       // 1–10: how confidently is it stated?
-  specificity_score: number | null;      // 1–10: how specific vs vague?
-  ai_summary: string | null;             // Claude's one-line summary
-  ai_reasoning: string | null;           // Claude's full reasoning for the scores
-
-  // Outcome & grading
-  outcome_date: string | null;           // when the outcome became known
-  outcome_description: string | null;    // what actually happened
-  grade: number | null;                  // 0–100 final score
-  grade_reasoning: string | null;        // Claude's grading explanation
-
-  // Meta
-  upvotes: number;
-  is_notable: boolean;       // editor-flagged as especially significant
-}
-
-export type TakeInsert = Omit<Take,
-  | "id" | "created_at" | "updated_at"
-  | "status"
-  | "difficulty_score" | "falsifiability_score" | "confidence_score" | "specificity_score"
-  | "ai_summary" | "ai_reasoning"
-  | "outcome_date" | "outcome_description"
-  | "grade" | "grade_reasoning"
-  | "upvotes" | "is_notable"
->;
-export type TakeUpdate = Partial<Omit<Take, "id" | "created_at">>;

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/grade-takes?secret=k9mX2pQr7vLnT4wJ8dYs",
+      "schedule": "0 10 * * *"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen text-gray-900 antialiased" style={{ backgroundColor: "#ebedf0" }}>
+      <body className="min-h-screen text-gray-900 antialiased overflow-x-hidden" style={{ backgroundColor: "#ebedf0" }}>
         <header className="border-b border-black/20 px-6 py-4" style={{ backgroundColor: "#2c2d2e" }}>
           <div className="mx-auto flex max-w-5xl items-center justify-between">
             <a href="/" className="text-xl font-bold tracking-tight text-white">

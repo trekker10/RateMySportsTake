@@ -73,15 +73,15 @@ export default async function ExpertProfilePage({
     .toUpperCase();
 
   return (
-    <div className="-mx-6 -mt-10">
+    <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-10">
 
       {/* ── Hero header strip ── */}
-      <div className="bg-gray-900 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="border-b border-gray-200" style={{ backgroundColor: "#ffffff" }}>
+        <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="flex items-center gap-6">
 
             {/* Avatar */}
-            <div className="h-24 w-24 shrink-0 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-3xl font-bold text-gray-300 ring-4 ring-gray-700">
+            <div className="h-24 w-24 shrink-0 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-3xl font-bold text-gray-500 ring-4 ring-gray-100">
               {expert.avatar_url ? (
                 <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
               ) : (
@@ -92,7 +92,7 @@ export default async function ExpertProfilePage({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h1 className="text-3xl font-bold text-white">{expert.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">{expert.name}</h1>
                 <FollowButton
                   expertId={expert.expert_id}
                   initialFollowing={!!followRow}
@@ -100,15 +100,15 @@ export default async function ExpertProfilePage({
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
-                {expert.outlet && <span className="font-medium text-gray-300">{expert.outlet}</span>}
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                {expert.outlet && <span className="font-medium text-gray-700">{expert.outlet}</span>}
                 {expert.outlet && expert.twitter_handle && <span>·</span>}
                 {expert.twitter_handle && (
                   <a
                     href={`https://x.com/${expert.twitter_handle.replace("@", "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="text-emerald-600 hover:text-emerald-500 transition-colors"
                   >
                     {expert.twitter_handle}
                   </a>
@@ -122,21 +122,21 @@ export default async function ExpertProfilePage({
               </div>
 
               {expert.bio && (
-                <p className="mt-2 text-sm text-gray-400 max-w-xl">{expert.bio}</p>
+                <p className="mt-2 text-sm text-gray-500 max-w-xl">{expert.bio}</p>
               )}
             </div>
 
             {/* Accountability score badge */}
-            <div className="hidden sm:flex flex-col items-center shrink-0 bg-gray-800 rounded-xl px-5 py-3 border border-gray-700">
-              <span className="text-3xl font-black text-emerald-400">{expert.accountability_score}</span>
-              <span className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">Accountability</span>
+            <div className="hidden sm:flex flex-col items-center shrink-0 bg-gray-50 rounded-xl px-5 py-3 border border-gray-200">
+              <span className="text-3xl font-black text-emerald-600">{expert.accountability_score}</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wide mt-0.5">Accountability</span>
             </div>
           </div>
         </div>
 
         {/* ── Tab nav ── */}
-        <div className="border-t border-gray-800">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="border-t border-gray-200">
+          <div className="max-w-5xl mx-auto px-6">
             <nav className="flex gap-0 -mb-px">
               {TABS.map((t) => (
                 <Link
@@ -144,13 +144,13 @@ export default async function ExpertProfilePage({
                   href={`/experts/${id}?tab=${t.key}`}
                   className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                     tab === t.key
-                      ? "border-emerald-400 text-emerald-400"
-                      : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500"
+                      ? "border-emerald-500 text-emerald-600"
+                      : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
                   }`}
                 >
                   {t.label}
                   {t.key === "takes" && allTakes?.length
-                    ? <span className="ml-1.5 text-xs text-gray-600">({allTakes.length})</span>
+                    ? <span className="ml-1.5 text-xs text-gray-400">({allTakes.length})</span>
                     : null}
                 </Link>
               ))}

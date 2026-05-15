@@ -15,8 +15,12 @@ export default function ExpertCard({ expert }: { expert: Expert }) {
 
         {/* Identity */}
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-bold text-zinc-300">
-            {initials}
+          <div className="h-11 w-11 shrink-0 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-300">
+            {expert.avatar_url ? (
+              <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-zinc-100 truncate">{expert.name}</p>

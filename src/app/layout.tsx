@@ -12,10 +12,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen text-gray-900 antialiased overflow-x-hidden" style={{ backgroundColor: "#ebedf0" }}>
-        <header className="border-b border-black/20 px-6 py-4" style={{ backgroundColor: "#2c2d2e" }}>
+        <header className="border-b border-black/20 px-6 py-5" style={{ backgroundColor: "#2c2d2e" }}>
           <div className="mx-auto flex max-w-5xl items-center justify-between">
-            <a href="/" className="text-xl font-bold tracking-tight text-white">
-              🎯 RateMySportsTake
+            <a href="/">
+              <img src="/logo.png" alt="RateMySportsTake" className="h-14 w-auto" />
             </a>
             <div className="flex items-center gap-6">
               <nav className="flex gap-6 text-sm text-gray-300">

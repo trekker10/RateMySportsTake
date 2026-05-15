@@ -1,35 +1,47 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import TakeCard from "@/components/TakeCard";
 import FollowButton from "@/components/FollowButton";
 
-interface StatProps {
+const TABS = [
+  { key: "takes",  label: "Takes" },
+  { key: "stats",  label: "Stats" },
+  { key: "best",   label: "Best" },
+  { key: "worst",  label: "Worst" },
+];
+
+interface StatBoxProps {
   label: string;
   value: string | number;
   sub?: string;
   highlight?: boolean;
 }
 
-function Stat({ label, value, sub, highlight = false }: StatProps) {
+function StatBox({ label, value, sub, highlight = false }: StatBoxProps) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-center">
-      <p className={`text-2xl font-bold ${highlight ? "text-emerald-400" : "text-zinc-100"}`}>
+    <div className="bg-white rounded-lg border border-gray-200 p-4 text-center shadow-sm">
+      <p className={`text-2xl font-bold ${highlight ? "text-emerald-600" : "text-gray-900"}`}>
         {value}
-        {sub && <span className="text-sm text-zinc-600 ml-0.5">{sub}</span>}
+        {sub && <span className="text-sm text-gray-400 ml-0.5">{sub}</span>}
       </p>
-      <p className="mt-1 text-xs text-zinc-500">{label}</p>
+      <p className="mt-1 text-xs text-gray-500 uppercase tracking-wide">{label}</p>
     </div>
   );
 }
 
 export default async function ExpertProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const { tab: rawTab } = await searchParams;
+  const tab = TABS.find((t) => t.key === rawTab)?.key ?? "takes";
 
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const [
@@ -41,17 +53,17 @@ export default async function ExpertProfilePage({
   ] = await Promise.all([
     supabase.from("experts").select("*").eq("expert_id", id).single(),
     supabase.from("takes").select("*").eq("expert_id", id).order("date_made", { ascending: false }),
-    supabase.from("takes").select("*").eq("expert_id", id).not("grade", "is", null).order("grade", { ascending: false }).limit(3),
-    supabase.from("takes").select("*").eq("expert_id", id).not("grade", "is", null).lt("grade", 60).order("grade", { ascending: true }).limit(3),
+    supabase.from("takes").select("*").eq("expert_id", id).not("grade", "is", null).order("grade", { ascending: false }).limit(5),
+    supabase.from("takes").select("*").eq("expert_id", id).not("grade", "is", null).lt("grade", 60).order("grade", { ascending: true }).limit(5),
     user
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
-  const bestIds = new Set((bestTakes ?? []).map((t) => t.take_id));
-  const worstTakes = (worstTakesRaw ?? []).filter((t) => !bestIds.has(t.take_id));
-
   if (!expert) notFound();
+
+  const bestIds = new Set((bestTakes ?? []).map((t: { take_id: string }) => t.take_id));
+  const worstTakes = (worstTakesRaw ?? []).filter((t: { take_id: string }) => !bestIds.has(t.take_id));
 
   const initials = expert.name
     .split(" ")
@@ -61,124 +73,155 @@ export default async function ExpertProfilePage({
     .toUpperCase();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-10">
+    <div className="-mx-6 -mt-10">
 
-      {/* Expert header */}
-      <div className="flex items-start gap-5">
-        <div className="shrink-0 h-16 w-16 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center text-xl font-bold text-zinc-300">
-          {expert.avatar_url ? (
-            <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
-          ) : (
-            initials
-          )}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold">{expert.name}</h1>
-            <FollowButton
-              expertId={expert.expert_id}
-              initialFollowing={!!followRow}
-              isLoggedIn={!!user}
-            />
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
-            {expert.outlet && <span>{expert.outlet}</span>}
-            {expert.twitter_handle && (
-              <a
-                href={`https://x.com/${expert.twitter_handle.replace("@", "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-emerald-500 hover:underline"
-              >
-                {expert.twitter_handle}
-              </a>
-            )}
-          </div>
-          {expert.bio && (
-            <p className="mt-2 text-sm text-zinc-400 max-w-prose">{expert.bio}</p>
-          )}
-          {expert.sport_focus.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {expert.sport_focus.map((s: string) => (
-                <span key={s} className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-400">
-                  {s}
-                </span>
-              ))}
+      {/* ── Hero header strip ── */}
+      <div className="bg-gray-900 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-6">
+
+            {/* Avatar */}
+            <div className="h-24 w-24 shrink-0 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-3xl font-bold text-gray-300 ring-4 ring-gray-700">
+              {expert.avatar_url ? (
+                <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
-          )}
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-3 mb-1">
+                <h1 className="text-3xl font-bold text-white">{expert.name}</h1>
+                <FollowButton
+                  expertId={expert.expert_id}
+                  initialFollowing={!!followRow}
+                  isLoggedIn={!!user}
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+                {expert.outlet && <span className="font-medium text-gray-300">{expert.outlet}</span>}
+                {expert.outlet && expert.twitter_handle && <span>·</span>}
+                {expert.twitter_handle && (
+                  <a
+                    href={`https://x.com/${expert.twitter_handle.replace("@", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    {expert.twitter_handle}
+                  </a>
+                )}
+                {expert.sport_focus?.length > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>{expert.sport_focus.join(", ")}</span>
+                  </>
+                )}
+              </div>
+
+              {expert.bio && (
+                <p className="mt-2 text-sm text-gray-400 max-w-xl">{expert.bio}</p>
+              )}
+            </div>
+
+            {/* Accountability score badge */}
+            <div className="hidden sm:flex flex-col items-center shrink-0 bg-gray-800 rounded-xl px-5 py-3 border border-gray-700">
+              <span className="text-3xl font-black text-emerald-400">{expert.accountability_score}</span>
+              <span className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">Accountability</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Tab nav ── */}
+        <div className="border-t border-gray-800">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="flex gap-0 -mb-px">
+              {TABS.map((t) => (
+                <Link
+                  key={t.key}
+                  href={`/experts/${id}?tab=${t.key}`}
+                  className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    tab === t.key
+                      ? "border-emerald-400 text-emerald-400"
+                      : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500"
+                  }`}
+                >
+                  {t.label}
+                  {t.key === "takes" && allTakes?.length
+                    ? <span className="ml-1.5 text-xs text-gray-600">({allTakes.length})</span>
+                    : null}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </div>
 
-      {/* Stats dashboard */}
-      <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Track Record</h2>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-          <div className="col-span-1 sm:col-span-1">
-            <Stat label="Accountability" value={expert.accountability_score} sub="/100" highlight />
-          </div>
-          <div className="col-span-1">
-            <Stat label="Overall Rating" value={expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"} sub={expert.overall_rating > 0 ? "/100" : undefined} />
-          </div>
-          <div className="col-span-1">
-            <Stat label="Accuracy" value={expert.accuracy_rate > 0 ? `${expert.accuracy_rate.toFixed(0)}%` : "—"} />
-          </div>
-          <div className="col-span-1">
-            <Stat label="Total Takes" value={expert.total_takes} />
-          </div>
-          <div className="col-span-1">
-            <Stat label="Graded" value={expert.graded_takes} />
-          </div>
-          <div className="col-span-1">
-            <Stat label="Boldness Avg" value={expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—"} sub={expert.boldness_avg > 0 ? "/10" : undefined} />
-          </div>
-          <div className="col-span-1">
-            <Stat label="Flip Count" value={expert.flip_count} />
-          </div>
-        </div>
-      </section>
+      {/* ── Content area ── */}
+      <div className="bg-gray-100 min-h-[60vh]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-      {/* Best predictions */}
-      {bestTakes && bestTakes.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-            Best Predictions
-          </h2>
-          <div className="space-y-3">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {bestTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)}
-          </div>
-        </section>
-      )}
-
-      {/* Worst predictions */}
-      {worstTakes && worstTakes.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-            Worst Predictions
-          </h2>
-          <div className="space-y-3">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {worstTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)}
-          </div>
-        </section>
-      )}
-
-      {/* All takes */}
-      <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-          All Takes ({allTakes?.length ?? 0})
-        </h2>
-        <div className="space-y-3">
-          {allTakes && allTakes.length > 0 ? (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            allTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
-          ) : (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
-              No takes submitted yet.
+          {/* TAKES TAB */}
+          {tab === "takes" && (
+            <div className="space-y-3">
+              {allTakes && allTakes.length > 0 ? (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                allTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+                  No takes submitted yet.
+                </div>
+              )}
             </div>
           )}
+
+          {/* STATS TAB */}
+          {tab === "stats" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <StatBox label="Accountability" value={expert.accountability_score} sub="/100" highlight />
+                <StatBox label="Overall Rating" value={expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"} sub={expert.overall_rating > 0 ? "/100" : undefined} />
+                <StatBox label="Accuracy" value={expert.accuracy_rate > 0 ? `${expert.accuracy_rate.toFixed(0)}%` : "—"} />
+                <StatBox label="Total Takes" value={expert.total_takes} />
+                <StatBox label="Graded" value={expert.graded_takes} />
+                <StatBox label="Boldness Avg" value={expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—"} sub={expert.boldness_avg > 0 ? "/10" : undefined} />
+                <StatBox label="Flip Count" value={expert.flip_count} />
+              </div>
+            </div>
+          )}
+
+          {/* BEST TAB */}
+          {tab === "best" && (
+            <div className="space-y-3">
+              {bestTakes && bestTakes.length > 0 ? (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                bestTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+                  No graded takes yet.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* WORST TAB */}
+          {tab === "worst" && (
+            <div className="space-y-3">
+              {worstTakes.length > 0 ? (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                worstTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+                  No bad takes on record yet.
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
-      </section>
+      </div>
     </div>
   );
 }

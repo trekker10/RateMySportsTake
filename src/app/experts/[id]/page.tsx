@@ -53,7 +53,7 @@ export default async function ExpertProfilePage({
     .toUpperCase();
 
   const stats = [
-    { label: "Overall Rating", value: expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—", sub: expert.overall_rating > 0 ? "/100" : undefined, highlight: true },
+    { label: "TakeScore", value: expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—", sub: expert.overall_rating > 0 ? "/100" : undefined, highlight: true },
     { label: "Accuracy",       value: expert.accuracy_rate > 0 ? `${expert.accuracy_rate.toFixed(0)}%` : "—" },
     { label: "Total Takes",    value: expert.total_takes },
     { label: "Boldness Avg",   value: expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—", sub: expert.boldness_avg > 0 ? "/10" : undefined },
@@ -119,7 +119,7 @@ export default async function ExpertProfilePage({
               <span className="text-3xl font-black text-emerald-600">
                 {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
               </span>
-              <span className="text-xs text-gray-400 uppercase tracking-wide mt-0.5">Overall Rating</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wide mt-0.5">TakeScore</span>
             </div>
           </div>
 

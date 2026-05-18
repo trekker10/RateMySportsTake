@@ -11,55 +11,57 @@ export default function ExpertCard({ expert }: { expert: Expert }) {
 
   return (
     <Link href={`/experts/${expert.expert_id}`}>
-      <div className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 hover:shadow-md transition-all space-y-4">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 hover:border-gray-300 hover:shadow-md transition-all space-y-5">
 
-        {/* Identity */}
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 shrink-0 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600">
+        {/* Top: headshot + name/bio */}
+        <div className="flex items-start gap-4">
+          <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-xl font-bold text-gray-600">
             {expert.avatar_url ? (
               <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
             ) : (
               initials
             )}
           </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-gray-900 truncate">{expert.name}</p>
+          <div className="min-w-0 pt-1">
+            <p className="text-xl font-bold text-gray-900 leading-tight">{expert.name}</p>
             {expert.outlet && (
-              <p className="text-xs text-gray-500 truncate">{expert.outlet}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{expert.outlet}</p>
+            )}
+            {expert.sport_focus.length > 0 && (
+              <p className="text-xs text-gray-400 mt-1">{expert.sport_focus.join(", ")}</p>
             )}
           </div>
         </div>
 
-        {/* Sport tags */}
-        {expert.sport_focus.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {expert.sport_focus.map((s) => (
-              <span key={s} className="rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs text-gray-600">
-                {s}
-              </span>
-            ))}
+        {/* Bottom: TakeScore box + stats */}
+        <div className="flex items-center gap-5">
+          <div className="shrink-0 rounded-xl border-2 border-gray-200 px-5 py-3 text-center min-w-[90px]">
+            <p className="text-3xl font-black text-gray-900">
+              {expert.overall_rating > 0 ? Math.round(expert.overall_rating) : "—"}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">TakeScore</p>
           </div>
-        )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-lg font-bold text-emerald-600">
-              {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
-            </p>
-            <p className="text-xs text-gray-400">Rating</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold text-gray-800">{expert.total_takes}</p>
-            <p className="text-xs text-gray-400">Takes</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold text-gray-800">
-              {expert.accuracy_rate > 0 ? `${expert.accuracy_rate.toFixed(0)}%` : "—"}
-            </p>
-            <p className="text-xs text-gray-400">Accuracy</p>
+          <div className="flex gap-5">
+            <div className="text-center">
+              <p className="text-xl font-bold text-gray-800">{expert.total_takes}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Total Takes</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-gray-800">
+                {expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—"}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Accuracy</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-gray-800">
+                {expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—"}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Boldness</p>
+            </div>
           </div>
         </div>
+
       </div>
     </Link>
   );

@@ -99,7 +99,7 @@ export default function AdminPanel({
           {[
             { label: "Browse Takes", href: "/takes" },
             { label: "Experts", href: "/experts" },
-            { label: "Manage Experts", href: "/admin/experts" },
+            { label: "Manage Profiles", href: "/admin/experts" },
             { label: "Import Takes", href: "/import" },
             { label: "Grade Dashboard", href: "/grade" },
           ].map(({ label, href }) => (

@@ -17,8 +17,8 @@ export default async function AdminExpertsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Manage Experts</h1>
-        <p className="mt-1 text-zinc-400">Edit profile info, images, and social links.</p>
+        <h1 className="text-3xl font-bold">Manage Profiles</h1>
+        <p className="mt-1 text-zinc-400">Toggle verification to add analysts to the leaderboard. Edit profile info, images, and social links.</p>
       </div>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">

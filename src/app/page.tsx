@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import HeroSearch from "@/components/HeroSearch";
 
 function verdictInfo(status: string) {
   if (status === "confirmed_true")  return { label: "RIGHT.",       color: "#0a7a3b" };
@@ -59,32 +60,7 @@ export default async function HomePage() {
             Sports analysts, scored on the takes they actually made.
           </p>
 
-          <div className="mt-8 flex items-stretch gap-4 max-w-3xl">
-            <form action="/takes" className="flex-1 flex items-stretch border-2 border-gray-900 bg-white">
-              <div className="flex items-center px-4 border-r-2 border-gray-900 shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m20 20-3.5-3.5" />
-                </svg>
-              </div>
-              <input
-                name="q"
-                placeholder="search analysts, takes, or topics…"
-                className="flex-1 px-4 py-3.5 bg-transparent text-gray-900 placeholder-gray-400 focus:outline-none text-base min-w-0"
-              />
-              <div className="flex items-center border-l-2 border-gray-900 shrink-0">
-                <span className="px-3 py-2 bg-gray-900 text-white font-mono text-[11px] tracking-widest">TAKES</span>
-                <span className="px-3 py-2 font-mono text-[11px] tracking-widest text-gray-400">ANALYSTS</span>
-              </div>
-            </form>
-            <Link
-              href="/experts"
-              className="px-5 py-3.5 font-black italic text-base tracking-wide text-white flex items-center whitespace-nowrap"
-              style={{ backgroundColor: "#e2241a" }}
-            >
-              EXPLORE THE INDEX ▸
-            </Link>
-          </div>
+          <HeroSearch />
         </div>
       </div>
 

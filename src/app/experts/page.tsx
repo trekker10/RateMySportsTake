@@ -7,18 +7,25 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default async function ExpertsPage() {
+export default async function ExpertsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const supabase = await createClient();
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
 
+  let expertsQuery = supabase.from("experts").select("*").order("overall_rating", { ascending: false });
+  if (q) {
+    expertsQuery = expertsQuery.or(`name.ilike.%${q}%,outlet.ilike.%${q}%`);
+  }
+
   const [{ data: experts }, { data: recentTakes }] = await Promise.all([
-    supabase
-      .from("experts")
-      .select("*")
-      .order("overall_rating", { ascending: false }),
+    expertsQuery,
     supabase
       .from("takes")
       .select("expert_id, grade, outcome_status, difficulty_score")
@@ -49,7 +56,8 @@ export default async function ExpertsPage() {
             <span style={{ color: "#e2241a" }}>· LEADERBOARD</span>
           </h1>
           <p className="mt-1 italic text-gray-500">
-            {experts?.length ?? 0} expert{experts?.length !== 1 ? "s" : ""} tracked · ranked by TakeScore
+            {experts?.length ?? 0} expert{experts?.length !== 1 ? "s" : ""}
+            {q ? ` matching "${q}"` : " tracked · ranked by TakeScore"}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">

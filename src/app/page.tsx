@@ -40,7 +40,7 @@ export default async function HomePage() {
     <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-10">
 
       {/* ── Hero ── */}
-      <div className="bg-white border-b-2 border-gray-900">
+      <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#f5f1e8" }}>
         <div className="max-w-5xl mx-auto px-6 py-14">
           <p className="font-mono text-xs tracking-[0.2em] uppercase" style={{ color: "#e2241a" }}>
             ━━ THE ACCOUNTABILITY INDEX
@@ -49,10 +49,10 @@ export default async function HomePage() {
             className="mt-4 font-black italic leading-none tracking-tighter text-gray-900"
             style={{ fontSize: "clamp(3.5rem, 9vw, 7rem)" }}
           >
-            THE TAKE<br />
-            IS THE<br />
+            HOLD<br />
+            <span style={{ color: "#e2241a" }}>THE TAKES</span><br />
             <span style={{ WebkitTextStroke: "2px #1a1a1a", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
-              RECORD.
+              ACCOUNTABLE.
             </span>
           </h1>
           <p className="mt-6 text-xl text-gray-500 max-w-xl">

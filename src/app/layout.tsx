@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import AuthButton from "@/components/AuthButton";
+import { getFlag } from "@/app/actions/flags";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
   description: "Sports take accountability — track who gets it right.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const showSubmit = await getFlag("show_submit_nav");
+
   return (
     <html lang="en">
       <body className="min-h-screen text-gray-900 antialiased overflow-x-hidden" style={{ backgroundColor: "#ebedf0" }}>
@@ -26,7 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a href="/experts" className="hover:text-gray-900 transition-colors">Leaderboard</a>
                 <a href="/experts" className="hover:text-gray-900 transition-colors">Analysts</a>
                 <a href="/takes"   className="hover:text-gray-900 transition-colors">Takes</a>
-                <a href="/submit"  className="hover:text-gray-900 transition-colors">Submit</a>
+                {showSubmit && (
+                  <a href="/submit" className="hover:text-gray-900 transition-colors">Submit</a>
+                )}
               </nav>
               <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-300 animate-pulse" />}>
                 <AuthButton />

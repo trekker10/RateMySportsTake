@@ -7,8 +7,15 @@
   --up: #0a7a3b;
 }
 
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 @keyframes marquee {

@@ -9,6 +9,7 @@ const FLAG_LABELS: Record<string, string> = {
   import_enabled:               "Show Import tab",
   grading_enabled:              "Enable daily auto-grading",
   public_browsing:              "Allow browsing without login",
+  show_submit_nav:              "Show Submit link in nav (admins always see it)",
 };
 
 function Toggle({
@@ -101,6 +102,7 @@ export default function AdminPanel({
             { label: "Experts", href: "/experts" },
             { label: "Manage Profiles", href: "/admin/experts" },
             { label: "Review Takes", href: "/admin/takes" },
+            { label: "Submit a Take", href: "/submit" },
             { label: "Import Takes", href: "/import" },
             { label: "Grade Dashboard", href: "/grade" },
           ].map(({ label, href }) => (

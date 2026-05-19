@@ -59,7 +59,7 @@ export default async function HomePage() {
             Sports analysts, scored on the takes they actually made.
           </p>
 
-          <div className="mt-8 flex items-stretch gap-4 max-w-2xl">
+          <div className="mt-8 flex items-stretch gap-4 max-w-3xl">
             <form action="/takes" className="flex-1 flex items-stretch border-2 border-gray-900 bg-white">
               <div className="flex items-center px-4 border-r-2 border-gray-900 shrink-0">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">

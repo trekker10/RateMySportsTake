@@ -10,77 +10,114 @@ interface TakeCardProps {
   showExpert?: boolean;
 }
 
-const OUTCOME_STYLES: Record<string, { label: string; className: string }> = {
-  confirmed_true:  { label: "✓ Correct",          className: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
-  confirmed_false: { label: "✗ Wrong",             className: "bg-red-50 text-red-700 border border-red-200" },
-  partially_true:  { label: "~ Partially Right",   className: "bg-yellow-50 text-yellow-700 border border-yellow-200" },
-  unresolvable:    { label: "Unresolvable",         className: "bg-gray-100 text-gray-500 border border-gray-200" },
-  pending:         { label: "Outcome Pending",      className: "bg-gray-100 text-gray-500 border border-gray-200" },
-};
+function verdictTag(status: string) {
+  if (status === "confirmed_true")  return { label: "RIGHT",      bg: "#0a7a3b", text: "#fff" };
+  if (status === "confirmed_false") return { label: "WRONG",      bg: "#e2241a", text: "#fff" };
+  if (status === "partially_true")  return { label: "PARTLY RIGHT", bg: "#d97706", text: "#fff" };
+  if (status === "unresolvable")    return { label: "N/A",         bg: "#6b7280", text: "#fff" };
+  return                                   { label: "PENDING",    bg: "#e5e7eb", text: "#4b5563" };
+}
+
+function gradeImpact(grade: number | null) {
+  if (grade == null) return null;
+  const d = Math.round(grade - 50);
+  return d >= 0 ? `+${d}` : `${d}`;
+}
+
+function initials(name: string) {
+  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
 
 export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
-  const outcome = OUTCOME_STYLES[take.outcome_status] ?? OUTCOME_STYLES.pending;
-  const preview =
-    take.raw_text.length > 220
-      ? take.raw_text.slice(0, 220).trimEnd() + "…"
-      : take.raw_text;
+  const v = verdictTag(take.outcome_status);
+  const impact = gradeImpact(take.grade);
+  const expert = take.experts;
+  const filed = new Date(take.date_made).toLocaleDateString("en-US", {
+    month: "short", year: "2-digit",
+  }).toUpperCase();
 
   return (
-    <Link href={`/takes/${take.take_id}`}>
-      <div className="rounded-xl border border-gray-200 bg-white p-5 hover:border-gray-300 hover:shadow-md transition-all space-y-3">
+    <div className="bg-white border-2 border-gray-900">
 
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {showExpert && take.experts && (
-              <span className="font-semibold text-gray-900">{take.experts.name}</span>
-            )}
-            {take.sport && (
-              <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 border border-gray-200">
-                {take.sport}
-              </span>
-            )}
-            <span className="text-xs text-gray-400">
-              {new Date(take.date_made).toLocaleDateString("en-US", {
-                month: "short", day: "numeric", year: "numeric",
-              })}
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {take.grade !== null && (
-              <span className="text-sm font-bold text-emerald-600">{take.grade}/100</span>
-            )}
-            <span className={`rounded-full px-2.5 py-0.5 text-xs ${outcome.className}`}>
-              {outcome.label}
-            </span>
-          </div>
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center gap-3 min-w-0">
+          {showExpert && expert ? (
+            <>
+              <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0 flex items-center justify-center text-xs font-bold text-gray-600">
+                {initials(expert.name)}
+              </div>
+              <div className="min-w-0">
+                <Link href={`/experts/${expert.expert_id}`} className="font-black text-sm uppercase tracking-tight hover:underline">
+                  {expert.name}
+                </Link>
+                <p className="font-mono text-[9px] tracking-wider text-gray-400 uppercase">
+                  {[expert.outlet, `Filed ${filed}`].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
+              Filed {filed}{take.sport ? ` · ${take.sport}` : ""}
+            </p>
+          )}
         </div>
-
-        {/* Quote */}
-        <p className="text-sm leading-relaxed text-gray-700">"{preview}"</p>
-
-        {/* AI scores */}
-        {take.rating_status === "rated" && (
-          <div className="flex flex-wrap gap-4 text-xs text-gray-400">
-            {take.difficulty_score !== null && (
-              <span>Difficulty <span className="font-medium text-gray-600">{take.difficulty_score}/10</span></span>
-            )}
-            {take.falsifiability_score !== null && (
-              <span>Falsifiability <span className="font-medium text-gray-600">{take.falsifiability_score}/10</span></span>
-            )}
-            {take.confidence_claimed !== null && (
-              <span>Confidence <span className="font-medium text-gray-600">{take.confidence_claimed}/10</span></span>
-            )}
-          </div>
-        )}
-
-        {take.rating_status === "pending" && (
-          <p className="text-xs text-gray-400">AI rating in progress…</p>
-        )}
-        {take.rating_status === "failed" && (
-          <p className="text-xs text-amber-600">AI rating failed</p>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="font-mono text-[10px] tracking-wider px-2 py-1 font-semibold"
+            style={{ backgroundColor: v.bg, color: v.text }}
+          >
+            {v.label}
+          </span>
+          {impact != null && (
+            <span className={`font-black text-lg ${impact.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
+              {impact}
+            </span>
+          )}
+        </div>
       </div>
-    </Link>
+
+      {/* Quote */}
+      <div className="px-4 py-4" style={{ backgroundColor: "#f5f1e9" }}>
+        <p className="italic text-lg leading-snug text-gray-800">
+          &ldquo;{take.raw_text}&rdquo;
+        </p>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-gray-200 space-y-3">
+        <div className="flex flex-wrap items-baseline gap-4">
+          {take.grade != null && (
+            <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
+              TAKESCORE NOW <span className="font-black text-base text-gray-900 ml-1">{take.grade.toFixed(1)}</span>
+            </span>
+          )}
+          {take.outcome_notes && (
+            <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
+              OUTCOME <span className="font-normal normal-case tracking-normal text-gray-600 italic ml-1">{take.outcome_notes}</span>
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/takes/${take.take_id}`}
+            className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+          >
+            See Full Context
+          </Link>
+          <button className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase">
+            Share Receipt
+          </button>
+          {expert && (
+            <Link
+              href={`/experts/${expert.expert_id}`}
+              className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+            >
+              {expert.name.split(" ")[0]}&apos;s Card →
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

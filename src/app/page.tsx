@@ -45,7 +45,7 @@ export default async function HomePage() {
       <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#f5f1e8" }}>
         <div className="max-w-5xl mx-auto px-6 py-14">
           <p className="font-mono text-xs tracking-[0.2em] uppercase" style={{ color: "#e2241a" }}>
-            ━━ THE ACCOUNTABILITY INDEX
+            ━━ THE SPORTS ACCOUNTABILITY INDEX
           </p>
           <h1
             className="mt-4 font-black italic leading-none tracking-tighter text-gray-900"
@@ -58,7 +58,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="mt-6 text-xl text-gray-500 max-w-xl">
-            Takes made. Receipts kept. Scores revealed.
+            Popular sports analysts make takes, AI keeps receipts, AI grades them.
           </p>
 
           <HeroSearch />

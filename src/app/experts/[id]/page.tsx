@@ -93,12 +93,68 @@ export default async function ExpertProfilePage({
 
       {/* ── Hero band ── */}
       <div className="border-b-2 border-gray-900 bg-white">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-[220px_1fr_220px]">
 
-          {/* Portrait — full-width banner on mobile, fixed column on desktop */}
-          <div className="border-b-2 md:border-b-0 md:border-r-2 border-gray-900 flex items-center justify-center bg-gray-100" style={{ minHeight: 180 }}>
+        {/* Mobile hero — side by side */}
+        <div className="md:hidden flex">
+          {/* Photo */}
+          <div className="w-36 shrink-0 border-r-2 border-gray-900 bg-gray-100 overflow-hidden flex items-center justify-center" style={{ minHeight: 200 }}>
             {expert.avatar_url ? (
-              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 180 }} />
+              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 200 }} />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-black text-gray-500">
+                {nameParts.map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 px-4 py-4 flex flex-col justify-between">
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.18em] text-gray-400 uppercase">Analyst · {rankLabel}</p>
+              <h1 className="font-black italic leading-none tracking-tight mt-1" style={{ fontSize: "clamp(1.6rem, 6.5vw, 2.5rem)" }}>
+                {firstName && <>{firstName} </>}
+                <span style={{ color: "#e2241a" }}>{lastName}</span>
+              </h1>
+
+              <div className="mt-2 space-y-0.5">
+                {expert.sport_focus?.length > 0 && (
+                  <p className="font-mono text-[10px] tracking-wider text-gray-500 uppercase">{expert.sport_focus.join(" · ")}</p>
+                )}
+                {expert.outlet && (
+                  <p className="font-mono text-[10px] tracking-wider text-gray-500">{expert.outlet}</p>
+                )}
+                {expert.twitter_handle && (
+                  <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer"
+                    className="block font-mono text-[10px] tracking-wider text-gray-500 hover:text-gray-900 transition-colors">
+                    {expert.twitter_handle}
+                  </a>
+                )}
+              </div>
+
+              {/* TakeScore inline */}
+              <div className="flex items-baseline gap-2 mt-3">
+                <span className="font-mono text-[9px] tracking-widest text-gray-400 uppercase">TakeScore</span>
+                <span className="font-black text-2xl leading-none" style={{ color: "#e2241a" }}>
+                  {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
+                </span>
+                {rank > 0 && <span className="font-mono text-[10px] text-gray-400">#{rank}</span>}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
+              <button className="px-3 py-1.5 border-2 border-gray-900 font-mono text-[10px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">
+                Followed Takes
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop hero — 3 columns */}
+        <div className="hidden md:grid max-w-5xl mx-auto grid-cols-[220px_1fr_220px]">
+          <div className="border-r-2 border-gray-900 flex items-center justify-center bg-gray-100" style={{ minHeight: 220 }}>
+            {expert.avatar_url ? (
+              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 220 }} />
             ) : (
               <div className="flex flex-col items-center gap-2 text-gray-400 p-8">
                 <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-black text-gray-500">
@@ -109,45 +165,31 @@ export default async function ExpertProfilePage({
             )}
           </div>
 
-          {/* Info */}
-          <div className="px-6 py-6">
-            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">
-              Analyst · {rankLabel}
-            </p>
+          <div className="px-7 py-6">
+            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">Analyst · {rankLabel}</p>
             <h1 className="font-black italic leading-none tracking-tight mt-2" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
               {firstName && <>{firstName}<br /></>}
               <span style={{ color: "#e2241a" }}>{lastName}</span>
             </h1>
-
-            <p className="italic text-base text-gray-500 mt-3">
+            <p className="italic text-lg text-gray-500 mt-3">
               {[expert.bio, expert.outlet, expert.sport_focus?.join(", ")].filter(Boolean).join(" · ")}
               {expert.twitter_handle && (
                 <> · <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">{expert.twitter_handle}</a></>
               )}
             </p>
-
             <div className="flex flex-wrap gap-2 mt-5">
               <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
-              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">
-                Followed Takes
-              </button>
-              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">
-                Roast Profile
-              </button>
+              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">Followed Takes</button>
+              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">Roast Profile</button>
             </div>
           </div>
 
-          {/* TakeScore */}
-          <div className="border-t-2 md:border-t-0 md:border-l-2 border-gray-900 px-6 py-6 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-4" style={{ backgroundColor: "#f5f1e8" }}>
-            <div>
-              <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
-              <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(3.5rem, 6vw, 6.5rem)", color: "#e2241a" }}>
-                {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
-              </p>
-            </div>
-            {rank > 0 && (
-              <p className="italic text-gray-500 text-sm">ranked {rankLabel} overall.</p>
-            )}
+          <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
+            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
+            <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#e2241a" }}>
+              {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
+            </p>
+            {rank > 0 && <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>}
           </div>
         </div>
       </div>

@@ -28,6 +28,9 @@ export interface Expert {
   bio: string | null;
   avatar_url: string | null;
 
+  // verification
+  verified: boolean;
+
   // rolling stats
   overall_rating: number;
   total_takes: number;

@@ -15,6 +15,7 @@ export async function updateExpert(expertId: string, formData: FormData) {
     twitter_handle: (formData.get("twitter_handle") as string) || null,
     bio:            (formData.get("bio") as string) || null,
     avatar_url:     (formData.get("avatar_url") as string) || null,
+    verified:       formData.get("verified") === "true",
   }).eq("expert_id", expertId);
 
   revalidatePath(`/experts/${expertId}`);

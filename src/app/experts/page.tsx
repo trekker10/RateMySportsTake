@@ -19,7 +19,7 @@ export default async function ExpertsPage({
     .toISOString()
     .split("T")[0];
 
-  let expertsQuery = supabase.from("experts").select("*").order("overall_rating", { ascending: false });
+  let expertsQuery = supabase.from("experts").select("*").eq("verified", true).order("overall_rating", { ascending: false });
   if (q) {
     expertsQuery = expertsQuery.or(`name.ilike.%${q}%,outlet.ilike.%${q}%`);
   }

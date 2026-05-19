@@ -93,6 +93,26 @@ export default function ExpertEditForm({ expert }: { expert: Record<string, unkn
         />
       </div>
 
+      {/* Verified analyst toggle */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">Verified Analyst</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Verified analysts appear on public leaderboards. Unverified profiles are hidden from rankings.
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer ml-6 shrink-0">
+          <input
+            type="checkbox"
+            name="verified"
+            value="true"
+            defaultChecked={expert.verified as boolean}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+        </label>
+      </div>
+
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <div className="flex items-center gap-4">

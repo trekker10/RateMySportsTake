@@ -20,6 +20,7 @@ export default async function HomePage() {
     supabase
       .from("experts")
       .select("expert_id, name, outlet, sport_focus, avatar_url, overall_rating, total_takes")
+      .eq("verified", true)
       .gt("overall_rating", 0)
       .order("overall_rating", { ascending: false }),
     supabase

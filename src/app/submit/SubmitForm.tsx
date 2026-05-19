@@ -28,6 +28,7 @@ export default function SubmitForm() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isFetching, startFetch] = useTransition();
   const [isSubmitting, startSubmit] = useTransition();
+  const [dateOverride, setDateOverride] = useState(false);
 
   function handleFetch(e: React.FormEvent) {
     e.preventDefault();
@@ -152,10 +153,29 @@ export default function SubmitForm() {
               <datalist id="sports-list">{SPORTS.map((s) => <option key={s} value={s} />)}</datalist>
             </div>
             <div>
-              <label htmlFor="date_made" className="block text-sm font-medium text-zinc-300 mb-1">
-                Date made <span className="text-emerald-400">*</span>
-              </label>
-              <input id="date_made" name="date_made" type="date" required defaultValue={prefilled?.dateMade ?? ""} className={inputClass} />
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="date_made" className="block text-sm font-medium text-zinc-300">
+                  Date made <span className="text-emerald-400">*</span>
+                </label>
+                {prefilled?.dateMade && !dateOverride && (
+                  <span className="text-xs text-emerald-500 flex items-center gap-1">
+                    ✓ pulled from tweet
+                    <button type="button" onClick={() => setDateOverride(true)} className="ml-1 underline text-zinc-400 hover:text-zinc-200">
+                      edit
+                    </button>
+                  </span>
+                )}
+              </div>
+              {prefilled?.dateMade && !dateOverride ? (
+                <>
+                  <input type="hidden" name="date_made" value={prefilled.dateMade} />
+                  <div className={`${inputClass} bg-gray-50 text-gray-500 cursor-default select-none`}>
+                    {new Date(prefilled.dateMade + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </div>
+                </>
+              ) : (
+                <input id="date_made" name="date_made" type="date" required defaultValue={prefilled?.dateMade ?? ""} className={inputClass} />
+              )}
             </div>
           </div>
         </section>

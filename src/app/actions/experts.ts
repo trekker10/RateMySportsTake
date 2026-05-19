@@ -4,6 +4,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkIsAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+export async function toggleVerified(expertId: string, verified: boolean) {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const supabase = createAdminClient();
+  await supabase.from("experts").update({ verified }).eq("expert_id", expertId);
+
+  revalidatePath("/admin/experts");
+  revalidatePath("/experts");
+  revalidatePath("/");
+}
+
 export async function updateExpert(expertId: string, formData: FormData) {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) throw new Error("Unauthorized");

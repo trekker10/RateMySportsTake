@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { checkIsAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import VerifiedToggle from "@/components/VerifiedToggle";
 
 export default async function AdminExpertsPage() {
   const isAdmin = await checkIsAdmin();
@@ -10,7 +11,7 @@ export default async function AdminExpertsPage() {
   const supabase = await createClient();
   const { data: experts } = await supabase
     .from("experts")
-    .select("expert_id, name, outlet, twitter_handle, avatar_url, total_takes")
+    .select("expert_id, name, outlet, twitter_handle, avatar_url, total_takes, verified")
     .order("name");
 
   return (
@@ -48,6 +49,7 @@ export default async function AdminExpertsPage() {
                 </p>
               </div>
               <div className="text-sm text-zinc-500 shrink-0">{expert.total_takes} takes</div>
+              <VerifiedToggle expertId={expert.expert_id} initialVerified={expert.verified ?? false} />
               <Link
                 href={`/admin/experts/${expert.expert_id}/edit`}
                 className="shrink-0 rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"

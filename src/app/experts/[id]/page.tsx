@@ -1,40 +1,62 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import TakeCard from "@/components/TakeCard";
 import FollowButton from "@/components/FollowButton";
 
-const TABS = [
-  { key: "takes", label: "Takes" },
-  { key: "best",  label: "Best" },
-  { key: "worst", label: "Worst" },
-];
+const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
+type VerdictFilter = typeof VERDICT_FILTERS[number];
+
+function verdictTag(status: string) {
+  if (status === "confirmed_true")  return { label: "RIGHT",      bg: "#0a7a3b", text: "#fff" };
+  if (status === "confirmed_false") return { label: "WRONG",      bg: "#e2241a", text: "#fff" };
+  if (status === "partially_true")  return { label: "PARTLY RIGHT", bg: "#d97706", text: "#fff" };
+  if (status === "unresolvable")    return { label: "N/A",         bg: "#6b7280", text: "#fff" };
+  return                                   { label: "PENDING",    bg: "#e5e7eb", text: "#4b5563" };
+}
+
+function gradeImpact(grade: number | null) {
+  if (grade == null) return null;
+  const delta = Math.round(grade - 50);
+  return delta >= 0 ? `+${delta}` : `${delta}`;
+}
 
 export default async function ExpertProfilePage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ verdict?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
-  const tab = TABS.find((t) => t.key === rawTab)?.key ?? "takes";
+  const { verdict: rawVerdict } = await searchParams;
+  const verdict: VerdictFilter = VERDICT_FILTERS.includes(rawVerdict as VerdictFilter)
+    ? (rawVerdict as VerdictFilter)
+    : "all";
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Build takes query based on verdict filter
+  let takesQuery = supabase
+    .from("takes")
+    .select("*")
+    .eq("expert_id", id)
+    .order("date_made", { ascending: false })
+    .limit(20);
+
+  if (verdict === "right")   takesQuery = takesQuery.eq("outcome_status", "confirmed_true");
+  if (verdict === "wrong")   takesQuery = takesQuery.in("outcome_status", ["confirmed_false", "partially_true"]);
+  if (verdict === "pending") takesQuery = takesQuery.eq("outcome_status", "pending");
+
   const [
     { data: expert },
-    { data: allTakes },
-    { data: bestTakes },
-    { data: worstTakesRaw },
+    { data: takes },
+    { data: allExperts },
     { data: followRow },
   ] = await Promise.all([
     supabase.from("experts").select("*").eq("expert_id", id).single(),
-    supabase.from("takes").select("*").eq("expert_id", id).order("date_made", { ascending: false }),
-    supabase.from("takes").select("*").eq("expert_id", id).not("grade", "is", null).order("grade", { ascending: false }).limit(5),
-    supabase.from("takes").select("*").eq("expert_id", id).not("grade", "is", null).lt("grade", 60).order("grade", { ascending: true }).limit(5),
+    takesQuery,
+    supabase.from("experts").select("expert_id, overall_rating").gt("overall_rating", 0).order("overall_rating", { ascending: false }),
     user
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -42,167 +64,223 @@ export default async function ExpertProfilePage({
 
   if (!expert) notFound();
 
-  const bestIds = new Set((bestTakes ?? []).map((t: { take_id: string }) => t.take_id));
-  const worstTakes = (worstTakesRaw ?? []).filter((t: { take_id: string }) => !bestIds.has(t.take_id));
+  // Rank
+  const rank = (allExperts ?? []).findIndex((e) => e.expert_id === id) + 1;
+  const rankLabel = rank > 0 ? `#${rank}` : "—";
 
-  const initials = expert.name
-    .split(" ")
-    .map((w: string) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  // Name split for accent on last word
+  const nameParts = expert.name.trim().split(" ");
+  const firstName = nameParts.slice(0, -1).join(" ");
+  const lastName  = nameParts[nameParts.length - 1];
 
-  const stats = [
-    { label: "TakeScore", value: expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—", sub: expert.overall_rating > 0 ? "/100" : undefined, highlight: true },
-    { label: "Accuracy",       value: expert.accuracy_rate > 0 ? `${expert.accuracy_rate.toFixed(0)}%` : "—" },
-    { label: "Total Takes",    value: expert.total_takes },
-    { label: "Boldness Avg",   value: expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—", sub: expert.boldness_avg > 0 ? "/10" : undefined },
-    { label: "Accountability", value: expert.accountability_score, sub: "/100" },
+  const subMetrics = [
+    { label: "ACCURACY",      value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed" },
+    { label: "BOLDNESS",      value: expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—",          sub: "contrarian-ness" },
+    { label: "ACCOUNTABILITY",value: expert.accountability_score > 0 ? Math.round(expert.accountability_score) : "—", sub: "accountability score" },
+    { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes" },
+    { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops" },
+  ];
+
+  const scoreFormula = [
+    { k: "Accuracy weight",       v: "40%" },
+    { k: "Boldness weight",       v: "25%" },
+    { k: "Recency decay",         v: "6 months" },
+    { k: "Flip-flop penalty",     v: "−3.0 ea" },
   ];
 
   return (
     <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-10">
 
-      {/* ── Hero header strip ── */}
-      <div className="border-b border-gray-200" style={{ backgroundColor: "#ffffff" }}>
-        <div className="max-w-5xl mx-auto px-6 pt-8 pb-0">
+      {/* ── Hero band ── */}
+      <div className="border-b-2 border-gray-900 bg-white">
+        <div className="max-w-5xl mx-auto" style={{ display: "grid", gridTemplateColumns: "220px 1fr 220px" }}>
 
-          {/* Top row: avatar + info + rating badge */}
-          <div className="flex items-center gap-6 pb-6">
-
-            {/* Avatar */}
-            <div className="h-24 w-24 shrink-0 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-3xl font-bold text-gray-500 ring-4 ring-gray-100">
-              {expert.avatar_url ? (
-                <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
-              ) : (
-                initials
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-3 mb-1">
-                <h1 className="text-3xl font-bold text-gray-900">{expert.name}</h1>
-                <FollowButton
-                  expertId={expert.expert_id}
-                  initialFollowing={!!followRow}
-                  isLoggedIn={!!user}
-                />
+          {/* Portrait */}
+          <div className="border-r-2 border-gray-900 flex items-center justify-center bg-gray-100" style={{ minHeight: 220 }}>
+            {expert.avatar_url ? (
+              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 220 }} />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-gray-400 p-8">
+                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-black text-gray-500">
+                  {nameParts.map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <span className="font-mono text-[10px] tracking-wider uppercase text-gray-400">No portrait</span>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                {expert.outlet && <span className="font-medium text-gray-700">{expert.outlet}</span>}
-                {expert.outlet && expert.twitter_handle && <span>·</span>}
-                {expert.twitter_handle && (
-                  <a
-                    href={`https://x.com/${expert.twitter_handle.replace("@", "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-600 hover:text-emerald-500 transition-colors"
-                  >
-                    {expert.twitter_handle}
-                  </a>
-                )}
-                {expert.sport_focus?.length > 0 && (
-                  <>
-                    <span>·</span>
-                    <span>{expert.sport_focus.join(", ")}</span>
-                  </>
-                )}
-              </div>
-              {expert.bio && (
-                <p className="mt-2 text-sm text-gray-500 max-w-xl">{expert.bio}</p>
-              )}
-            </div>
+            )}
+          </div>
 
-            {/* Overall rating badge — top right */}
-            <div className="hidden sm:flex flex-col items-center shrink-0 bg-gray-50 rounded-xl px-5 py-3 border border-gray-200">
-              <span className="text-3xl font-black text-emerald-600">
-                {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
-              </span>
-              <span className="text-xs text-gray-400 uppercase tracking-wide mt-0.5">TakeScore</span>
+          {/* Info */}
+          <div className="px-7 py-6">
+            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">
+              Analyst · {rankLabel}
+            </p>
+            <h1 className="font-black italic leading-none tracking-tight mt-2" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
+              {firstName && <>{firstName}<br /></>}
+              <span style={{ color: "#e2241a" }}>{lastName}</span>
+            </h1>
+
+            <p className="italic text-lg text-gray-500 mt-3">
+              {[expert.bio, expert.outlet, expert.sport_focus?.join(", ")].filter(Boolean).join(" · ")}
+              {expert.twitter_handle && (
+                <> · <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">{expert.twitter_handle}</a></>
+              )}
+            </p>
+
+            <div className="flex flex-wrap gap-2 mt-5">
+              <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
+              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">
+                Followed Takes
+              </button>
+              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">
+                Roast Profile
+              </button>
             </div>
           </div>
 
-          {/* ── Stats bar ── */}
-          <div className="grid grid-cols-5 divide-x divide-gray-200 border-t border-gray-200">
-            {stats.map((s) => (
-              <div key={s.label} className="py-4 text-center">
-                <p className={`text-xl font-bold ${s.highlight ? "text-emerald-600" : "text-gray-900"}`}>
-                  {s.value}
-                  {s.sub && <span className="text-xs text-gray-400 ml-0.5">{s.sub}</span>}
-                </p>
-                <p className="mt-0.5 text-xs text-gray-400 uppercase tracking-wide">{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Tab nav ── */}
-          <div className="border-t border-gray-200 flex gap-0 -mb-px">
-            {TABS.map((t) => (
-              <Link
-                key={t.key}
-                href={`/experts/${id}?tab=${t.key}`}
-                className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  tab === t.key
-                    ? "border-emerald-500 text-emerald-600"
-                    : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
-                }`}
-              >
-                {t.label}
-                {t.key === "takes" && allTakes?.length
-                  ? <span className="ml-1.5 text-xs text-gray-400">({allTakes.length})</span>
-                  : null}
-              </Link>
-            ))}
+          {/* TakeScore */}
+          <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
+            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
+            <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#e2241a" }}>
+              {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
+            </p>
+            {rank > 0 && (
+              <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Content area ── */}
+      {/* ── Sub-metric bar ── */}
+      <div className="bg-white border-b-2 border-gray-900">
+        <div className="max-w-5xl mx-auto grid grid-cols-5 divide-x-2 divide-gray-900">
+          {subMetrics.map((m) => (
+            <div key={m.label} className="px-5 py-4">
+              <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
+              <p className="font-black text-3xl leading-none mt-1 text-gray-900">{m.value}</p>
+              <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Body ── */}
       <div className="min-h-[60vh]" style={{ backgroundColor: "#ebedf0" }}>
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto px-6 py-8 grid gap-5" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
 
-          {tab === "takes" && (
-            <div className="space-y-3">
-              {allTakes && allTakes.length > 0 ? (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                allTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
-                  No takes submitted yet.
+          {/* Take Log */}
+          <div>
+            <div className="flex flex-wrap items-baseline gap-3 mb-3">
+              <h2 className="font-black text-2xl tracking-tight">THE TAKE LOG</h2>
+              {VERDICT_FILTERS.map((v) => (
+                <Link
+                  key={v}
+                  href={`/experts/${id}?verdict=${v}`}
+                  className={`px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 transition-colors ${
+                    verdict === v
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-500 border-gray-300 hover:border-gray-600"
+                  }`}
+                >
+                  {v}
+                </Link>
+              ))}
+            </div>
+
+            <div className="bg-white border-2 border-gray-900">
+              {takes && takes.length > 0 ? takes.map((take, i) => {
+                const v = verdictTag(take.outcome_status);
+                const impact = gradeImpact(take.grade);
+                return (
+                  <div
+                    key={take.take_id}
+                    className="grid items-center px-4 py-3.5 gap-3"
+                    style={{
+                      gridTemplateColumns: "64px 1fr auto auto",
+                      borderTop: i > 0 ? "1px dashed #d1d5db" : undefined,
+                    }}
+                  >
+                    <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
+                      {new Date(take.date_made).toLocaleDateString("en-US", { month: "short", year: "2-digit" }).toUpperCase()}
+                    </p>
+                    <p className="italic text-base leading-snug text-gray-800 line-clamp-2">
+                      &ldquo;{take.summary ?? take.raw_text}&rdquo;
+                    </p>
+                    <span
+                      className="font-mono text-[10px] tracking-wider px-2 py-1 whitespace-nowrap font-semibold"
+                      style={{ backgroundColor: v.bg, color: v.text }}
+                    >
+                      {v.label}
+                    </span>
+                    {impact != null ? (
+                      <p className={`font-black text-lg w-10 text-right ${impact.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
+                        {impact}
+                      </p>
+                    ) : (
+                      <p className="font-black text-lg w-10 text-right text-gray-300">—</p>
+                    )}
+                  </div>
+                );
+              }) : (
+                <div className="px-4 py-12 text-center italic text-gray-400">
+                  No takes found for this filter.
                 </div>
               )}
-            </div>
-          )}
 
-          {tab === "best" && (
-            <div className="space-y-3">
-              {bestTakes && bestTakes.length > 0 ? (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                bestTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
-                  No graded takes yet.
-                </div>
-              )}
+              <div className="px-4 py-3 border-t-2 border-gray-900 flex items-center justify-between">
+                <Link href={`/experts/${id}?verdict=all`} className="italic text-gray-500 hover:text-gray-900 text-sm transition-colors">
+                  see all {expert.total_takes} takes
+                </Link>
+                <span className="font-black text-xl text-gray-400">→</span>
+              </div>
             </div>
-          )}
+          </div>
 
-          {tab === "worst" && (
-            <div className="space-y-3">
-              {worstTakes.length > 0 ? (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                worstTakes.map((take) => <TakeCard key={take.take_id} take={take as any} />)
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
-                  No bad takes on record yet.
-                </div>
-              )}
+          {/* Sidebar */}
+          <div className="space-y-4">
+
+            {/* How TakeScore Works */}
+            <div className="bg-white border-2 border-gray-900 p-5">
+              <p className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase">How TakeScore Works</p>
+              <p className="italic text-base leading-snug mt-3 text-gray-700">
+                accuracy × boldness × volume, decayed over time, penalized for memory-holed takes.
+              </p>
+              <div className="mt-4 space-y-0">
+                {scoreFormula.map((row) => (
+                  <div key={row.k} className="flex justify-between items-baseline py-2 border-b border-dashed border-gray-200">
+                    <span className="italic text-sm text-gray-600">{row.k}</span>
+                    <span className="font-mono text-xs tracking-wider text-gray-900">{row.v}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs italic text-gray-400" style={{ color: "#e2241a" }}>
+                show the formula. transparency = trust.
+              </p>
             </div>
-          )}
 
+            {/* TakeScore Lifetime (placeholder sparkline) */}
+            <div className="bg-white border-2 border-gray-900 p-5">
+              <p className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase">TakeScore · Lifetime</p>
+              <svg viewBox="0 0 320 90" className="w-full mt-3" style={{ height: 90 }}>
+                <line x1="0" y1="75" x2="320" y2="75" stroke="#d1d5db" strokeDasharray="3 3" />
+                <polyline
+                  fill="none"
+                  stroke="#1a1a1a"
+                  strokeWidth="2"
+                  points="0,70 40,65 80,68 120,55 160,52 200,44 240,38 280,30 320,22"
+                />
+                <circle cx="320" cy="22" r="4" fill="#e2241a" />
+              </svg>
+              <p className="italic text-sm text-gray-400 mt-2">
+                {expert.overall_rating > 0
+                  ? `Current TakeScore: ${expert.overall_rating.toFixed(1)}`
+                  : "No TakeScore yet — submit and grade takes to build a record."}
+              </p>
+            </div>
+
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

@@ -93,12 +93,12 @@ export default async function ExpertProfilePage({
 
       {/* ── Hero band ── */}
       <div className="border-b-2 border-gray-900 bg-white">
-        <div className="max-w-5xl mx-auto" style={{ display: "grid", gridTemplateColumns: "220px 1fr 220px" }}>
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-[220px_1fr_220px]">
 
-          {/* Portrait */}
-          <div className="border-r-2 border-gray-900 flex items-center justify-center bg-gray-100" style={{ minHeight: 220 }}>
+          {/* Portrait — full-width banner on mobile, fixed column on desktop */}
+          <div className="border-b-2 md:border-b-0 md:border-r-2 border-gray-900 flex items-center justify-center bg-gray-100" style={{ minHeight: 180 }}>
             {expert.avatar_url ? (
-              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 220 }} />
+              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 180 }} />
             ) : (
               <div className="flex flex-col items-center gap-2 text-gray-400 p-8">
                 <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-black text-gray-500">
@@ -110,7 +110,7 @@ export default async function ExpertProfilePage({
           </div>
 
           {/* Info */}
-          <div className="px-7 py-6">
+          <div className="px-6 py-6">
             <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">
               Analyst · {rankLabel}
             </p>
@@ -119,7 +119,7 @@ export default async function ExpertProfilePage({
               <span style={{ color: "#e2241a" }}>{lastName}</span>
             </h1>
 
-            <p className="italic text-lg text-gray-500 mt-3">
+            <p className="italic text-base text-gray-500 mt-3">
               {[expert.bio, expert.outlet, expert.sport_focus?.join(", ")].filter(Boolean).join(" · ")}
               {expert.twitter_handle && (
                 <> · <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">{expert.twitter_handle}</a></>
@@ -138,13 +138,15 @@ export default async function ExpertProfilePage({
           </div>
 
           {/* TakeScore */}
-          <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
-            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
-            <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#e2241a" }}>
-              {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
-            </p>
+          <div className="border-t-2 md:border-t-0 md:border-l-2 border-gray-900 px-6 py-6 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-4" style={{ backgroundColor: "#f5f1e8" }}>
+            <div>
+              <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
+              <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(3.5rem, 6vw, 6.5rem)", color: "#e2241a" }}>
+                {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
+              </p>
+            </div>
             {rank > 0 && (
-              <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>
+              <p className="italic text-gray-500 text-sm">ranked {rankLabel} overall.</p>
             )}
           </div>
         </div>
@@ -152,11 +154,11 @@ export default async function ExpertProfilePage({
 
       {/* ── Sub-metric bar ── */}
       <div className="bg-white border-b-2 border-gray-900">
-        <div className="max-w-5xl mx-auto grid grid-cols-5 divide-x-2 divide-gray-900">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900">
           {subMetrics.map((m) => (
-            <div key={m.label} className="px-5 py-4">
+            <div key={m.label} className="px-4 py-4">
               <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
-              <p className="font-black text-3xl leading-none mt-1 text-gray-900">{m.value}</p>
+              <p className="font-black text-2xl md:text-3xl leading-none mt-1 text-gray-900">{m.value}</p>
               <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
             </div>
           ))}
@@ -165,7 +167,7 @@ export default async function ExpertProfilePage({
 
       {/* ── Body ── */}
       <div className="min-h-[60vh]" style={{ backgroundColor: "#ebedf0" }}>
-        <div className="max-w-5xl mx-auto px-6 py-8 grid gap-5" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-5">
 
           {/* Take Log */}
           <div>

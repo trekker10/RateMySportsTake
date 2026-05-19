@@ -93,6 +93,48 @@ export async function gradeSingleTake(
   }
 }
 
+export interface AdminTake {
+  take_id: string;
+  raw_text: string;
+  summary: string | null;
+  grading_criteria: string | null;
+  date_made: string;
+  time_horizon_date: string | null;
+  outcome_status: string;
+  outcome_notes: string | null;
+  grade: number | null;
+  grade_notes: string | null;
+  rating_status: string;
+  expert_name: string;
+  expert_id: string;
+}
+
+export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
+  const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from("takes")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, experts(name)")
+    .order("date_made", { ascending: false });
+
+  return (data ?? []).map((t) => ({
+    take_id: t.take_id,
+    raw_text: t.raw_text,
+    summary: t.summary,
+    grading_criteria: t.grading_criteria,
+    date_made: t.date_made,
+    time_horizon_date: t.time_horizon_date,
+    outcome_status: t.outcome_status,
+    outcome_notes: t.outcome_notes,
+    grade: t.grade,
+    grade_notes: t.grade_notes,
+    rating_status: t.rating_status,
+    expert_id: t.expert_id,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expert_name: (t.experts as any)?.name ?? "Unknown",
+  }));
+}
+
 // Used by the cron API route — grades all overdue pending takes
 export async function gradeAllPendingTakes(): Promise<{
   graded: number;

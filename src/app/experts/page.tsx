@@ -79,8 +79,8 @@ export default async function ExpertsPage({
       {/* Table */}
       <div className="border-2 border-gray-900 overflow-hidden">
 
-        {/* Header row */}
-        <div className="grid items-center px-4 py-2.5 bg-gray-900 text-white"
+        {/* Header row — desktop only */}
+        <div className="hidden md:grid items-center px-4 py-2.5 bg-gray-900 text-white"
           style={{ gridTemplateColumns: "56px 1fr 150px 80px 110px" }}>
           <div className="font-mono text-[10px] tracking-[0.15em]">RANK</div>
           <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
@@ -88,64 +88,70 @@ export default async function ExpertsPage({
           <div className="font-mono text-[10px] tracking-[0.15em]">TAKES</div>
           <div className="font-mono text-[10px] tracking-[0.15em]">TAKESCORE</div>
         </div>
+        {/* Mobile header */}
+        <div className="grid md:hidden items-center px-4 py-2.5 bg-gray-900 text-white"
+          style={{ gridTemplateColumns: "44px 1fr 80px" }}>
+          <div className="font-mono text-[10px] tracking-[0.15em]">RK</div>
+          <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
+          <div className="font-mono text-[10px] tracking-[0.15em]">SCORE</div>
+        </div>
 
         {rows.length > 0 ? rows.map((e, i) => (
           <Link key={e.expert_id} href={`/experts/${e.expert_id}`} className="block">
+            {/* Desktop row */}
             <div
-              className="grid items-center px-4 py-3.5 hover:bg-gray-50 transition-colors"
+              className="hidden md:grid items-center px-4 py-3.5 hover:bg-gray-50 transition-colors"
               style={{
                 gridTemplateColumns: "56px 1fr 150px 80px 110px",
                 borderTop: "1px dashed #d1d5db",
                 backgroundColor: i % 2 === 1 ? "#fafafa" : "#ffffff",
               }}
             >
-              {/* Rank */}
-              <div
-                className="font-black text-[2rem] leading-none"
-                style={{ color: e.rank <= 3 ? "#e2241a" : "#d1d5db" }}
-              >
+              <div className="font-black text-[2rem] leading-none" style={{ color: e.rank <= 3 ? "#e2241a" : "#d1d5db" }}>
                 {String(e.rank).padStart(2, "0")}
               </div>
-
-              {/* Analyst */}
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
-                  {e.avatar_url
-                    ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} />
-                    : initials(e.name)}
+                  {e.avatar_url ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} /> : initials(e.name)}
                 </div>
                 <div className="min-w-0">
                   <p className="font-black text-base uppercase tracking-tight truncate">{e.name}</p>
-                  {e.bio && (
-                    <p className="text-sm italic text-gray-400 truncate max-w-[280px]">{e.bio}</p>
-                  )}
+                  {e.bio && <p className="text-sm italic text-gray-400 truncate max-w-[280px]">{e.bio}</p>}
                   {e.accolades.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {e.accolades.map((a: Accolade) => (
-                        <span key={a.label} className={`rounded-full px-2 py-0.5 text-[10px] ${a.className}`}>
-                          {a.emoji} {a.label}
-                        </span>
+                        <span key={a.label} className={`rounded-full px-2 py-0.5 text-[10px] ${a.className}`}>{a.emoji} {a.label}</span>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Outlet */}
               <div>
                 <p className="font-mono text-xs tracking-wider text-gray-700 uppercase truncate">{e.outlet ?? "—"}</p>
-                {e.sport_focus?.length > 0 && (
-                  <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>
-                )}
+                {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
               </div>
-
-              {/* Takes */}
               <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
+              <div className="font-black text-2xl text-gray-900">{e.overall_rating > 0 ? e.overall_rating.toFixed(1) : "—"}</div>
+            </div>
 
-              {/* TakeScore */}
-              <div className="font-black text-2xl text-gray-900">
-                {e.overall_rating > 0 ? e.overall_rating.toFixed(1) : "—"}
+            {/* Mobile row */}
+            <div
+              className="md:hidden flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+              style={{ borderTop: "1px dashed #d1d5db", backgroundColor: i % 2 === 1 ? "#fafafa" : "#ffffff" }}
+            >
+              <span className="font-black text-xl w-9 shrink-0 leading-none" style={{ color: e.rank <= 3 ? "#e2241a" : "#d1d5db" }}>
+                {String(e.rank).padStart(2, "0")}
+              </span>
+              <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
+                {e.avatar_url ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} /> : initials(e.name)}
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
+                <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.outlet ?? e.sport_focus?.[0] ?? "—"}</p>
+              </div>
+              <span className="font-black text-xl shrink-0 text-gray-900">
+                {e.overall_rating > 0 ? e.overall_rating.toFixed(1) : "—"}
+              </span>
             </div>
           </Link>
         )) : (

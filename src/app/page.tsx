@@ -66,7 +66,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── Score panels ── */}
-      <div className="bg-white border-b-2 border-gray-900 grid grid-cols-3 divide-x-2 divide-gray-900">
+      <div className="bg-white border-b-2 border-gray-900 grid grid-cols-1 md:grid-cols-3 divide-y-2 md:divide-y-0 md:divide-x-2 divide-gray-900">
 
         {/* Left: Top Analysts */}
         <div className="px-7 py-9">

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { checkIsAdmin } from "@/lib/auth";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import GuestMobileMenu from "@/components/GuestMobileMenu";
 
 export default async function AuthButton() {
   const supabase = await createClient();
@@ -8,17 +9,18 @@ export default async function AuthButton() {
   const isAdmin = user ? await checkIsAdmin() : false;
 
   if (user) {
-    return (
-      <ProfileDropdown email={user.email ?? ""} isAdmin={isAdmin} />
-    );
+    return <ProfileDropdown email={user.email ?? ""} isAdmin={isAdmin} />;
   }
 
   return (
-    <a
-      href="/auth/login"
-      className="bg-gray-900 px-4 py-1.5 font-mono text-xs tracking-widest uppercase text-white hover:bg-black transition-colors"
-    >
-      Sign In
-    </a>
+    <>
+      <a
+        href="/auth/login"
+        className="hidden sm:inline bg-gray-900 px-4 py-1.5 font-mono text-xs tracking-widest uppercase text-white hover:bg-black transition-colors"
+      >
+        Sign In
+      </a>
+      <GuestMobileMenu />
+    </>
   );
 }

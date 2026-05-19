@@ -3,6 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "@/app/auth/actions";
 
+const NAV_LINKS = [
+  { label: "Leaderboard", href: "/experts" },
+  { label: "Analysts",    href: "/experts" },
+  { label: "Takes",       href: "/takes" },
+  { label: "Submit",      href: "/submit" },
+];
+
 export default function ProfileDropdown({
   email,
   isAdmin,
@@ -29,11 +36,28 @@ export default function ProfileDropdown({
         onClick={() => setOpen((o) => !o)}
         className="font-mono text-xs tracking-widest uppercase px-4 py-1.5 border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
       >
-        PROFILE
+        <span className="sm:hidden">MENU</span>
+        <span className="hidden sm:inline">PROFILE</span>
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border-2 border-gray-900 shadow-lg min-w-[180px] z-50">
+        <div className="absolute right-0 top-full mt-1 bg-white border-2 border-gray-900 shadow-lg min-w-[220px] z-50">
+
+          {/* Nav links — mobile only */}
+          <div className="sm:hidden border-b-2 border-gray-900">
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.href + link.label}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-3 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          {/* Profile section */}
           <div className="px-4 py-2.5 border-b border-gray-200">
             <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">Signed in as</p>
             <p className="text-sm text-gray-700 truncate mt-0.5">{email}</p>

@@ -70,7 +70,7 @@ export default async function TakesPage({
       </div>
 
       {/* 2-col layout */}
-      <div className="grid gap-5" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
+      <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-5">
 
         {/* Takes */}
         <div className="space-y-3">

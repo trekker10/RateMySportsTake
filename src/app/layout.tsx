@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-sm italic text-gray-500 hidden sm:block">We rate the takes so you don&apos;t have to.</span>
             </a>
             <div className="flex items-center gap-6">
-              <nav className="flex gap-6 font-mono text-xs tracking-widest text-gray-600 uppercase">
+              <nav className="hidden sm:flex gap-6 font-mono text-xs tracking-widest text-gray-600 uppercase">
                 <a href="/experts" className="hover:text-gray-900 transition-colors">Leaderboard</a>
                 <a href="/experts" className="hover:text-gray-900 transition-colors">Analysts</a>
                 <a href="/takes"   className="hover:text-gray-900 transition-colors">Takes</a>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Expert } from "@/types/database";
+import type { Accolade } from "@/lib/accolades";
 
-export default function ExpertCard({ expert }: { expert: Expert }) {
+export default function ExpertCard({ expert, accolades = [] }: { expert: Expert; accolades?: Accolade[] }) {
   const initials = expert.name
     .split(" ")
     .map((w) => w[0])
@@ -29,6 +30,15 @@ export default function ExpertCard({ expert }: { expert: Expert }) {
             )}
             {expert.sport_focus.length > 0 && (
               <p className="text-xs text-gray-400 mt-1">{expert.sport_focus.join(", ")}</p>
+            )}
+            {accolades.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {accolades.map((a) => (
+                  <span key={a.label} className={`rounded-full px-2.5 py-0.5 text-xs ${a.className}`}>
+                    {a.emoji} {a.label}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         </div>

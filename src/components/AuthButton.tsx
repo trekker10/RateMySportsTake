@@ -13,18 +13,18 @@ export default async function AuthButton() {
         {isAdmin && (
           <a
             href="/admin"
-            className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+            className="text-xs font-medium font-mono tracking-wider text-gray-500 hover:text-gray-900 transition-colors uppercase"
           >
             Admin
           </a>
         )}
-        <span className="text-xs text-gray-500 hidden sm:block">
+        <span className="text-xs text-gray-400 hidden sm:block">
           {user.email}
         </span>
         <form action={signOut}>
           <button
             type="submit"
-            className="text-sm text-gray-300 hover:text-white transition-colors"
+            className="font-mono text-xs tracking-wider text-gray-600 hover:text-gray-900 transition-colors uppercase"
           >
             Sign out
           </button>
@@ -36,7 +36,7 @@ export default async function AuthButton() {
   return (
     <a
       href="/auth/login"
-      className="rounded-lg bg-gray-700 px-4 py-1.5 text-sm text-gray-200 hover:bg-gray-600 transition-colors"
+      className="border border-gray-400 px-4 py-1.5 font-mono text-xs tracking-wider text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors uppercase"
     >
       Sign in
     </a>

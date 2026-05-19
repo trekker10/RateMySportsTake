@@ -12,19 +12,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen text-gray-900 antialiased overflow-x-hidden" style={{ backgroundColor: "#ebedf0" }}>
-        <header className="border-b border-black/20 px-6 py-5" style={{ backgroundColor: "#2c2d2e" }}>
+        <header className="border-b-2 border-gray-900 px-6 py-3" style={{ backgroundColor: "#f5f1e8" }}>
           <div className="mx-auto flex max-w-5xl items-center justify-between">
-            <a href="/">
-              <img src="/logo.png" alt="RateMySportsTake" className="h-14 w-auto" />
+            {/* Wordmark + tagline */}
+            <a href="/" className="flex items-baseline gap-3">
+              <span className="font-black text-xl tracking-tight text-gray-900" style={{ letterSpacing: "-0.04em" }}>
+                RATE<span style={{ color: "#e2241a" }}>/</span>MY<span style={{ color: "#e2241a" }}>/</span>SPORTS<span style={{ color: "#e2241a" }}>/</span>TAKE
+              </span>
+              <span className="text-sm italic text-gray-500 hidden sm:block">We rate the takes so you don&apos;t have to.</span>
             </a>
             <div className="flex items-center gap-6">
-              <nav className="flex gap-6 font-mono text-xs tracking-widest text-gray-300 uppercase">
-                <a href="/experts" className="hover:text-white transition-colors">Leaderboard</a>
-                <a href="/takes"   className="hover:text-white transition-colors">Takes</a>
-                <a href="/submit"  className="hover:text-white transition-colors">Submit</a>
-                <a href="/grade"   className="hover:text-white transition-colors">Grade</a>
+              <nav className="flex gap-6 font-mono text-xs tracking-widest text-gray-600 uppercase">
+                <a href="/experts" className="hover:text-gray-900 transition-colors">Leaderboard</a>
+                <a href="/takes"   className="hover:text-gray-900 transition-colors">Takes</a>
+                <a href="/submit"  className="hover:text-gray-900 transition-colors">Submit</a>
+                <a href="/grade"   className="hover:text-gray-900 transition-colors">Grade</a>
               </nav>
-              <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-700 animate-pulse" />}>
+              <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-300 animate-pulse" />}>
                 <AuthButton />
               </Suspense>
             </div>

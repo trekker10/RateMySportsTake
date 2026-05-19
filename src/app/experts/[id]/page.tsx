@@ -202,7 +202,7 @@ export default async function ExpertProfilePage({
                     <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
                       {new Date(take.date_made).toLocaleDateString("en-US", { month: "short", year: "2-digit" }).toUpperCase()}
                     </p>
-                    <p className="italic text-base leading-snug text-gray-800 line-clamp-2">
+                    <p className="italic text-base leading-snug text-gray-800">
                       &ldquo;{take.summary ?? take.raw_text}&rdquo;
                     </p>
                     <span

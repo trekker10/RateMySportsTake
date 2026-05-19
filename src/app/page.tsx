@@ -49,7 +49,7 @@ export default async function HomePage() {
           </p>
           <h1
             className="mt-4 font-black italic leading-none tracking-tighter text-gray-900"
-            style={{ fontSize: "clamp(1.8rem, 8vw, 7rem)" }}
+            style={{ fontSize: "clamp(2.2rem, 9.5vw, 7rem)" }}
           >
             HOLD<br />
             <span style={{ color: "#e2241a" }}>THE TAKES</span><br />

@@ -57,7 +57,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="mt-6 text-xl text-gray-500 max-w-xl">
-            Sports analysts, scored on the takes they actually made.
+            Takes made. Receipts kept. Scores revealed.
           </p>
 
           <HeroSearch />

@@ -190,34 +190,49 @@ export default async function ExpertProfilePage({
               {takes && takes.length > 0 ? takes.map((take, i) => {
                 const v = verdictTag(take.outcome_status);
                 const impact = gradeImpact(take.grade);
+                const displayText = (take.summary ?? take.raw_text).replace(/^The analyst/i, "Analyst");
+                const analysis = take.outcome_notes ?? take.grade_notes;
                 return (
                   <div
                     key={take.take_id}
-                    className="grid items-center px-4 py-3.5 gap-3"
-                    style={{
-                      gridTemplateColumns: "64px 1fr auto auto",
-                      borderTop: i > 0 ? "1px dashed #d1d5db" : undefined,
-                    }}
+                    className="flex"
+                    style={{ borderTop: i > 0 ? "1px dashed #d1d5db" : undefined }}
                   >
-                    <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
+                    {/* Date */}
+                    <div className="w-16 shrink-0 px-3 pt-4 font-mono text-[10px] tracking-wider text-gray-400 uppercase">
                       {new Date(take.date_made).toLocaleDateString("en-US", { month: "short", year: "2-digit" }).toUpperCase()}
-                    </p>
-                    <p className="italic text-base leading-snug text-gray-800">
-                      &ldquo;{take.summary ?? take.raw_text}&rdquo;
-                    </p>
-                    <span
-                      className="font-mono text-[10px] tracking-wider px-2 py-1 whitespace-nowrap font-semibold"
-                      style={{ backgroundColor: v.bg, color: v.text }}
-                    >
-                      {v.label}
-                    </span>
-                    {impact != null ? (
-                      <p className={`font-black text-lg w-10 text-right ${impact.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
-                        {impact}
-                      </p>
-                    ) : (
-                      <p className="font-black text-lg w-10 text-right text-gray-300">—</p>
-                    )}
+                    </div>
+
+                    {/* Take + analysis stacked */}
+                    <div className="flex-1 min-w-0">
+                      <div className="px-4 py-3.5" style={{ backgroundColor: "#f5f1e9" }}>
+                        <p className="italic text-base leading-snug text-gray-800">
+                          &ldquo;{displayText}&rdquo;
+                        </p>
+                      </div>
+                      {analysis && (
+                        <div className="px-4 py-3 border-t border-gray-200">
+                          <p className="text-sm text-gray-600 leading-relaxed">{analysis}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Verdict + impact */}
+                    <div className="shrink-0 px-4 py-4 flex flex-col items-end gap-2">
+                      <span
+                        className="font-mono text-[10px] tracking-wider px-2 py-1 whitespace-nowrap font-semibold"
+                        style={{ backgroundColor: v.bg, color: v.text }}
+                      >
+                        {v.label}
+                      </span>
+                      {impact != null ? (
+                        <p className={`font-black text-lg ${impact.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
+                          {impact}
+                        </p>
+                      ) : (
+                        <p className="font-black text-lg text-gray-300">—</p>
+                      )}
+                    </div>
                   </div>
                 );
               }) : (

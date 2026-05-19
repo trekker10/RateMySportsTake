@@ -24,9 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-6">
               <nav className="flex gap-6 font-mono text-xs tracking-widest text-gray-600 uppercase">
                 <a href="/experts" className="hover:text-gray-900 transition-colors">Leaderboard</a>
+                <a href="/experts" className="hover:text-gray-900 transition-colors">Analysts</a>
                 <a href="/takes"   className="hover:text-gray-900 transition-colors">Takes</a>
                 <a href="/submit"  className="hover:text-gray-900 transition-colors">Submit</a>
-                <a href="/grade"   className="hover:text-gray-900 transition-colors">Grade</a>
               </nav>
               <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-300 animate-pulse" />}>
                 <AuthButton />

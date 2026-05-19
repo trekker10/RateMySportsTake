@@ -18,11 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <img src="/logo.png" alt="RateMySportsTake" className="h-14 w-auto" />
             </a>
             <div className="flex items-center gap-6">
-              <nav className="flex gap-6 text-sm text-gray-300">
+              <nav className="flex gap-6 font-mono text-xs tracking-widest text-gray-300 uppercase">
+                <a href="/experts" className="hover:text-white transition-colors">Leaderboard</a>
                 <a href="/takes"   className="hover:text-white transition-colors">Takes</a>
-                <a href="/experts" className="hover:text-white transition-colors">Experts</a>
                 <a href="/submit"  className="hover:text-white transition-colors">Submit</a>
-                <a href="/import"  className="hover:text-white transition-colors">Import</a>
                 <a href="/grade"   className="hover:text-white transition-colors">Grade</a>
               </nav>
               <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-700 animate-pulse" />}>

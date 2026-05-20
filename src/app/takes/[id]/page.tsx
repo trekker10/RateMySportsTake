@@ -79,26 +79,20 @@ export default async function TakePage({
           )}
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-              <p className="text-3xl font-bold text-emerald-600">
-                {take.boldness_score != null ? take.boldness_score : "—"}
-                {take.boldness_score != null && <span className="text-sm text-gray-400">/100</span>}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">Boldness</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-              <p className="text-3xl font-bold text-emerald-600">
-                {take.accuracy_score != null ? take.accuracy_score : "—"}
-                {take.accuracy_score != null && <span className="text-sm text-gray-400">/100</span>}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">Accuracy</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-              <p className="text-3xl font-bold text-emerald-600">
-                {take.impact_score != null ? take.impact_score.toFixed(1) : "—"}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">Impact</p>
-            </div>
+            {[
+              { label: "Boldness",  val: take.boldness_score != null ? `${take.boldness_score}/100` : null },
+              { label: "Accuracy",  val: take.accuracy_score != null ? `${take.accuracy_score}/100` : null },
+              { label: "Impact",    val: take.impact_score   != null ? take.impact_score.toFixed(1) : null },
+            ].map(({ label, val }) => (
+              <div key={label} className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+                {val != null ? (
+                  <p className="text-3xl font-bold text-emerald-600">{val}</p>
+                ) : (
+                  <p className="text-sm text-gray-400 italic mt-2">Pending</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">{label}</p>
+              </div>
+            ))}
           </div>
 
           {take.grading_criteria && (

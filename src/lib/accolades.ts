@@ -4,61 +4,33 @@ export type Accolade = {
   className: string;
 };
 
-type ExpertSnap = {
-  expert_id: string;
-  overall_rating: number;
-  graded_takes: number;
+const ACCOLADE_STYLE: Record<string, string> = {
+  elite_analyst:      "bg-amber-100 text-amber-700 border border-amber-200",
+  sharp_mind:         "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  fading_fast:        "bg-orange-100 text-orange-700 border border-orange-200",
+  take_landfill:      "bg-red-100 text-red-600 border border-red-200",
+  dead_eye:           "bg-blue-100 text-blue-700 border border-blue-200",
+  lock_of_century:    "bg-yellow-100 text-yellow-700 border border-yellow-200",
+  fade_this_guy:      "bg-red-50 text-red-500 border border-red-200",
+  broken_clock:       "bg-zinc-100 text-zinc-600 border border-zinc-200",
+  scorched_earth:     "bg-orange-50 text-orange-600 border border-orange-200",
+  on_a_heater:        "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  in_freefall:        "bg-red-100 text-red-600 border border-red-200",
+  flip_flopper:       "bg-purple-100 text-purple-700 border border-purple-200",
+  consistent_diamond: "bg-sky-100 text-sky-700 border border-sky-200",
+  inactive:           "bg-zinc-100 text-zinc-500 border border-zinc-200",
 };
 
-type RecentTake = {
-  expert_id: string;
-  grade: number | null;
-  outcome_status: string;
-  difficulty_score: number | null;
-};
+export function accoladeToDisplay(key: string, emoji: string, label: string): Accolade {
+  return {
+    emoji,
+    label,
+    className: ACCOLADE_STYLE[key] ?? "bg-zinc-100 text-zinc-600 border border-zinc-200",
+  };
+}
 
-export function computeAccolades(
-  expertId: string,
-  overallRating: number,
-  allExperts: ExpertSnap[],
-  recentTakes: RecentTake[]
-): Accolade[] {
-  const accolades: Accolade[] = [];
-  const myTakes = recentTakes.filter((t) => t.expert_id === expertId);
-
-  // Elite / Landfill — rank among experts with at least 1 graded take
-  const ranked = [...allExperts]
-    .filter((e) => e.graded_takes > 0 && e.overall_rating > 0)
-    .sort((a, b) => b.overall_rating - a.overall_rating);
-
-  if (ranked.length >= 5) {
-    const idx = ranked.findIndex((e) => e.expert_id === expertId);
-    if (idx !== -1) {
-      const pct = (idx + 1) / ranked.length;
-      if (pct <= 0.1)
-        accolades.push({ emoji: "🏆", label: "Elite Analyst", className: "bg-amber-100 text-amber-700 border border-amber-200" });
-      else if (pct >= 0.9)
-        accolades.push({ emoji: "🗑️", label: "Take Landfill", className: "bg-red-100 text-red-600 border border-red-200" });
-    }
-  }
-
-  // On a Heater / In Freefall — recent graded takes vs overall rating
-  const gradedRecent = myTakes.filter((t) => t.grade !== null);
-  if (gradedRecent.length >= 2 && overallRating > 0) {
-    const recentAvg = gradedRecent.reduce((s, t) => s + (t.grade ?? 0), 0) / gradedRecent.length;
-    if (recentAvg >= overallRating + 10)
-      accolades.push({ emoji: "📈", label: "On a Heater", className: "bg-emerald-100 text-emerald-700 border border-emerald-200" });
-    else if (recentAvg <= overallRating - 15)
-      accolades.push({ emoji: "📉", label: "In Freefall", className: "bg-orange-100 text-orange-700 border border-orange-200" });
-  }
-
-  // On Fire — recent high-grade confirmed take
-  if (myTakes.some((t) => (t.grade ?? 0) >= 85 && t.outcome_status === "confirmed_true"))
-    accolades.push({ emoji: "🔥", label: "On Fire", className: "bg-orange-50 text-orange-600 border border-orange-200" });
-
-  // Big Take Alert — recent boldness 9 or 10
-  if (myTakes.some((t) => (t.difficulty_score ?? 0) >= 9))
-    accolades.push({ emoji: "🚨", label: "BIG TAKE ALERT", className: "bg-red-50 text-red-600 border border-red-300 font-semibold" });
-
-  return accolades;
+// Kept for backwards compat — real accolades now come from expert_accolades table
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function computeAccolades(..._args: any[]): Accolade[] {
+  return [];
 }

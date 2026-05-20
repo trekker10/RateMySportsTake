@@ -47,8 +47,9 @@ export default function ImportSearch() {
         setResults(
           found.map((take) => ({ take, selected: true, sport: "", status: "idle" }))
         );
-      } catch {
-        setSearchError("Search failed. Please try again.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setSearchError(`Search failed: ${msg}`);
       }
     });
   }

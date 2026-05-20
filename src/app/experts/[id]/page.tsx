@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import FollowButton from "@/components/FollowButton";
+import Avatar from "@/components/Avatar";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
@@ -98,13 +99,12 @@ export default async function ExpertProfilePage({
         <div className="md:hidden flex">
           {/* Photo */}
           <div className="w-36 shrink-0 border-r-2 border-gray-900 bg-gray-100 overflow-hidden flex items-center justify-center" style={{ minHeight: 200 }}>
-            {expert.avatar_url ? (
-              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 200 }} />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-black text-gray-500">
-                {nameParts.map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-              </div>
-            )}
+            <Avatar
+              name={expert.name}
+              avatarUrl={expert.avatar_url}
+              className="w-full h-full object-cover"
+              textClassName="text-2xl font-black text-gray-500"
+            />
           </div>
 
           {/* Info */}
@@ -135,7 +135,7 @@ export default async function ExpertProfilePage({
               <div className="flex items-baseline gap-2 mt-3">
                 <span className="font-mono text-[9px] tracking-widest text-gray-400 uppercase">TakeScore</span>
                 <span className="font-black text-2xl leading-none" style={{ color: "#e2241a" }}>
-                  {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
+                  {expert.overall_rating > 0 ? <>{Math.round(expert.overall_rating)}<span className="text-xs font-normal text-gray-400">/100</span></> : "—"}
                 </span>
                 {rank > 0 && <span className="font-mono text-[10px] text-gray-400">#{rank}</span>}
               </div>
@@ -153,16 +153,12 @@ export default async function ExpertProfilePage({
         {/* Desktop hero — 3 columns */}
         <div className="hidden md:grid max-w-5xl mx-auto grid-cols-[220px_1fr_220px]">
           <div className="border-r-2 border-gray-900 flex items-center justify-center bg-gray-100" style={{ minHeight: 220 }}>
-            {expert.avatar_url ? (
-              <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover" style={{ minHeight: 220 }} />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-gray-400 p-8">
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-black text-gray-500">
-                  {nameParts.map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                </div>
-                <span className="font-mono text-[10px] tracking-wider uppercase text-gray-400">No portrait</span>
-              </div>
-            )}
+            <Avatar
+              name={expert.name}
+              avatarUrl={expert.avatar_url}
+              className="w-full h-full object-cover"
+              textClassName="text-3xl font-black text-gray-500"
+            />
           </div>
 
           <div className="px-7 py-6">
@@ -187,7 +183,7 @@ export default async function ExpertProfilePage({
           <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
             <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
             <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#e2241a" }}>
-              {expert.overall_rating > 0 ? expert.overall_rating.toFixed(1) : "—"}
+              {expert.overall_rating > 0 ? <>{Math.round(expert.overall_rating)}<span className="text-lg font-normal text-gray-400">/100</span></> : "—"}
             </p>
             {rank > 0 && <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>}
           </div>
@@ -331,7 +327,7 @@ export default async function ExpertProfilePage({
               </svg>
               <p className="italic text-sm text-gray-400 mt-2">
                 {expert.overall_rating > 0
-                  ? `Current TakeScore: ${expert.overall_rating.toFixed(1)}`
+                  ? `Current TakeScore: ${Math.round(expert.overall_rating)}/100`
                   : "No TakeScore yet — submit and grade takes to build a record."}
               </p>
             </div>

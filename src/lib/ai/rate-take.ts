@@ -8,7 +8,6 @@ interface RatingResult {
   sport: string;
   subjects: string[];
   difficulty_score: number;
-  falsifiability_score: number;
   confidence_claimed: number;
   time_horizon: TimeHorizon;
   time_horizon_date: string | null;
@@ -49,7 +48,6 @@ Return JSON with exactly these fields:
   "sport": standardized sport name (NBA, NFL, MLB, NHL, Soccer, College Football, College Basketball, MMA, Golf, Tennis, Other),
   "subjects": array of player and team names mentioned,
   "difficulty_score": integer 1-10 (1=safe/obvious take, 10=extremely bold or contrarian),
-  "falsifiability_score": integer 1-10 (1=pure opinion that can never be proven, 10=clearly measurable outcome),
   "confidence_claimed": integer 1-10 (1=heavily hedged, 10=stated as an absolute guarantee),
   "time_horizon": one of "immediate" | "this_season" | "this_year" | "multi_year" | "career" | "unresolvable",
   "time_horizon_date": estimated YYYY-MM-DD when the outcome will be known, or null if unresolvable,
@@ -70,7 +68,6 @@ Return JSON with exactly these fields:
     sport: parsed.sport,
     subjects: parsed.subjects ?? [],
     difficulty_score: parsed.difficulty_score,
-    falsifiability_score: parsed.falsifiability_score,
     confidence_claimed: parsed.confidence_claimed,
     time_horizon: parsed.time_horizon,
     time_horizon_date: parsed.time_horizon_date ?? null,

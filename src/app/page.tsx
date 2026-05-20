@@ -1,16 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import HeroSearch from "@/components/HeroSearch";
+import Avatar from "@/components/Avatar";
 
 function verdictInfo(status: string) {
   if (status === "confirmed_true")  return { label: "RIGHT.",       color: "#0a7a3b" };
   if (status === "confirmed_false") return { label: "WRONG.",       color: "#e2241a" };
   if (status === "partially_true")  return { label: "PARTLY RIGHT.", color: "#d97706" };
   return { label: "UNRESOLVABLE.", color: "#6b7280" };
-}
-
-function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
 export default async function HomePage() {
@@ -82,15 +79,13 @@ export default async function HomePage() {
               >
                 <span className="font-black text-2xl w-9 shrink-0 text-gray-300">{String(e.rank).padStart(2, "0")}</span>
                 <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
-                  {e.avatar_url
-                    ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} />
-                    : initials(e.name)}
+                  <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
                   <p className="font-mono text-[9px] tracking-wider text-gray-400 uppercase truncate">{e.outlet ?? "—"}</p>
                 </div>
-                <span className="font-black text-2xl text-gray-900">{e.overall_rating.toFixed(1)}</span>
+                <span className="font-black text-2xl text-gray-900">{Math.round(e.overall_rating)}<span className="text-sm font-normal text-gray-400">/100</span></span>
               </Link>
             )) : (
               <p className="mt-6 text-gray-400 italic">No ranked analysts yet.</p>
@@ -180,9 +175,7 @@ export default async function HomePage() {
               >
                 <span className="font-black text-2xl w-9 shrink-0 text-gray-300">{String(e.rank).padStart(2, "0")}</span>
                 <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
-                  {e.avatar_url
-                    ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} />
-                    : initials(e.name)}
+                  <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>

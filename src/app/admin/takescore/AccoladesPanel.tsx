@@ -3,10 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { getAccoladesAdmin, setFlipFlopper, syncAllAccolades } from "@/app/actions/takescore";
 import { ACCOLADE_DEFS } from "@/lib/takescore";
-
-function initials(name: string) {
-  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-}
+import Avatar from "@/components/Avatar";
 
 export default function AccoladesPanel() {
   const [data, setData] = useState<Awaited<ReturnType<typeof getAccoladesAdmin>>>([]);
@@ -79,9 +76,7 @@ export default function AccoladesPanel() {
             <div key={analyst.expert_id} className="px-5 py-4">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-full bg-zinc-700 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-zinc-300">
-                  {analyst.avatar_url
-                    ? <img src={analyst.avatar_url} className="w-full h-full object-cover" alt="" />
-                    : initials(analyst.expert_name)}
+                  <Avatar name={analyst.expert_name} avatarUrl={analyst.avatar_url} className="w-full h-full object-cover" textClassName="text-xs font-bold text-zinc-300" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-zinc-100 text-sm">{analyst.expert_name}</p>

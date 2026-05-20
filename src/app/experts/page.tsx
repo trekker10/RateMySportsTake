@@ -2,10 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
-
-function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-}
+import Avatar from "@/components/Avatar";
 
 export default async function ExpertsPage({
   searchParams,
@@ -112,7 +109,7 @@ export default async function ExpertsPage({
               </div>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
-                  {e.avatar_url ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} /> : initials(e.name)}
+                  <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-black text-base uppercase tracking-tight truncate">{e.name}</p>
@@ -131,7 +128,7 @@ export default async function ExpertsPage({
                 {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
               </div>
               <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
-              <div className="font-black text-2xl text-gray-900">{e.overall_rating > 0 ? e.overall_rating.toFixed(1) : "—"}</div>
+              <div className="font-black text-2xl text-gray-900">{e.overall_rating > 0 ? <>{Math.round(e.overall_rating)}<span className="text-sm font-normal text-gray-400">/100</span></> : "—"}</div>
             </div>
 
             {/* Mobile row */}
@@ -143,14 +140,14 @@ export default async function ExpertsPage({
                 {String(e.rank).padStart(2, "0")}
               </span>
               <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
-                {e.avatar_url ? <img src={e.avatar_url} className="w-full h-full object-cover" alt={e.name} /> : initials(e.name)}
+                <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
                 <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.outlet ?? e.sport_focus?.[0] ?? "—"}</p>
               </div>
               <span className="font-black text-xl shrink-0 text-gray-900">
-                {e.overall_rating > 0 ? e.overall_rating.toFixed(1) : "—"}
+                {e.overall_rating > 0 ? <>{Math.round(e.overall_rating)}<span className="text-xs font-normal text-gray-400">/100</span></> : "—"}
               </span>
             </div>
           </Link>

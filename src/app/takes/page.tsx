@@ -111,7 +111,7 @@ export default async function TakesPage({
                   </p>
                 </div>
                 <span className="font-black text-xl" style={{ color: "#e2241a" }}>
-                  {e.overall_rating.toFixed(1)}
+                  {Math.round(e.overall_rating)}<span className="text-xs font-normal text-gray-400">/100</span>
                 </span>
               </Link>
             ))}

@@ -131,3 +131,32 @@ export async function importTake(params: {
 
   return { success: true, takeId: take.take_id };
 }
+
+export async function importTakeForExpert(params: {
+  expertId: string;
+  rawText: string;
+  sourceType: SourceType;
+  sourceUrl: string | null;
+  sport: string;
+  dateMade: string;
+}): Promise<{ success: true; takeId: string } | { success: false; error: string }> {
+  const supabase = createAdminClient();
+  const { expertId, rawText, sourceType, sourceUrl, sport, dateMade } = params;
+
+  const { data: take, error: takeError } = await supabase
+    .from("takes")
+    .insert({ expert_id: expertId, raw_text: rawText, source_type: sourceType, source_url: sourceUrl, sport, date_made: dateMade })
+    .select("take_id")
+    .single();
+
+  if (takeError || !take) return { success: false, error: takeError?.message ?? "Failed to insert take" };
+
+  try {
+    const rating = await rateTake(rawText, sport, sourceType, dateMade);
+    await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", take.take_id);
+  } catch {
+    await supabase.from("takes").update({ rating_status: "failed" }).eq("take_id", take.take_id);
+  }
+
+  return { success: true, takeId: take.take_id };
+}

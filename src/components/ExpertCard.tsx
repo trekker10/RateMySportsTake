@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Expert } from "@/types/database";
 import type { Accolade } from "@/lib/accolades";
+import Avatar from "@/components/Avatar";
 
 export default function ExpertCard({ expert, accolades = [] }: { expert: Expert; accolades?: Accolade[] }) {
   const initials = expert.name
@@ -17,11 +18,12 @@ export default function ExpertCard({ expert, accolades = [] }: { expert: Expert;
         {/* Top: headshot + name/bio */}
         <div className="flex items-start gap-4">
           <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-xl font-bold text-gray-600">
-            {expert.avatar_url ? (
-              <img src={expert.avatar_url} alt={expert.name} className="h-full w-full object-cover" />
-            ) : (
-              initials
-            )}
+            <Avatar
+              name={expert.name}
+              avatarUrl={expert.avatar_url}
+              className="h-full w-full object-cover"
+              textClassName=""
+            />
           </div>
           <div className="min-w-0 pt-1">
             <p className="text-xl font-bold text-gray-900 leading-tight">{expert.name}</p>
@@ -47,7 +49,7 @@ export default function ExpertCard({ expert, accolades = [] }: { expert: Expert;
         <div className="flex items-center gap-5">
           <div className="shrink-0 rounded-xl border-2 border-gray-200 px-5 py-3 text-center min-w-[90px]">
             <p className="text-3xl font-black text-gray-900">
-              {expert.overall_rating > 0 ? Math.round(expert.overall_rating) : "—"}
+              {expert.overall_rating > 0 ? <>{Math.round(expert.overall_rating)}<span className="text-xs font-normal text-gray-400">/100</span></> : "—"}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">TakeScore</p>
           </div>

@@ -73,7 +73,6 @@ export interface Take {
   sport: string | null;
   subjects: string[];
   difficulty_score: number | null;       // 1–10
-  falsifiability_score: number | null;   // 1–10
   confidence_claimed: number | null;     // 1–10
   time_horizon: TimeHorizon | null;
   time_horizon_date: string | null;      // ISO date string
@@ -94,6 +93,13 @@ export interface Take {
   grade_notes: string | null;
   aging_verdict: AgingVerdict | null;
 
+  // TakeScore engine fields
+  boldness_score: number | null;       // 0–100
+  accuracy_score: number | null;       // 0/25/50/75/100
+  boldness_credit: number | null;      // bonus/penalty from boldness
+  recency_weight: number | null;       // 0.7–1.5
+  impact_score: number | null;         // calculated impact
+
   // Flip tracking
   related_take_ids: string[];
   is_flip: boolean;
@@ -105,7 +111,7 @@ export type TakeInsert = Pick<Take, "expert_id" | "raw_text" | "source_type" | "
 export type TakeUpdate = Partial<
   Pick<Take,
     | "take_type" | "sport" | "subjects"
-    | "difficulty_score" | "falsifiability_score" | "confidence_claimed"
+    | "difficulty_score" | "confidence_claimed"
     | "time_horizon" | "time_horizon_date"
     | "summary" | "grading_criteria" | "flags" | "rating_status"
     | "outcome_status" | "outcome_date" | "outcome_notes" | "outcome_source_url"

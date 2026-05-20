@@ -3,12 +3,9 @@
 import { useState, useEffect, useTransition } from "react";
 import { getAnalystDashboard, getAnalystTakeDetail, recalculateAllTakeScores, type AnalystDashboardRow } from "@/app/actions/takescore";
 import Link from "next/link";
+import Avatar from "@/components/Avatar";
 
 type SortKey = keyof Pick<AnalystDashboardRow, "takeScore" | "totalTakes" | "gradedTakes" | "avgBoldness" | "avgAccuracy" | "volumeMult" | "decayMult">;
-
-function initials(name: string) {
-  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-}
 
 export default function AnalystDashboard() {
   const [rows, setRows] = useState<AnalystDashboardRow[]>([]);
@@ -68,14 +65,12 @@ export default function AnalystDashboard() {
           ← Back to dashboard
         </button>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold">
-            {analyst?.avatar_url
-              ? <img src={analyst.avatar_url} className="w-full h-full object-cover rounded-full" alt="" />
-              : initials(analyst?.name ?? "")}
+          <div className="w-10 h-10 rounded-full bg-zinc-700 overflow-hidden flex items-center justify-center text-sm font-bold">
+            <Avatar name={analyst?.name ?? ""} avatarUrl={analyst?.avatar_url} className="w-full h-full object-cover" textClassName="text-sm font-bold text-zinc-300" />
           </div>
           <div>
             <p className="font-bold text-zinc-100">{analyst?.name}</p>
-            <p className="text-sm text-zinc-400">TakeScore: <span className="text-white font-black">{analyst?.takeScore.toFixed(1)}</span> · V: {analyst?.volumeMult} · D: {analyst?.decayMult}</p>
+            <p className="text-sm text-zinc-400">TakeScore: <span className="text-white font-black">{Math.round(analyst?.takeScore ?? 0)}<span className="text-xs font-normal text-zinc-500">/100</span></span> · V: {analyst?.volumeMult} · D: {analyst?.decayMult}</p>
           </div>
         </div>
 
@@ -144,11 +139,11 @@ export default function AnalystDashboard() {
           >
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-7 h-7 rounded-full bg-zinc-700 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-zinc-300">
-                {row.avatar_url ? <img src={row.avatar_url} className="w-full h-full object-cover" alt="" /> : initials(row.name)}
+                <Avatar name={row.name} avatarUrl={row.avatar_url} className="w-full h-full object-cover" textClassName="text-xs font-bold text-zinc-300" />
               </div>
               <span className="text-sm font-semibold text-zinc-100 truncate">{row.name}</span>
             </div>
-            <div className="font-black text-lg text-zinc-100">{row.takeScore.toFixed(1)}</div>
+            <div className="font-black text-lg text-zinc-100">{Math.round(row.takeScore)}<span className="text-xs font-normal text-zinc-500">/100</span></div>
             <div className="text-sm text-zinc-300">{row.totalTakes}</div>
             <div className="text-sm text-zinc-300">{row.gradedTakes}</div>
             <div className="text-sm text-zinc-300">{row.avgBoldness.toFixed(1)}</div>

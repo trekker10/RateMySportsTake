@@ -1,11 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
-const SCORE_LABELS: Record<string, string> = {
-  difficulty_score: "Difficulty",
-  falsifiability_score: "Falsifiability",
-  confidence_claimed: "Confidence Claimed",
-};
 
 export default async function TakePage({
   params,
@@ -84,17 +79,26 @@ export default async function TakePage({
           )}
 
           <div className="grid grid-cols-3 gap-4">
-            {(["difficulty_score", "falsifiability_score", "confidence_claimed"] as const).map(
-              (key) => (
-                <div key={key} className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-                  <p className="text-3xl font-bold text-emerald-600">
-                    {take[key] ?? "—"}
-                    <span className="text-sm text-gray-400">/10</span>
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">{SCORE_LABELS[key]}</p>
-                </div>
-              )
-            )}
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+              <p className="text-3xl font-bold text-emerald-600">
+                {take.boldness_score != null ? take.boldness_score : "—"}
+                {take.boldness_score != null && <span className="text-sm text-gray-400">/100</span>}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">Boldness</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+              <p className="text-3xl font-bold text-emerald-600">
+                {take.accuracy_score != null ? take.accuracy_score : "—"}
+                {take.accuracy_score != null && <span className="text-sm text-gray-400">/100</span>}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">Accuracy</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+              <p className="text-3xl font-bold text-emerald-600">
+                {take.impact_score != null ? take.impact_score.toFixed(1) : "—"}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">Impact</p>
+            </div>
           </div>
 
           {take.grading_criteria && (

@@ -74,12 +74,33 @@ export default async function ExpertProfilePage({
   const firstName = nameParts.slice(0, -1).join(" ");
   const lastName  = nameParts[nameParts.length - 1];
 
+  function boldnessTier(avg: number): { label: string; color: string } {
+    if (avg <= 0)  return { label: "—",             color: "#9ca3af" };
+    if (avg <= 20) return { label: "Not Very Bold",  color: "#991b1b" };
+    if (avg <= 40) return { label: "Meh Bold",       color: "#c2410c" };
+    if (avg <= 60) return { label: "Bold",           color: "#b45309" };
+    if (avg <= 80) return { label: "Pretty Bold",    color: "#15803d" };
+    return              { label: "Very Bold",        color: "#166534" };
+  }
+
+  function accountabilityTier(score: number): { label: string; color: string } {
+    if (score <= 0)  return { label: "—",                       color: "#9ca3af" };
+    if (score <= 20) return { label: "Not Very",                color: "#991b1b" };
+    if (score <= 40) return { label: "Won't Take It",           color: "#c2410c" };
+    if (score <= 60) return { label: "Sometimes",               color: "#b45309" };
+    if (score <= 80) return { label: "Mostly Does",             color: "#15803d" };
+    return               { label: "Always Takes It",            color: "#166534" };
+  }
+
+  const boldness = boldnessTier(expert.boldness_avg);
+  const accountability = accountabilityTier(expert.accountability_score);
+
   const subMetrics = [
-    { label: "ACCURACY",      value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed" },
-    { label: "BOLDNESS",      value: expert.boldness_avg > 0 ? expert.boldness_avg.toFixed(1) : "—",          sub: "contrarian-ness" },
-    { label: "ACCOUNTABILITY",value: expert.accountability_score > 0 ? Math.round(expert.accountability_score) : "—", sub: "accountability score" },
-    { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes" },
-    { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops" },
+    { label: "ACCURACY",      value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed",    color: "#111827" },
+    { label: "BOLDNESS",      value: boldness.label,                                                           sub: "how contrarian",        color: boldness.color },
+    { label: "ACCOUNTABILITY",value: accountability.label,                                                     sub: "owns their takes",      color: accountability.color },
+    { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes",          color: "#111827" },
+    { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops",     color: "#111827" },
   ];
 
   const scoreFormula = [
@@ -196,7 +217,7 @@ export default async function ExpertProfilePage({
           {subMetrics.map((m) => (
             <div key={m.label} className="px-4 py-4">
               <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
-              <p className="font-black text-2xl md:text-3xl leading-none mt-1 text-gray-900">{m.value}</p>
+              <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)", color: m.color }}>{m.value}</p>
               <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
             </div>
           ))}

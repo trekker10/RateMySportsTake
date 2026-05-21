@@ -153,6 +153,9 @@ export default async function ExpertProfilePage({
               </div>
 
               {/* TakeScore inline */}
+              <div className="mt-3 mb-1">
+                <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
+              </div>
               <div className="flex items-baseline gap-2 mt-3">
                 <span className="font-mono text-[9px] tracking-widest text-gray-400 uppercase">TakeScore</span>
                 <span className="font-black text-2xl leading-none" style={{ color: "#e2241a" }}>
@@ -188,6 +191,9 @@ export default async function ExpertProfilePage({
                 <> · <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">{expert.twitter_handle}</a></>
               )}
             </p>
+            <div className="mt-5">
+              <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
+            </div>
           </div>
 
           <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>

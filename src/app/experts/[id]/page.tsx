@@ -162,12 +162,6 @@ export default async function ExpertProfilePage({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-3">
-              <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
-              <button className="px-3 py-1.5 border-2 border-gray-900 font-mono text-[10px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">
-                Followed Takes
-              </button>
-            </div>
           </div>
         </div>
 
@@ -194,11 +188,6 @@ export default async function ExpertProfilePage({
                 <> · <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">{expert.twitter_handle}</a></>
               )}
             </p>
-            <div className="flex flex-wrap gap-2 mt-5">
-              <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
-              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">Followed Takes</button>
-              <button className="px-4 py-2 border-2 border-gray-900 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 transition-colors">Roast Profile</button>
-            </div>
           </div>
 
           <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>

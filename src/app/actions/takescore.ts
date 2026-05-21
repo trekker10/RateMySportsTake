@@ -117,8 +117,7 @@ export async function recalculateTakeScore(expertId: string): Promise<void> {
   const lastTake = sorted[0];
   const lastTakeDate = lastTake ? new Date(lastTake.date_made) : null;
 
-  await supabase.from("experts").update({
-    overall_rating: result.takeScore,
+  const expertUpdate: Record<string, unknown> = {
     boldness_avg: result.avgBoldness,
     volume_mult: result.volumeMultiplier,
     decay_mult: result.decayMultiplier,
@@ -126,7 +125,15 @@ export async function recalculateTakeScore(expertId: string): Promise<void> {
       ? result.perTake.reduce((s, t) => s + t.impact, 0) / result.perTake.length
       : 0,
     last_take_date: lastTakeDate?.toISOString().split("T")[0] ?? null,
-  }).eq("expert_id", expertId);
+  };
+
+  // Only overwrite overall_rating if the new engine actually has graded takes to work with.
+  // Avoids zeroing out existing scores for analysts whose takes predate the new columns.
+  if (result.gradedTakes > 0) {
+    expertUpdate.overall_rating = result.takeScore;
+  }
+
+  await supabase.from("experts").update(expertUpdate).eq("expert_id", expertId);
 }
 
 export async function recalculateAllTakeScores(): Promise<void> {

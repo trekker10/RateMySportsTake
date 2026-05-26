@@ -15,10 +15,13 @@ function verdictTag(status: string) {
   return                                   { label: "PENDING",    bg: "#e5e7eb", text: "#4b5563" };
 }
 
-function gradeImpact(grade: number | null) {
+function gradeArrows(grade: number | null): { arrows: string; positive: boolean } | null {
   if (grade == null) return null;
-  const delta = Math.round(grade - 50);
-  return delta >= 0 ? `+${delta}` : `${delta}`;
+  const delta = Math.abs(Math.round(grade - 50));
+  const positive = Math.round(grade) >= 50;
+  const count = delta <= 15 ? 1 : delta <= 30 ? 2 : 3;
+  const arrow = positive ? "↗" : "↘";
+  return { arrows: arrow.repeat(count), positive };
 }
 
 export default async function ExpertProfilePage({
@@ -245,7 +248,7 @@ export default async function ExpertProfilePage({
             <div className="bg-white border-2 border-gray-900">
               {takes && takes.length > 0 ? takes.map((take, i) => {
                 const v = verdictTag(take.outcome_status);
-                const impact = gradeImpact(take.grade);
+                const impact = gradeArrows(take.grade);
                 const displayText = (take.summary ?? take.raw_text).replace(/^The analyst/i, "Analyst");
                 const analysis = take.outcome_notes ?? take.grade_notes;
                 return (
@@ -282,11 +285,11 @@ export default async function ExpertProfilePage({
                         {v.label}
                       </span>
                       {impact != null ? (
-                        <p className={`font-black text-lg ${impact.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
-                          {impact}
+                        <p className={`italic text-xl tracking-tight leading-none ${impact.positive ? "text-emerald-600" : "text-red-600"}`}>
+                          {impact.arrows}
                         </p>
                       ) : (
-                        <p className="font-black text-lg text-gray-300">—</p>
+                        <p className="text-lg text-gray-300">—</p>
                       )}
                     </div>
                   </div>

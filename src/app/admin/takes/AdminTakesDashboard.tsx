@@ -148,12 +148,45 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
   );
 }
 
+function ResolveBadge({ date }: { date: string }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(date + "T00:00:00");
+  const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
+
+  let bg = "#e5e7eb";   // default gray
+  let fg = "#4b5563";
+  let prefix = "Resolves";
+
+  if (diffDays < 0) {
+    bg = "#fef2f2"; fg = "#b91c1c"; prefix = "Overdue";
+  } else if (diffDays === 0) {
+    bg = "#fff7ed"; fg = "#c2410c"; prefix = "Today";
+  } else if (diffDays <= 30) {
+    bg = "#fffbeb"; fg = "#b45309"; prefix = "Soon";
+  }
+
+  const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: diffDays < -300 || diffDays > 300 ? "numeric" : undefined });
+
+  return (
+    <span
+      className="rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap"
+      style={{ backgroundColor: bg, color: fg }}
+    >
+      {prefix} {label}
+    </span>
+  );
+}
+
 export default function AdminTakesDashboard() {
   const [takes, setTakes] = useState<TakeState[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [isLoading, startLoad] = useTransition();
   const [gradingAll, setGradingAll] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"date_made" | "time_horizon_date" | "expert_name" | "grade">("date_made");
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     startLoad(async () => {
@@ -227,12 +260,39 @@ export default function AdminTakesDashboard() {
   }
 
   const allTakes = takes ?? [];
-  const filtered = allTakes.filter((t) => {
-    if (filter === "pending") return t.outcome_status === "pending";
-    if (filter === "graded") return t.outcome_status !== "pending";
-    if (filter === "unrated") return t.rating_status !== "rated";
-    return true;
-  });
+
+  const filtered = allTakes
+    .filter((t) => {
+      if (filter === "pending") return t.outcome_status === "pending";
+      if (filter === "graded")  return t.outcome_status !== "pending";
+      if (filter === "unrated") return t.rating_status !== "rated";
+      return true;
+    })
+    .filter((t) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        t.expert_name.toLowerCase().includes(q) ||
+        (t.summary ?? "").toLowerCase().includes(q) ||
+        t.raw_text.toLowerCase().includes(q) ||
+        (t.outcome_notes ?? "").toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      let av: string | number = "";
+      let bv: string | number = "";
+      if (sortKey === "date_made")         { av = a.date_made ?? "";          bv = b.date_made ?? ""; }
+      if (sortKey === "time_horizon_date") { av = a.time_horizon_date ?? "9999"; bv = b.time_horizon_date ?? "9999"; }
+      if (sortKey === "expert_name")       { av = a.expert_name;              bv = b.expert_name; }
+      if (sortKey === "grade")             { av = a.grade ?? -1;              bv = b.grade ?? -1; }
+      if (typeof av === "string") return sortAsc ? av.localeCompare(bv as string) : (bv as string).localeCompare(av);
+      return sortAsc ? (av - (bv as number)) : ((bv as number) - av);
+    });
+
+  function toggleSort(key: typeof sortKey) {
+    if (sortKey === key) setSortAsc(p => !p);
+    else { setSortKey(key); setSortAsc(key === "time_horizon_date"); }
+  }
 
   const pendingGradeable = allTakes.filter(
     (t) => t.outcome_status === "pending" && t.rating_status === "rated" && t.gradeStatus === "idle"
@@ -263,6 +323,38 @@ export default function AdminTakesDashboard() {
             {gradingAll ? "Grading…" : `Grade all pending (${pendingGradeable})`}
           </button>
         )}
+      </div>
+
+      {/* Search + sort */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by analyst, take text, notes…"
+          className="flex-1 min-w-[220px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
+        />
+        <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
+          <span className="mr-1">SORT:</span>
+          {([
+            { key: "date_made",         label: "Date Made" },
+            { key: "time_horizon_date", label: "Resolves" },
+            { key: "expert_name",       label: "Analyst" },
+            { key: "grade",             label: "Grade" },
+          ] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => toggleSort(key)}
+              className={`px-2 py-1 rounded border transition-colors ${
+                sortKey === key
+                  ? "border-gray-700 bg-gray-900 text-white"
+                  : "border-gray-300 text-gray-500 hover:border-gray-500"
+              }`}
+            >
+              {label}{sortKey === key ? (sortAsc ? " ↑" : " ↓") : ""}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -315,12 +407,6 @@ export default function AdminTakesDashboard() {
                       </Link>
                       <span className="text-gray-400 text-xs">·</span>
                       <span className="text-gray-500 text-xs">{take.date_made}</span>
-                      {take.time_horizon_date && (
-                        <>
-                          <span className="text-gray-400 text-xs">·</span>
-                          <span className="text-gray-500 text-xs">resolves {take.time_horizon_date}</span>
-                        </>
-                      )}
                       {take.boldness_score != null && (
                         <span className="text-gray-500 text-xs">· B={take.boldness_score}</span>
                       )}
@@ -342,6 +428,9 @@ export default function AdminTakesDashboard() {
 
                   {/* Right side */}
                   <div className="shrink-0 flex flex-col items-end gap-2">
+                    {take.time_horizon_date && (
+                      <ResolveBadge date={take.time_horizon_date} />
+                    )}
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-xs font-bold" style={{ color: verdict.color }}>
                         {verdict.label}

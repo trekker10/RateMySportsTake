@@ -5,6 +5,26 @@ import { rateTake } from "@/lib/ai/rate-take";
 import { redirect } from "next/navigation";
 import type { SourceType } from "@/types/database";
 
+export async function rateSingleTake(takeId: string): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = createAdminClient();
+  const { data: take } = await supabase
+    .from("takes")
+    .select("raw_text, sport, source_type, date_made")
+    .eq("take_id", takeId)
+    .single();
+
+  if (!take) return { success: false, error: "Take not found" };
+
+  try {
+    const rating = await rateTake(take.raw_text, take.sport ?? "", take.source_type, take.date_made);
+    await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", takeId);
+    return { success: true };
+  } catch (err) {
+    await supabase.from("takes").update({ rating_status: "failed" }).eq("take_id", takeId);
+    return { success: false, error: err instanceof Error ? err.message : "Rating failed" };
+  }
+}
+
 export async function updateGradingCriteria(takeId: string, criteria: string): Promise<void> {
   const supabase = createAdminClient();
   await supabase.from("takes").update({ grading_criteria: criteria.trim() }).eq("take_id", takeId);

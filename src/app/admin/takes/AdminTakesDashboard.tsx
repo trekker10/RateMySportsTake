@@ -2,10 +2,14 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
-import { saveTakeEdits } from "@/app/actions/takes";
+import { saveTakeEdits, rateSingleTake } from "@/app/actions/takes";
 import Link from "next/link";
 
-type TakeState = AdminTake & { gradeStatus: "idle" | "grading" | "done" | "error"; errorMsg?: string };
+type TakeState = AdminTake & {
+  gradeStatus: "idle" | "grading" | "done" | "error";
+  rateStatus: "idle" | "rating" | "done" | "error";
+  errorMsg?: string;
+};
 type Filter = "all" | "pending" | "graded" | "unrated";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -154,7 +158,7 @@ export default function AdminTakesDashboard() {
   useEffect(() => {
     startLoad(async () => {
       const all = await getAllTakesForAdmin();
-      setTakes(all.map((t) => ({ ...t, gradeStatus: "idle" })));
+      setTakes(all.map((t) => ({ ...t, gradeStatus: "idle", rateStatus: "idle" })));
     });
   }, []);
 
@@ -170,6 +174,17 @@ export default function AdminTakesDashboard() {
     );
   }
 
+  async function rateOne(takeId: string) {
+    setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, rateStatus: "rating" } : t));
+    const result = await rateSingleTake(takeId);
+    if (result.success) {
+      refreshTake(takeId);
+      setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, rateStatus: "done" } : t));
+    } else {
+      setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, rateStatus: "error", errorMsg: result.error } : t));
+    }
+  }
+
   function refreshTake(takeId: string) {
     startLoad(async () => {
       const all = await getAllTakesForAdmin();
@@ -177,7 +192,7 @@ export default function AdminTakesDashboard() {
         prev!.map((t) => {
           const fresh = all.find((a) => a.take_id === t.take_id);
           if (!fresh) return t;
-          return { ...fresh, gradeStatus: t.take_id === takeId ? "done" : t.gradeStatus, errorMsg: t.errorMsg };
+          return { ...fresh, gradeStatus: t.take_id === takeId ? "done" : t.gradeStatus, rateStatus: t.rateStatus, errorMsg: t.errorMsg };
         })
       );
     });
@@ -350,6 +365,22 @@ export default function AdminTakesDashboard() {
                       >
                         {isExpanded ? "Close" : "Edit"}
                       </button>
+
+                      {/* Rate it button — for unrated takes */}
+                      {take.rating_status !== "rated" && take.rateStatus === "idle" && (
+                        <button
+                          onClick={() => rateOne(take.take_id)}
+                          className="rounded-lg border border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-800 px-3 py-1 text-xs transition-colors"
+                        >
+                          Rate it
+                        </button>
+                      )}
+                      {take.rateStatus === "rating" && (
+                        <span className="text-xs text-blue-400 animate-pulse">Rating…</span>
+                      )}
+                      {take.rateStatus === "done" && take.rating_status !== "rated" && (
+                        <span className="text-xs text-blue-400">✓ Rated</span>
+                      )}
 
                       {/* Grade button — show if rated OR grading criteria has been set manually */}
                       {take.gradeStatus === "idle" && (take.rating_status === "rated" || !!take.grading_criteria) && (

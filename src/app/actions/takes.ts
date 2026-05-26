@@ -5,6 +5,13 @@ import { rateTake } from "@/lib/ai/rate-take";
 import { redirect } from "next/navigation";
 import type { SourceType } from "@/types/database";
 
+export async function deleteTake(takeId: string): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("takes").delete().eq("take_id", takeId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 export async function rateSingleTake(takeId: string): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = createAdminClient();
   const { data: take } = await supabase

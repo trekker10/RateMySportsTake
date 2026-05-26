@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
-import { saveTakeEdits, rateSingleTake } from "@/app/actions/takes";
+import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
 import Link from "next/link";
 
 type TakeState = AdminTake & {
@@ -241,6 +241,17 @@ export default function AdminTakesDashboard() {
     }
   }
 
+  async function deleteOne(takeId: string) {
+    if (!confirm("Delete this take permanently? This cannot be undone.")) return;
+    const result = await deleteTake(takeId);
+    if (result.success) {
+      setTakes(prev => prev!.filter(t => t.take_id !== takeId));
+      if (expandedId === takeId) setExpandedId(null);
+    } else {
+      alert(`Delete failed: ${result.error}`);
+    }
+  }
+
   async function gradeAllPending() {
     if (!takes) return;
     const eligible = takes.filter(
@@ -453,6 +464,15 @@ export default function AdminTakesDashboard() {
                         }`}
                       >
                         {isExpanded ? "Close" : "Edit"}
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => deleteOne(take.take_id)}
+                        className="rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
+                        title="Delete take"
+                      >
+                        🗑
                       </button>
 
                       {/* Rate it button — for unrated takes */}

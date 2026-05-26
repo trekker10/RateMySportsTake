@@ -22,6 +22,8 @@ export default function FindTakesPanel({
   twitterHandle: string | null;
 }) {
   const [topic, setTopic] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [results, setResults] = useState<FoundTake[]>([]);
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -40,7 +42,7 @@ export default function FindTakesPanel({
     setErrors({});
     setMessage(null);
     startSearch(async () => {
-      const found = await searchExpertTakesForProfile(expertId, expertName, twitterHandle, topic);
+      const found = await searchExpertTakesForProfile(expertId, expertName, twitterHandle, topic, dateFrom || undefined, dateTo || undefined);
       setResults(found);
       setSearched(true);
     });
@@ -99,24 +101,61 @@ export default function FindTakesPanel({
         </p>
       </div>
 
-      {/* Search bar */}
-      <div className="px-5 py-4 flex gap-3 border-b border-zinc-800">
-        <input
-          type="text"
-          value={topic}
-          onChange={e => setTopic(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleSearch()}
-          placeholder="Topic (optional) — e.g. NBA Finals, Patrick Mahomes…"
-          className="flex-1 rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-          disabled={isSearching}
-        />
-        <button
-          onClick={handleSearch}
-          disabled={isSearching}
-          className="px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50 shrink-0"
-        >
-          {isSearching ? "Searching…" : "Search"}
-        </button>
+      {/* Search controls */}
+      <div className="px-5 py-4 space-y-3 border-b border-zinc-800">
+        {/* Topic + search button */}
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={topic}
+            onChange={e => setTopic(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSearch()}
+            placeholder="Topic (optional) — e.g. NBA Finals, Patrick Mahomes…"
+            className="flex-1 rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+            disabled={isSearching}
+          />
+          <button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50 shrink-0"
+          >
+            {isSearching ? "Searching…" : "Search"}
+          </button>
+        </div>
+
+        {/* Date range */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500 shrink-0">Date range:</span>
+          <div className="relative flex-1">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 pointer-events-none">From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              disabled={isSearching}
+              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 pl-10 pr-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-500 disabled:opacity-50"
+            />
+          </div>
+          <span className="text-zinc-600 text-xs">→</span>
+          <div className="relative flex-1">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 pointer-events-none">To</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              disabled={isSearching}
+              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 pl-6 pr-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-500 disabled:opacity-50"
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading state */}

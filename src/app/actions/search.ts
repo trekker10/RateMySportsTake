@@ -11,15 +11,35 @@ export interface FoundTake {
   source_type: "article" | "podcast" | "tv_segment" | "radio" | "other";
 }
 
+function buildDateClause(dateFrom?: string, dateTo?: string): string {
+  if (dateFrom && dateTo) return ` made between ${dateFrom} and ${dateTo}`;
+  if (dateFrom) return ` made on or after ${dateFrom}`;
+  if (dateTo) return ` made on or before ${dateTo}`;
+  return "";
+}
+
+function filterByDateRange(takes: FoundTake[], dateFrom?: string, dateTo?: string): FoundTake[] {
+  if (!dateFrom && !dateTo) return takes;
+  return takes.filter((t) => {
+    if (!t.date_made) return true; // keep unknowns — can't verify
+    if (dateFrom && t.date_made < dateFrom) return false;
+    if (dateTo && t.date_made > dateTo) return false;
+    return true;
+  });
+}
+
 export async function searchExpertTakesForProfile(
   expertId: string,
   expertName: string,
   twitterHandle: string | null,
-  topic: string
+  topic: string,
+  dateFrom?: string,
+  dateTo?: string
 ): Promise<FoundTake[]> {
   const handleClause = twitterHandle
     ? ` (Twitter/X: ${twitterHandle})`
     : "";
+  const dateClause = buildDateClause(dateFrom, dateTo);
   const query = [expertName, topic, "prediction OR take OR says"].filter(Boolean).join(" ");
 
   const response = await client.messages.create({
@@ -32,9 +52,9 @@ export async function searchExpertTakesForProfile(
     messages: [
       {
         role: "user",
-        content: `Search the web for specific predictions, bold claims, and takes made by ${expertName}${handleClause}${topic ? ` about ${topic}` : ""}. Look for quotes from articles, podcast recaps, and other web pages — not tweets.
+        content: `Search the web for specific predictions, bold claims, and takes made by ${expertName}${handleClause}${topic ? ` about ${topic}` : ""}${dateClause}. Look for quotes from articles, podcast recaps, and other web pages — not tweets.
 
-The Twitter/X handle helps confirm identity when multiple people share the name.
+The Twitter/X handle helps confirm identity when multiple people share the name.${dateClause ? `\n\nIMPORTANT: Only include takes${dateClause}. Discard any results from outside that date range.` : ""}
 
 Search query to start with: "${query}"
 
@@ -62,7 +82,8 @@ Only include specific, verifiable predictions or bold claims — skip general co
   try {
     const match = last.text.match(/\[[\s\S]*\]/);
     if (!match) return [];
-    return JSON.parse(match[0]) as FoundTake[];
+    const parsed = JSON.parse(match[0]) as FoundTake[];
+    return filterByDateRange(parsed, dateFrom, dateTo);
   } catch {
     return [];
   }
@@ -70,8 +91,11 @@ Only include specific, verifiable predictions or bold claims — skip general co
 
 export async function searchExpertTakes(
   expertName: string,
-  topic: string
+  topic: string,
+  dateFrom?: string,
+  dateTo?: string
 ): Promise<FoundTake[]> {
+  const dateClause = buildDateClause(dateFrom, dateTo);
   const query = [expertName, topic, "prediction OR take OR says"].filter(Boolean).join(" ");
 
   const response = await client.messages.create({
@@ -84,8 +108,8 @@ export async function searchExpertTakes(
     messages: [
       {
         role: "user",
-        content: `Search the web for specific predictions, bold claims, and takes made by ${expertName}${topic ? ` about ${topic}` : ""}. Look for quotes from articles, podcast recaps, and other web pages — not tweets.
-
+        content: `Search the web for specific predictions, bold claims, and takes made by ${expertName}${topic ? ` about ${topic}` : ""}${dateClause}. Look for quotes from articles, podcast recaps, and other web pages — not tweets.
+${dateClause ? `\nIMPORTANT: Only include takes${dateClause}. Discard any results from outside that date range.\n` : ""}
 Search query to start with: "${query}"
 
 After searching, return a JSON array of what you find:
@@ -111,7 +135,8 @@ Only include specific, verifiable predictions or bold claims — skip general co
   try {
     const match = last.text.match(/\[[\s\S]*\]/);
     if (!match) return [];
-    return JSON.parse(match[0]) as FoundTake[];
+    const parsed = JSON.parse(match[0]) as FoundTake[];
+    return filterByDateRange(parsed, dateFrom, dateTo);
   } catch {
     return [];
   }

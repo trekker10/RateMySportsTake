@@ -30,6 +30,8 @@ interface ResultState {
 export default function ImportSearch() {
   const [expertName, setExpertName] = useState("");
   const [topic, setTopic] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [results, setResults] = useState<ResultState[] | null>(null);
   const [isSearching, startSearch] = useTransition();
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function ImportSearch() {
     setImportSummary(null);
     startSearch(async () => {
       try {
-        const found = await searchExpertTakes(expertName, topic);
+        const found = await searchExpertTakes(expertName, topic, dateFrom || undefined, dateTo || undefined);
         setResults(
           found.map((take) => ({ take, selected: true, sport: "", status: "idle" }))
         );
@@ -157,6 +159,34 @@ export default function ImportSearch() {
             />
           </div>
         </div>
+
+        {/* Date range */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-1">
+            Date range <span className="text-zinc-500 font-normal">(optional — leave blank for no limit)</span>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">From</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full rounded-lg bg-white border border-gray-300 pl-12 pr-4 py-2.5 text-gray-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">To</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full rounded-lg bg-white border border-gray-300 pl-8 pr-4 py-2.5 text-gray-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={isSearching}

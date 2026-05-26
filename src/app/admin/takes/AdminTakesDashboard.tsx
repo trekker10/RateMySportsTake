@@ -24,7 +24,7 @@ const OUTCOME_OPTIONS = [
   { value: "unresolvable",     label: "Unresolvable" },
 ];
 
-const inputClass = "w-full rounded bg-zinc-800 border border-zinc-700 px-2.5 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500";
+const inputClass = "w-full rounded bg-white border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500";
 
 function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: Partial<AdminTake>) => void }) {
   const [summary, setSummary] = useState(take.summary ?? "");
@@ -66,10 +66,10 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-zinc-700 bg-zinc-800/60 p-4 space-y-4">
+    <div className="mt-3 rounded-lg border border-gray-300 bg-white p-4 space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">AI Summary</label>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">AI Summary</label>
           <textarea
             value={summary}
             onChange={e => setSummary(e.target.value)}
@@ -80,18 +80,18 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Boldness (0–100)</label>
+            <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Boldness (0–100)</label>
             <input type="number" min={0} max={100} value={boldness} onChange={e => setBoldness(e.target.value)} className={inputClass} placeholder="e.g. 65" />
           </div>
           <div>
-            <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Resolution Date</label>
+            <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Resolution Date</label>
             <input type="date" value={resDate} onChange={e => setResDate(e.target.value)} className={inputClass} />
           </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Grading Criteria</label>
+        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Grading Criteria</label>
         <textarea
           value={criteria}
           onChange={e => setCriteria(e.target.value)}
@@ -101,15 +101,15 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
         />
       </div>
 
-      <div className="border-t border-zinc-700 pt-4 grid md:grid-cols-3 gap-3">
+      <div className="border-t border-gray-200 pt-4 grid md:grid-cols-3 gap-3">
         <div>
-          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Outcome</label>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Outcome</label>
           <select value={outcome} onChange={e => setOutcome(e.target.value)} className={inputClass}>
             {OUTCOME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Grade (0–100)</label>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Grade (0–100)</label>
           <input
             type="number" min={0} max={100}
             value={grade}
@@ -119,7 +119,7 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
           />
         </div>
         <div>
-          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Outcome Notes</label>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Outcome Notes</label>
           <input
             type="text"
             value={notes}
@@ -134,7 +134,7 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="px-4 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50"
+          className="px-4 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-700 transition-colors disabled:opacity-50"
         >
           {isPending ? "Saving…" : "Save changes"}
         </button>
@@ -235,7 +235,7 @@ export default function AdminTakesDashboard() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Takes Review</h1>
-          <p className="mt-1 text-zinc-400">
+          <p className="mt-1 text-gray-500">
             Review all takes and trigger AI grading on any of them.
           </p>
         </div>
@@ -258,8 +258,8 @@ export default function AdminTakesDashboard() {
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filter === f
-                ? "bg-zinc-100 text-zinc-900"
-                : "text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-500"
+                ? "bg-gray-900 text-white"
+                : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-60">({counts[f]})</span>
@@ -268,19 +268,19 @@ export default function AdminTakesDashboard() {
       </div>
 
       {isLoading && takes === null && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
+        <div className="rounded-xl border border-gray-300 p-8 text-center text-gray-400" style={{ backgroundColor: "#f5f0e6" }}>
           Loading takes…
         </div>
       )}
 
       {takes !== null && filtered.length === 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
+        <div className="rounded-xl border border-gray-300 p-8 text-center text-gray-400" style={{ backgroundColor: "#f5f0e6" }}>
           No takes in this category.
         </div>
       )}
 
       {filtered.length > 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+        <div className="rounded-xl border border-gray-300 divide-y divide-gray-200" style={{ backgroundColor: "#f5f0e6" }}>
           {filtered.map((take) => {
             const verdict = STATUS_LABEL[take.outcome_status] ?? STATUS_LABEL.pending;
             const isGraded = take.outcome_status !== "pending";
@@ -294,20 +294,20 @@ export default function AdminTakesDashboard() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/experts/${take.expert_id}`}
-                        className="font-semibold text-zinc-100 hover:text-white text-sm"
+                        className="font-semibold text-gray-900 hover:text-black text-sm"
                       >
                         {take.expert_name}
                       </Link>
-                      <span className="text-zinc-600 text-xs">·</span>
-                      <span className="text-zinc-500 text-xs">{take.date_made}</span>
+                      <span className="text-gray-400 text-xs">·</span>
+                      <span className="text-gray-500 text-xs">{take.date_made}</span>
                       {take.time_horizon_date && (
                         <>
-                          <span className="text-zinc-600 text-xs">·</span>
-                          <span className="text-zinc-500 text-xs">resolves {take.time_horizon_date}</span>
+                          <span className="text-gray-400 text-xs">·</span>
+                          <span className="text-gray-500 text-xs">resolves {take.time_horizon_date}</span>
                         </>
                       )}
                       {take.boldness_score != null && (
-                        <span className="text-zinc-500 text-xs">· B={take.boldness_score}</span>
+                        <span className="text-gray-500 text-xs">· B={take.boldness_score}</span>
                       )}
                       {take.rating_status !== "rated" && (
                         <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-900/40 text-amber-400 border border-amber-800">
@@ -316,12 +316,12 @@ export default function AdminTakesDashboard() {
                       )}
                     </div>
 
-                    <p className="mt-1.5 text-sm text-zinc-300 leading-relaxed line-clamp-2">
+                    <p className="mt-1.5 text-sm text-gray-700 leading-relaxed line-clamp-2">
                       "{take.summary ?? take.raw_text}"
                     </p>
 
                     {isGraded && take.outcome_notes && (
-                      <p className="mt-1 text-xs text-zinc-500 italic">{take.outcome_notes}</p>
+                      <p className="mt-1 text-xs text-gray-500 italic">{take.outcome_notes}</p>
                     )}
                   </div>
 
@@ -344,8 +344,8 @@ export default function AdminTakesDashboard() {
                         onClick={() => setExpandedId(isExpanded ? null : take.take_id)}
                         className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
                           isExpanded
-                            ? "border-zinc-500 text-zinc-200"
-                            : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                            ? "border-gray-600 text-gray-900 bg-gray-100"
+                            : "border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-800"
                         }`}
                       >
                         {isExpanded ? "Close" : "Edit"}
@@ -361,7 +361,7 @@ export default function AdminTakesDashboard() {
                         </button>
                       )}
                       {take.gradeStatus === "grading" && (
-                        <span className="text-xs text-zinc-500 animate-pulse">Searching web…</span>
+                        <span className="text-xs text-gray-400 animate-pulse">Searching web…</span>
                       )}
                       {take.gradeStatus === "done" && (
                         <span className="text-xs text-emerald-400">✓ Done</span>
@@ -390,7 +390,7 @@ export default function AdminTakesDashboard() {
         </div>
       )}
 
-      <Link href="/admin" className="inline-block text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+      <Link href="/admin" className="inline-block text-sm text-gray-500 hover:text-gray-800 transition-colors">
         ← Back to Admin
       </Link>
     </div>

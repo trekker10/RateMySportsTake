@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import EditableGradingCriteria from "./EditableGradingCriteria";
 
 
 export default async function TakePage({
@@ -96,12 +97,7 @@ export default async function TakePage({
           </div>
 
           {take.grading_criteria && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
-                Grading Criteria
-              </p>
-              <p className="text-gray-700">{take.grading_criteria}</p>
-            </div>
+            <EditableGradingCriteria takeId={take.take_id} initial={take.grading_criteria} />
           )}
 
           {take.flags && take.flags.length > 0 && (

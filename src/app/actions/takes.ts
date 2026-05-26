@@ -5,6 +5,11 @@ import { rateTake } from "@/lib/ai/rate-take";
 import { redirect } from "next/navigation";
 import type { SourceType } from "@/types/database";
 
+export async function updateGradingCriteria(takeId: string, criteria: string): Promise<void> {
+  const supabase = createAdminClient();
+  await supabase.from("takes").update({ grading_criteria: criteria.trim() }).eq("take_id", takeId);
+}
+
 export async function submitTake(formData: FormData) {
   const supabase = createAdminClient();
 

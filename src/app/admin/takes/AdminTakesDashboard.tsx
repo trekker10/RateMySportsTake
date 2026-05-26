@@ -351,11 +351,11 @@ export default function AdminTakesDashboard() {
                         {isExpanded ? "Close" : "Edit"}
                       </button>
 
-                      {/* Grade button */}
-                      {take.gradeStatus === "idle" && take.rating_status === "rated" && (
+                      {/* Grade button — show if rated OR grading criteria has been set manually */}
+                      {take.gradeStatus === "idle" && (take.rating_status === "rated" || !!take.grading_criteria) && (
                         <button
                           onClick={() => gradeOne(take.take_id)}
-                          className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
+                          className="rounded-lg border border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-800 px-3 py-1 text-xs transition-colors"
                         >
                           {isGraded ? "Re-grade" : "Grade it"}
                         </button>

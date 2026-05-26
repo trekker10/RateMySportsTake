@@ -10,6 +10,21 @@ export async function updateGradingCriteria(takeId: string, criteria: string): P
   await supabase.from("takes").update({ grading_criteria: criteria.trim() }).eq("take_id", takeId);
 }
 
+export async function saveTakeEdits(takeId: string, edits: {
+  summary?: string;
+  grading_criteria?: string;
+  boldness_score?: number | null;
+  time_horizon_date?: string | null;
+  grade?: number | null;
+  outcome_status?: string;
+  outcome_notes?: string | null;
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("takes").update(edits).eq("take_id", takeId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 export async function submitTake(formData: FormData) {
   const supabase = createAdminClient();
 

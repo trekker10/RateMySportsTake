@@ -100,6 +100,7 @@ export interface AdminTake {
   grading_criteria: string | null;
   date_made: string;
   time_horizon_date: string | null;
+  boldness_score: number | null;
   outcome_status: string;
   outcome_notes: string | null;
   grade: number | null;
@@ -114,7 +115,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
 
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, experts(name)")
     .order("date_made", { ascending: false });
 
   return (data ?? []).map((t) => ({
@@ -124,6 +125,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
     grading_criteria: t.grading_criteria,
     date_made: t.date_made,
     time_horizon_date: t.time_horizon_date,
+    boldness_score: t.boldness_score,
     outcome_status: t.outcome_status,
     outcome_notes: t.outcome_notes,
     grade: t.grade,

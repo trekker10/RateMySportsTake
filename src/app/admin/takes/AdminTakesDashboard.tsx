@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
+import { saveTakeEdits } from "@/app/actions/takes";
 import Link from "next/link";
 
 type TakeState = AdminTake & { gradeStatus: "idle" | "grading" | "done" | "error"; errorMsg?: string };
@@ -15,11 +16,140 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   unresolvable:    { label: "UNRESOLVABLE",  color: "#6b7280" },
 };
 
+const OUTCOME_OPTIONS = [
+  { value: "pending",          label: "Pending" },
+  { value: "confirmed_true",   label: "Right" },
+  { value: "confirmed_false",  label: "Wrong" },
+  { value: "partially_true",   label: "Partly Right" },
+  { value: "unresolvable",     label: "Unresolvable" },
+];
+
+const inputClass = "w-full rounded bg-zinc-800 border border-zinc-700 px-2.5 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500";
+
+function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: Partial<AdminTake>) => void }) {
+  const [summary, setSummary] = useState(take.summary ?? "");
+  const [criteria, setCriteria] = useState(take.grading_criteria ?? "");
+  const [boldness, setBoldness] = useState<string>(take.boldness_score != null ? String(take.boldness_score) : "");
+  const [resDate, setResDate] = useState(take.time_horizon_date ?? "");
+  const [grade, setGrade] = useState<string>(take.grade != null ? String(Math.round(take.grade)) : "");
+  const [outcome, setOutcome] = useState(take.outcome_status);
+  const [notes, setNotes] = useState(take.outcome_notes ?? "");
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSave() {
+    startTransition(async () => {
+      const edits: Parameters<typeof saveTakeEdits>[1] = {
+        summary: summary.trim() || undefined,
+        grading_criteria: criteria.trim() || undefined,
+        boldness_score: boldness !== "" ? Number(boldness) : null,
+        time_horizon_date: resDate || null,
+        outcome_status: outcome,
+        outcome_notes: notes.trim() || null,
+        grade: grade !== "" ? Number(grade) : null,
+      };
+      const result = await saveTakeEdits(take.take_id, edits);
+      if (result.success) {
+        setSaved(true);
+        onSaved({
+          summary: summary.trim() || null,
+          grading_criteria: criteria.trim() || null,
+          boldness_score: boldness !== "" ? Number(boldness) : null,
+          time_horizon_date: resDate || null,
+          outcome_status: outcome,
+          outcome_notes: notes.trim() || null,
+          grade: grade !== "" ? Number(grade) : null,
+        });
+        setTimeout(() => setSaved(false), 3000);
+      }
+    });
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-zinc-700 bg-zinc-800/60 p-4 space-y-4">
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">AI Summary</label>
+          <textarea
+            value={summary}
+            onChange={e => setSummary(e.target.value)}
+            rows={2}
+            className={`${inputClass} resize-none`}
+            placeholder="One-sentence summary of the take…"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Boldness (0–100)</label>
+            <input type="number" min={0} max={100} value={boldness} onChange={e => setBoldness(e.target.value)} className={inputClass} placeholder="e.g. 65" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Resolution Date</label>
+            <input type="date" value={resDate} onChange={e => setResDate(e.target.value)} className={inputClass} />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Grading Criteria</label>
+        <textarea
+          value={criteria}
+          onChange={e => setCriteria(e.target.value)}
+          rows={3}
+          className={`${inputClass} resize-none`}
+          placeholder="What would make this take TRUE?"
+        />
+      </div>
+
+      <div className="border-t border-zinc-700 pt-4 grid md:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Outcome</label>
+          <select value={outcome} onChange={e => setOutcome(e.target.value)} className={inputClass}>
+            {OUTCOME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Grade (0–100)</label>
+          <input
+            type="number" min={0} max={100}
+            value={grade}
+            onChange={e => setGrade(e.target.value)}
+            className={inputClass}
+            placeholder="e.g. 75"
+          />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-zinc-400 mb-1 uppercase">Outcome Notes</label>
+          <input
+            type="text"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            className={inputClass}
+            placeholder="What actually happened?"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={isPending}
+          className="px-4 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50"
+        >
+          {isPending ? "Saving…" : "Save changes"}
+        </button>
+        {saved && <span className="text-xs text-emerald-400">✓ Saved</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminTakesDashboard() {
   const [takes, setTakes] = useState<TakeState[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [isLoading, startLoad] = useTransition();
   const [gradingAll, setGradingAll] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     startLoad(async () => {
@@ -31,6 +161,12 @@ export default function AdminTakesDashboard() {
   function setTakeGradeStatus(takeId: string, gradeStatus: TakeState["gradeStatus"], errorMsg?: string) {
     setTakes((prev) =>
       prev!.map((t) => t.take_id === takeId ? { ...t, gradeStatus, errorMsg } : t)
+    );
+  }
+
+  function updateTake(takeId: string, updated: Partial<AdminTake>) {
+    setTakes((prev) =>
+      prev!.map((t) => t.take_id === takeId ? { ...t, ...updated } : t)
     );
   }
 
@@ -148,9 +284,10 @@ export default function AdminTakesDashboard() {
           {filtered.map((take) => {
             const verdict = STATUS_LABEL[take.outcome_status] ?? STATUS_LABEL.pending;
             const isGraded = take.outcome_status !== "pending";
+            const isExpanded = expandedId === take.take_id;
 
             return (
-              <div key={take.take_id} className="px-5 py-4 space-y-2">
+              <div key={take.take_id} className="px-5 py-4">
                 {/* Row header */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -169,6 +306,9 @@ export default function AdminTakesDashboard() {
                           <span className="text-zinc-500 text-xs">resolves {take.time_horizon_date}</span>
                         </>
                       )}
+                      {take.boldness_score != null && (
+                        <span className="text-zinc-500 text-xs">· B={take.boldness_score}</span>
+                      )}
                       {take.rating_status !== "rated" && (
                         <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-900/40 text-amber-400 border border-amber-800">
                           NOT RATED YET
@@ -176,59 +316,73 @@ export default function AdminTakesDashboard() {
                       )}
                     </div>
 
-                    {/* Take text */}
                     <p className="mt-1.5 text-sm text-zinc-300 leading-relaxed line-clamp-2">
                       "{take.summary ?? take.raw_text}"
                     </p>
 
-                    {/* Outcome notes if graded */}
                     {isGraded && take.outcome_notes && (
                       <p className="mt-1 text-xs text-zinc-500 italic">{take.outcome_notes}</p>
                     )}
                   </div>
 
-                  {/* Right side: verdict + grade + action */}
+                  {/* Right side */}
                   <div className="shrink-0 flex flex-col items-end gap-2">
                     <div className="flex items-center gap-3">
-                      <span
-                        className="font-mono text-xs font-bold"
-                        style={{ color: verdict.color }}
-                      >
+                      <span className="font-mono text-xs font-bold" style={{ color: verdict.color }}>
                         {verdict.label}
                       </span>
                       {take.grade != null && (
-                        <span
-                          className="font-black text-lg leading-none"
-                          style={{ color: take.grade >= 60 ? "#0a7a3b" : "#e2241a" }}
-                        >
+                        <span className="font-black text-lg leading-none" style={{ color: take.grade >= 60 ? "#0a7a3b" : "#e2241a" }}>
                           {Math.round(take.grade)}
                         </span>
                       )}
                     </div>
 
-                    {/* Grade button */}
-                    {take.gradeStatus === "idle" && take.rating_status === "rated" && (
+                    <div className="flex items-center gap-2">
+                      {/* Edit toggle */}
                       <button
-                        onClick={() => gradeOne(take.take_id)}
-                        className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
+                        onClick={() => setExpandedId(isExpanded ? null : take.take_id)}
+                        className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
+                          isExpanded
+                            ? "border-zinc-500 text-zinc-200"
+                            : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                        }`}
                       >
-                        {isGraded ? "Re-grade" : "Grade it"}
+                        {isExpanded ? "Close" : "Edit"}
                       </button>
-                    )}
-                    {take.gradeStatus === "grading" && (
-                      <span className="text-xs text-zinc-500 animate-pulse">Searching web…</span>
-                    )}
-                    {take.gradeStatus === "done" && (
-                      <span className="text-xs text-emerald-400">✓ Done</span>
-                    )}
-                    {take.gradeStatus === "error" && (
-                      <span className="text-xs text-red-400" title={take.errorMsg}>Failed</span>
-                    )}
+
+                      {/* Grade button */}
+                      {take.gradeStatus === "idle" && take.rating_status === "rated" && (
+                        <button
+                          onClick={() => gradeOne(take.take_id)}
+                          className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"
+                        >
+                          {isGraded ? "Re-grade" : "Grade it"}
+                        </button>
+                      )}
+                      {take.gradeStatus === "grading" && (
+                        <span className="text-xs text-zinc-500 animate-pulse">Searching web…</span>
+                      )}
+                      {take.gradeStatus === "done" && (
+                        <span className="text-xs text-emerald-400">✓ Done</span>
+                      )}
+                      {take.gradeStatus === "error" && (
+                        <span className="text-xs text-red-400" title={take.errorMsg}>Failed</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {take.gradeStatus === "error" && take.errorMsg && (
-                  <p className="text-xs text-red-400 pl-0">{take.errorMsg}</p>
+                  <p className="text-xs text-red-400 mt-1">{take.errorMsg}</p>
+                )}
+
+                {/* Inline edit panel */}
+                {isExpanded && (
+                  <TakeEditPanel
+                    take={take}
+                    onSaved={(updated) => updateTake(take.take_id, updated)}
+                  />
                 )}
               </div>
             );

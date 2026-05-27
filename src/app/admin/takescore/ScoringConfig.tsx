@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { saveTakeScoreConfig, resetTakeScoreConfig } from "@/app/actions/takescore";
-import { DEFAULT_CONFIG, type TakeScoreConfig } from "@/lib/takescore";
+import { DEFAULT_CONFIG, scoreToGrade, type TakeScoreConfig } from "@/lib/takescore";
 
 function Field({ label, value, onChange, tooltip }: {
   label: string;
@@ -147,6 +147,27 @@ export default function ScoringConfig({
         <Section title="Engine Settings">
           <Field label="Rolling window (# of takes)"  value={cfg.rolling_window}        onChange={v => set("rolling_window", v)}        tooltip="How many takes factor into the rolling average" />
           <Field label="Normalization divisor"         value={cfg.normalization_divisor} onChange={v => set("normalization_divisor", v)} tooltip="Divides raw impact avg to fit 0–100 scale. Higher = lower scores overall." />
+        </Section>
+
+        <Section title="Grade Scale (score thresholds)">
+          <p className="text-xs text-zinc-500 mb-3">
+            Set the minimum score needed for each letter grade. Scores below the D threshold receive an F.
+            Preview: {[100,75,65,55,45,35,25,15,5].map(s => (
+              <span key={s} className="ml-2 font-mono">{s}→<strong>{scoreToGrade(s, cfg)}</strong></span>
+            ))}
+          </p>
+          {([
+            { key: "grade_a_min",      label: "A  (≥ this score)" },
+            { key: "grade_bplus_min",  label: "B+ (≥ this score)" },
+            { key: "grade_b_min",      label: "B  (≥ this score)" },
+            { key: "grade_bminus_min", label: "B− (≥ this score)" },
+            { key: "grade_cplus_min",  label: "C+ (≥ this score)" },
+            { key: "grade_c_min",      label: "C  (≥ this score)" },
+            { key: "grade_cminus_min", label: "C− (≥ this score)" },
+            { key: "grade_d_min",      label: "D  (≥ this score, below = F)" },
+          ] as const).map(({ key, label }) => (
+            <Field key={key} label={label} value={cfg[key]} onChange={v => set(key, v)} />
+          ))}
         </Section>
       </div>
 

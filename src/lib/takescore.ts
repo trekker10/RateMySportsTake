@@ -33,6 +33,15 @@ export interface TakeScoreConfig {
   decay_old_mult: number;
   rolling_window: number;
   normalization_divisor: number;
+  // Grade scale thresholds (score must be >= threshold to earn that grade)
+  grade_a_min: number;
+  grade_bplus_min: number;
+  grade_b_min: number;
+  grade_bminus_min: number;
+  grade_cplus_min: number;
+  grade_c_min: number;
+  grade_cminus_min: number;
+  grade_d_min: number;
 }
 
 export const DEFAULT_CONFIG: TakeScoreConfig = {
@@ -70,7 +79,40 @@ export const DEFAULT_CONFIG: TakeScoreConfig = {
   decay_old_mult: 0.65,
   rolling_window: 20,
   normalization_divisor: 2.0,
+  grade_a_min: 80,
+  grade_bplus_min: 70,
+  grade_b_min: 60,
+  grade_bminus_min: 50,
+  grade_cplus_min: 40,
+  grade_c_min: 30,
+  grade_cminus_min: 20,
+  grade_d_min: 10,
 };
+
+export function scoreToGrade(score: number, cfg?: Partial<TakeScoreConfig>): string {
+  const c = { ...DEFAULT_CONFIG, ...(cfg ?? {}) };
+  if (score >= c.grade_a_min)      return "A";
+  if (score >= c.grade_bplus_min)  return "B+";
+  if (score >= c.grade_b_min)      return "B";
+  if (score >= c.grade_bminus_min) return "B−";
+  if (score >= c.grade_cplus_min)  return "C+";
+  if (score >= c.grade_c_min)      return "C";
+  if (score >= c.grade_cminus_min) return "C−";
+  if (score >= c.grade_d_min)      return "D";
+  return "F";
+}
+
+export function gradeColor(grade: string): string {
+  if (grade === "A")  return "#0a7a3b";
+  if (grade === "B+") return "#16a34a";
+  if (grade === "B")  return "#4b8c3f";
+  if (grade === "B−") return "#92400e";
+  if (grade === "C+") return "#b45309";
+  if (grade === "C")  return "#c2410c";
+  if (grade === "C−") return "#dc2626";
+  if (grade === "D")  return "#b91c1c";
+  return "#991b1b"; // F
+}
 
 export interface ScoredTake {
   take_id: string;

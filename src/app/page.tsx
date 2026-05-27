@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import HeroSearch from "@/components/HeroSearch";
 import Avatar from "@/components/Avatar";
+import { getTakeScoreConfig } from "@/app/actions/takescore";
+import { scoreToGrade, gradeColor } from "@/lib/takescore";
 
 function verdictInfo(status: string) {
   if (status === "confirmed_true")  return { label: "RIGHT.",       color: "#0a7a3b" };
@@ -12,6 +14,7 @@ function verdictInfo(status: string) {
 
 export default async function HomePage() {
   const supabase = await createClient();
+  const gradeConfig = await getTakeScoreConfig();
 
   const [{ data: rankedExperts }, { data: featuredTakes }] = await Promise.all([
     supabase
@@ -85,7 +88,7 @@ export default async function HomePage() {
                   <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
                   <p className="font-mono text-[9px] tracking-wider text-gray-400 uppercase truncate">{e.outlet ?? "—"}</p>
                 </div>
-                <span className="font-black text-2xl text-gray-900">{Math.round(e.overall_rating)}<span className="text-sm font-normal text-gray-400">/100</span></span>
+                <span className="font-black text-2xl" style={{ color: gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) }}>{scoreToGrade(e.overall_rating, gradeConfig)}</span>
               </Link>
             )) : (
               <p className="mt-6 text-gray-400 italic">No ranked analysts yet.</p>
@@ -128,8 +131,8 @@ export default async function HomePage() {
                   {featured.grade != null && (
                     <div className="ml-auto text-right">
                       <p className="font-mono text-[10px] tracking-[0.14em] text-gray-400 uppercase">GRADE</p>
-                      <p className="font-black mt-1 leading-none" style={{ fontSize: "4rem", color: featured.grade >= 60 ? "#0a7a3b" : "#e2241a" }}>
-                        {Math.round(featured.grade)}
+                      <p className="font-black mt-1 leading-none" style={{ fontSize: "4rem", color: gradeColor(scoreToGrade(featured.grade, gradeConfig)) }}>
+                        {scoreToGrade(featured.grade, gradeConfig)}
                       </p>
                     </div>
                   )}
@@ -181,7 +184,7 @@ export default async function HomePage() {
                   <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
                   <p className="font-mono text-[9px] tracking-wider text-gray-400 uppercase truncate">{e.outlet ?? "—"}</p>
                 </div>
-                <span className="font-black text-2xl" style={{ color: "#e2241a" }}>{e.overall_rating.toFixed(1)}</span>
+                <span className="font-black text-2xl" style={{ color: gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) }}>{scoreToGrade(e.overall_rating, gradeConfig)}</span>
               </Link>
             )) : (
               <p className="mt-6 text-gray-400 italic">Not enough ranked analysts yet.</p>

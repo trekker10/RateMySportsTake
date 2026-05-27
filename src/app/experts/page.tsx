@@ -3,6 +3,8 @@ import Link from "next/link";
 import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
+import { getTakeScoreConfig } from "@/app/actions/takescore";
+import { scoreToGrade, gradeColor } from "@/lib/takescore";
 
 export default async function ExpertsPage({
   searchParams,
@@ -11,6 +13,7 @@ export default async function ExpertsPage({
 }) {
   const { q } = await searchParams;
   const supabase = await createClient();
+  const gradeConfig = await getTakeScoreConfig();
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -128,7 +131,7 @@ export default async function ExpertsPage({
                 {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
               </div>
               <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
-              <div className="font-black text-2xl text-gray-900">{e.overall_rating > 0 ? <>{Math.round(e.overall_rating)}<span className="text-sm font-normal text-gray-400">/100</span></> : "—"}</div>
+              <div className="font-black text-2xl" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>{e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}</div>
             </div>
 
             {/* Mobile row */}
@@ -146,8 +149,8 @@ export default async function ExpertsPage({
                 <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
                 <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.outlet ?? e.sport_focus?.[0] ?? "—"}</p>
               </div>
-              <span className="font-black text-xl shrink-0 text-gray-900">
-                {e.overall_rating > 0 ? <>{Math.round(e.overall_rating)}<span className="text-xs font-normal text-gray-400">/100</span></> : "—"}
+              <span className="font-black text-2xl shrink-0" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                {e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}
               </span>
             </div>
           </Link>

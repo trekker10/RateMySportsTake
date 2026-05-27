@@ -19,7 +19,8 @@ import {
 export async function getTakeScoreConfig(): Promise<TakeScoreConfig> {
   const supabase = createAdminClient();
   const { data } = await supabase.from("take_score_config").select("*").eq("id", "default").single();
-  return (data ?? DEFAULT_CONFIG) as TakeScoreConfig;
+  // Merge with defaults so new fields work even before DB migration
+  return { ...DEFAULT_CONFIG, ...(data ?? {}) } as TakeScoreConfig;
 }
 
 export async function saveTakeScoreConfig(

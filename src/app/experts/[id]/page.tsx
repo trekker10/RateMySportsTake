@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import FollowButton from "@/components/FollowButton";
 import Avatar from "@/components/Avatar";
+import { getTakeScoreConfig } from "@/app/actions/takescore";
+import { scoreToGrade, gradeColor } from "@/lib/takescore";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
@@ -67,6 +69,8 @@ export default async function ExpertProfilePage({
   ]);
 
   if (!expert) notFound();
+
+  const gradeConfig = await getTakeScoreConfig();
 
   // Rank
   const rank = (allExperts ?? []).findIndex((e) => e.expert_id === id) + 1;
@@ -161,8 +165,8 @@ export default async function ExpertProfilePage({
               </div>
               <div className="flex items-baseline gap-2 mt-3">
                 <span className="font-mono text-[9px] tracking-widest text-gray-400 uppercase">TakeScore</span>
-                <span className="font-black text-2xl leading-none" style={{ color: "#e2241a" }}>
-                  {expert.overall_rating > 0 ? <>{Math.round(expert.overall_rating)}<span className="text-xs font-normal text-gray-400">/100</span></> : "—"}
+                <span className="font-black text-2xl leading-none" style={{ color: expert.overall_rating > 0 ? gradeColor(scoreToGrade(expert.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                  {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
                 </span>
                 {rank > 0 && <span className="font-mono text-[10px] text-gray-400">#{rank}</span>}
               </div>
@@ -201,8 +205,8 @@ export default async function ExpertProfilePage({
 
           <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
             <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
-            <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#e2241a" }}>
-              {expert.overall_rating > 0 ? <>{Math.round(expert.overall_rating)}<span className="text-lg font-normal text-gray-400">/100</span></> : "—"}
+            <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: expert.overall_rating > 0 ? gradeColor(scoreToGrade(expert.overall_rating, gradeConfig)) : "#9ca3af" }}>
+              {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
             </p>
             {rank > 0 && <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>}
           </div>
@@ -346,7 +350,7 @@ export default async function ExpertProfilePage({
               </svg>
               <p className="italic text-sm text-gray-400 mt-2">
                 {expert.overall_rating > 0
-                  ? `Current TakeScore: ${Math.round(expert.overall_rating)}/100`
+                  ? `Current TakeScore: ${scoreToGrade(expert.overall_rating, gradeConfig)}`
                   : "No TakeScore yet — submit and grade takes to build a record."}
               </p>
             </div>

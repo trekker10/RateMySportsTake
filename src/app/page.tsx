@@ -25,7 +25,7 @@ export default async function HomePage() {
       .order("overall_rating", { ascending: false }),
     supabase
       .from("takes")
-      .select("take_id, raw_text, summary, grade, outcome_status, outcome_notes, expert_id, experts(name, outlet, expert_id)")
+      .select("take_id, raw_text, summary, grade, outcome_status, outcome_notes, date_made, expert_id, experts(name, outlet, expert_id)")
       .not("grade", "is", null)
       .neq("outcome_status", "pending")
       .not("outcome_status", "is", null)
@@ -118,6 +118,11 @@ export default async function HomePage() {
                 <p className="mt-3 text-lg italic text-gray-500">
                   — {expert?.name}{expert?.outlet ? `, ${expert.outlet}` : ""}
                 </p>
+                {featured.date_made && (
+                  <p className="mt-1 font-mono text-[10px] tracking-[0.14em] text-gray-400 uppercase">
+                    Prediction made · {new Date(featured.date_made).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
                 <div className="mt-8 flex items-end gap-6">
                   <div>
                     <p className="font-mono text-[10px] tracking-[0.14em] text-gray-400 uppercase">VERDICT</p>

@@ -18,10 +18,12 @@ function verdictTag(status: string) {
   return                                   { label: "PENDING",    bg: "#e5e7eb", text: "#4b5563" };
 }
 
-function gradeImpact(grade: number | null) {
+function gradeArrows(grade: number | null): { arrows: string; positive: boolean } | null {
   if (grade == null) return null;
-  const d = Math.round(grade - 50);
-  return d >= 0 ? `+${d}` : `${d}`;
+  const delta = Math.abs(Math.round(grade - 50));
+  const positive = Math.round(grade) >= 50;
+  const count = delta <= 15 ? 1 : delta <= 30 ? 2 : 3;
+  return { arrows: (positive ? "↗" : "↘").repeat(count), positive };
 }
 
 function initials(name: string) {
@@ -30,7 +32,7 @@ function initials(name: string) {
 
 export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
   const v = verdictTag(take.outcome_status);
-  const impact = gradeImpact(take.grade);
+  const impact = gradeArrows(take.grade);
   const expert = take.experts;
   const filed = new Date(take.date_made).toLocaleDateString("en-US", {
     month: "short", year: "2-digit",
@@ -70,8 +72,8 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
             {v.label}
           </span>
           {impact != null && (
-            <span className={`font-black text-lg ${impact.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
-              {impact}
+            <span className={`font-black text-lg italic tracking-tight ${impact.positive ? "text-emerald-600" : "text-red-600"}`}>
+              {impact.arrows}
             </span>
           )}
         </div>
@@ -87,11 +89,14 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
       {/* Footer */}
       <div className="px-4 py-3 border-t border-gray-200 space-y-3">
         <div className="flex flex-wrap items-baseline gap-4">
-          {take.grade != null && (
-            <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
-              TAKESCORE NOW <span className="font-black text-base text-gray-900 ml-1">{take.grade.toFixed(1)}</span>
-            </span>
-          )}
+          {take.grade != null && (() => {
+            const g = gradeArrows(take.grade);
+            return g ? (
+              <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
+                GRADE <span className={`font-black italic text-base ml-1 tracking-tight ${g.positive ? "text-emerald-600" : "text-red-600"}`}>{g.arrows}</span>
+              </span>
+            ) : null;
+          })()}
           {take.outcome_notes && (
             <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
               OUTCOME <span className="font-normal normal-case tracking-normal text-gray-600 italic ml-1">{take.outcome_notes}</span>

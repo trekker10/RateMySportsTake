@@ -31,10 +31,10 @@ export default async function ExpertProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ verdict?: string }>;
+  searchParams: Promise<{ verdict?: string; grade?: string }>;
 }) {
   const { id } = await params;
-  const { verdict: rawVerdict } = await searchParams;
+  const { verdict: rawVerdict, grade: gradeParam } = await searchParams;
   const verdict: VerdictFilter = VERDICT_FILTERS.includes(rawVerdict as VerdictFilter)
     ? (rawVerdict as VerdictFilter)
     : "all";
@@ -42,7 +42,28 @@ export default async function ExpertProfilePage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Build takes query based on verdict filter
+  // Load config first so we can use grade thresholds in the query
+  const gradeConfig = await getTakeScoreConfig();
+
+  // Grade label → numeric range based on config thresholds
+  const GRADE_LABELS = ["A", "B+", "B", "B−", "C+", "C", "C−", "D", "F"] as const;
+  type GradeLabel = typeof GRADE_LABELS[number];
+  function gradeRange(label: GradeLabel): { min: number; max: number } {
+    const c = gradeConfig;
+    if (label === "A")  return { min: c.grade_a_min,      max: 101 };
+    if (label === "B+") return { min: c.grade_bplus_min,  max: c.grade_a_min };
+    if (label === "B")  return { min: c.grade_b_min,      max: c.grade_bplus_min };
+    if (label === "B−") return { min: c.grade_bminus_min, max: c.grade_b_min };
+    if (label === "C+") return { min: c.grade_cplus_min,  max: c.grade_bminus_min };
+    if (label === "C")  return { min: c.grade_c_min,      max: c.grade_cplus_min };
+    if (label === "C−") return { min: c.grade_cminus_min, max: c.grade_c_min };
+    if (label === "D")  return { min: c.grade_d_min,      max: c.grade_cminus_min };
+    return { min: 0, max: c.grade_d_min };
+  }
+
+  const activeGrade = GRADE_LABELS.includes(gradeParam as GradeLabel) ? (gradeParam as GradeLabel) : null;
+
+  // Build takes query
   let takesQuery = supabase
     .from("takes")
     .select("*")
@@ -53,12 +74,17 @@ export default async function ExpertProfilePage({
   if (verdict === "right")   takesQuery = takesQuery.eq("outcome_status", "confirmed_true");
   if (verdict === "wrong")   takesQuery = takesQuery.in("outcome_status", ["confirmed_false", "partially_true"]);
   if (verdict === "pending") takesQuery = takesQuery.eq("outcome_status", "pending");
+  if (activeGrade) {
+    const { min, max } = gradeRange(activeGrade);
+    takesQuery = takesQuery.gte("grade", min).lt("grade", max);
+  }
 
   const [
     { data: expert },
     { data: takes },
     { data: allExperts },
     { data: followRow },
+    { data: allGradedTakes },
   ] = await Promise.all([
     supabase.from("experts").select("*").eq("expert_id", id).single(),
     takesQuery,
@@ -66,11 +92,17 @@ export default async function ExpertProfilePage({
     user
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase.from("takes").select("grade").eq("expert_id", id).not("grade", "is", null),
   ]);
 
   if (!expert) notFound();
 
-  const gradeConfig = await getTakeScoreConfig();
+  // Build grade distribution
+  const distribution = GRADE_LABELS.map(label => ({
+    label,
+    count: (allGradedTakes ?? []).filter(t => t.grade != null && scoreToGrade(t.grade, gradeConfig) === label).length,
+  }));
+  const maxDistCount = Math.max(...distribution.map(d => d.count), 1);
 
   // Rank
   const rank = (allExperts ?? []).findIndex((e) => e.expert_id === id) + 1;
@@ -108,13 +140,6 @@ export default async function ExpertProfilePage({
     { label: "ACCOUNTABILITY",value: accountability.label,  sub: "",               color: accountability.color },
     { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes",          color: "#111827" },
     { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops",     color: "#111827" },
-  ];
-
-  const scoreFormula = [
-    { k: "Accuracy weight",       v: "40%" },
-    { k: "Boldness weight",       v: "25%" },
-    { k: "Recency decay",         v: "6 months" },
-    { k: "Flip-flop penalty",     v: "−3.0 ea" },
   ];
 
   return (
@@ -234,19 +259,32 @@ export default async function ExpertProfilePage({
           <div>
             <div className="flex flex-wrap items-baseline gap-3 mb-3">
               <h2 className="font-black text-2xl tracking-tight">THE TAKE LOG</h2>
-              {VERDICT_FILTERS.map((v) => (
+              {VERDICT_FILTERS.map((v) => {
+                const href = activeGrade
+                  ? `/experts/${id}?verdict=${v}&grade=${encodeURIComponent(activeGrade)}`
+                  : `/experts/${id}?verdict=${v}`;
+                return (
+                  <Link
+                    key={v}
+                    href={href}
+                    className={`px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 transition-colors ${
+                      verdict === v
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-500 border-gray-300 hover:border-gray-600"
+                    }`}
+                  >
+                    {v}
+                  </Link>
+                );
+              })}
+              {activeGrade && (
                 <Link
-                  key={v}
-                  href={`/experts/${id}?verdict=${v}`}
-                  className={`px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 transition-colors ${
-                    verdict === v
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-500 border-gray-300 hover:border-gray-600"
-                  }`}
+                  href={`/experts/${id}?verdict=${verdict}`}
+                  className="px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 border-red-400 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
                 >
-                  {v}
+                  GRADE: {activeGrade} ×
                 </Link>
-              ))}
+              )}
             </div>
 
             <div className="bg-white border-2 border-gray-900">
@@ -316,23 +354,47 @@ export default async function ExpertProfilePage({
           {/* Sidebar */}
           <div className="space-y-4">
 
-            {/* How TakeScore Works */}
+            {/* Grade Distribution */}
             <div className="bg-white border-2 border-gray-900 p-5">
-              <p className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase">How TakeScore Works</p>
-              <p className="italic text-base leading-snug mt-3 text-gray-700">
-                accuracy × boldness × volume, decayed over time, penalized for memory-holed takes.
-              </p>
-              <div className="mt-4 space-y-0">
-                {scoreFormula.map((row) => (
-                  <div key={row.k} className="flex justify-between items-baseline py-2 border-b border-dashed border-gray-200">
-                    <span className="italic text-sm text-gray-600">{row.k}</span>
-                    <span className="font-mono text-xs tracking-wider text-gray-900">{row.v}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-xs italic text-gray-400" style={{ color: "#e2241a" }}>
-                show the formula. transparency = trust.
-              </p>
+              <p className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase mb-4">Grade Distribution</p>
+              {distribution.every(d => d.count === 0) ? (
+                <p className="italic text-sm text-gray-400">No graded takes yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {distribution.map(({ label, count }) => {
+                    const barPct = count > 0 ? Math.round((count / maxDistCount) * 100) : 0;
+                    const isActive = activeGrade === label;
+                    const href = isActive
+                      ? `/experts/${id}${verdict !== "all" ? `?verdict=${verdict}` : ""}`
+                      : `/experts/${id}?grade=${encodeURIComponent(label)}${verdict !== "all" ? `&verdict=${verdict}` : ""}`;
+                    return (
+                      <Link
+                        key={label}
+                        href={href}
+                        className={`flex items-center gap-3 group transition-opacity ${count === 0 ? "pointer-events-none opacity-30" : ""}`}
+                      >
+                        <span className={`w-6 font-mono text-xs text-right shrink-0 ${isActive ? "font-black text-gray-900" : "text-gray-500"}`}>
+                          {label}
+                        </span>
+                        <div className="flex-1 bg-gray-100 h-5 rounded-sm overflow-hidden">
+                          <div
+                            className="h-full rounded-sm transition-all"
+                            style={{ width: `${barPct}%`, backgroundColor: isActive ? "#991b1b" : "#e2241a" }}
+                          />
+                        </div>
+                        <span className={`w-7 font-black text-sm text-right shrink-0 ${isActive ? "text-gray-900" : "text-gray-600"}`}>
+                          {count}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+              {activeGrade && (
+                <p className="mt-3 text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                  Showing {activeGrade}-grade takes · <Link href={`/experts/${id}`} className="underline hover:text-gray-600">clear</Link>
+                </p>
+              )}
             </div>
 
             {/* TakeScore Lifetime (placeholder sparkline) */}

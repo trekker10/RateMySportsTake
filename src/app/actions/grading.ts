@@ -2,6 +2,8 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { gradeTake } from "@/lib/ai/grade-take";
+import { getTakeScoreConfig } from "@/app/actions/takescore";
+import { recalculateTakeScore } from "@/app/actions/takescore";
 
 export interface PendingTake {
   take_id: string;
@@ -71,6 +73,18 @@ export async function gradeSingleTake(
       confidenceClaimed: take.confidence_claimed ?? 5,
     });
 
+    // Derive accuracy_score from grade using scoring config tier values
+    let accuracy_score: number | null = null;
+    if (result.grade != null) {
+      const cfg = await getTakeScoreConfig();
+      const g = result.grade;
+      if (g >= 80)      accuracy_score = cfg.accuracy_nailed;
+      else if (g >= 60) accuracy_score = cfg.accuracy_mostly_right;
+      else if (g >= 40) accuracy_score = cfg.accuracy_half_right;
+      else if (g >= 20) accuracy_score = cfg.accuracy_mostly_wrong;
+      else              accuracy_score = cfg.accuracy_wrong;
+    }
+
     await supabase
       .from("takes")
       .update({
@@ -81,8 +95,12 @@ export async function gradeSingleTake(
         grade_breakdown: result.grade_breakdown,
         grade_notes: result.grade_notes,
         aging_verdict: result.aging_verdict,
+        ...(accuracy_score != null ? { accuracy_score } : {}),
       })
       .eq("take_id", takeId);
+
+    // Recalculate expert's TakeScore so impact_score is also updated
+    await recalculateTakeScore(take.expert_id);
 
     return { success: true };
   } catch (err) {

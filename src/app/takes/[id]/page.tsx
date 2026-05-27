@@ -51,21 +51,25 @@ export default async function TakePage({
               <span>{take.sport}</span>
             </>
           )}
-          {take.source_url && (
-            <>
-              <span>·</span>
-              <a
-                href={take.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-600 hover:underline"
-              >
-                Source ↗
-              </a>
-            </>
-          )}
         </footer>
       </blockquote>
+
+      {/* Source link */}
+      {take.source_url && (
+        <a
+          href={take.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-3.5 shadow-sm hover:border-emerald-400 hover:bg-emerald-50 transition-colors group"
+        >
+          <span className="text-xl">🔗</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Original Source</p>
+            <p className="text-sm text-emerald-600 group-hover:text-emerald-700 truncate">{take.source_url}</p>
+          </div>
+          <span className="text-gray-400 group-hover:text-emerald-600 text-lg shrink-0">↗</span>
+        </a>
+      )}
 
       {/* AI rating */}
       {take.rating_status === "rated" && (
@@ -81,13 +85,15 @@ export default async function TakePage({
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Boldness",  val: take.boldness_score != null ? `${take.boldness_score}/100` : null },
-              { label: "Accuracy",  val: take.accuracy_score != null ? `${take.accuracy_score}/100` : null },
-              { label: "Impact",    val: take.impact_score   != null ? take.impact_score.toFixed(1) : null },
-            ].map(({ label, val }) => (
+              { label: "Boldness", val: take.boldness_score != null ? `${take.boldness_score}` : null, suffix: "/100" },
+              { label: "Grade",    val: take.grade          != null ? `${Math.round(take.grade)}` : null, suffix: "/100" },
+              { label: "Impact",   val: take.impact_score   != null ? take.impact_score.toFixed(1) : null, suffix: "" },
+            ].map(({ label, val, suffix }) => (
               <div key={label} className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
                 {val != null ? (
-                  <p className="text-3xl font-bold text-emerald-600">{val}</p>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    {val}<span className="text-base font-normal text-gray-400">{suffix}</span>
+                  </p>
                 ) : (
                   <p className="text-sm text-gray-400 italic mt-2">Pending</p>
                 )}

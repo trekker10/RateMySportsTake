@@ -66,21 +66,21 @@ export default async function HomePage() {
       </div>
 
       {/* ── How It Works ── */}
-      <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#f5f1e8" }}>
+      <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#1a1a1a" }}>
         <div className="max-w-7xl mx-auto px-6 pt-12 pb-0">
           {/* Section header */}
-          <h2 className="font-black italic leading-none tracking-tighter text-gray-900 pb-6 border-b border-dashed border-gray-400"
+          <h2 className="font-black italic leading-none tracking-tighter text-white pb-6 border-b border-dashed border-gray-600"
             style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}>
             HOW IT <span style={{ color: "#e2241a" }}>WORKS.</span>
           </h2>
 
           {/* Steps grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-dashed border-gray-400">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-dashed border-gray-600">
 
             {/* Step 01 */}
             <div className="relative px-0 md:pr-10 py-10">
               {/* Arrow connector */}
-              <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border-2 border-gray-900 items-center justify-center font-black text-gray-900 text-base">
+              <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 border-2 border-gray-500 items-center justify-center font-black text-white text-base" style={{ backgroundColor: "#1a1a1a" }}>
                 →
               </div>
               <div className="flex items-start gap-3 mb-6">
@@ -95,23 +95,23 @@ export default async function HomePage() {
                 >
                   01
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.2em] text-gray-400 uppercase mt-1 rotate-0" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+                <span className="font-mono text-[9px] tracking-[0.2em] text-gray-500 uppercase mt-1" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
                   STEP 01
                 </span>
               </div>
-              <h3 className="font-black italic leading-tight tracking-tighter text-gray-900 mb-4"
+              <h3 className="font-black italic leading-tight tracking-tighter text-white mb-4"
                 style={{ fontSize: "clamp(1.4rem, 2.8vw, 2rem)" }}>
                 THE TAKE<br />IS MADE.
               </h3>
-              <div className="w-8 h-0.5 bg-gray-900 mb-4" />
-              <p className="text-gray-600 leading-relaxed text-base">
+              <div className="w-8 h-0.5 bg-gray-500 mb-4" />
+              <p className="text-gray-400 leading-relaxed text-base">
                 Every bold prediction from the biggest voices in sports media gets logged the moment they say it.
               </p>
             </div>
 
             {/* Step 02 */}
             <div className="relative px-0 md:px-10 py-10">
-              <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border-2 border-gray-900 items-center justify-center font-black text-gray-900 text-base">
+              <div className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 border-2 border-gray-500 items-center justify-center font-black text-white text-base" style={{ backgroundColor: "#1a1a1a" }}>
                 →
               </div>
               <div className="flex items-start gap-3 mb-6">
@@ -126,16 +126,16 @@ export default async function HomePage() {
                 >
                   02
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.2em] text-gray-400 uppercase mt-1" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+                <span className="font-mono text-[9px] tracking-[0.2em] text-gray-500 uppercase mt-1" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
                   STEP 02
                 </span>
               </div>
-              <h3 className="font-black italic leading-tight tracking-tighter text-gray-900 mb-4"
+              <h3 className="font-black italic leading-tight tracking-tighter text-white mb-4"
                 style={{ fontSize: "clamp(1.4rem, 2.8vw, 2rem)" }}>
                 THE TAKE<br />GETS RATED.
               </h3>
-              <div className="w-8 h-0.5 bg-gray-900 mb-4" />
-              <p className="text-gray-600 leading-relaxed text-base">
+              <div className="w-8 h-0.5 bg-gray-500 mb-4" />
+              <p className="text-gray-400 leading-relaxed text-base">
                 When it resolves, we grade it — factoring in accuracy and how bold it was at the time. Calling a longshot in preseason hits different than jumping on the bandwagon the week before the championship.
               </p>
             </div>
@@ -154,16 +154,16 @@ export default async function HomePage() {
                 >
                   03
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.2em] text-gray-400 uppercase mt-1" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+                <span className="font-mono text-[9px] tracking-[0.2em] text-gray-500 uppercase mt-1" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
                   STEP 03
                 </span>
               </div>
-              <h3 className="font-black italic leading-tight tracking-tighter text-gray-900 mb-4"
+              <h3 className="font-black italic leading-tight tracking-tighter text-white mb-4"
                 style={{ fontSize: "clamp(1.4rem, 2.8vw, 2rem)" }}>
                 THE SCORE<br />UPDATES.
               </h3>
-              <div className="w-8 h-0.5 bg-gray-900 mb-4" />
-              <p className="text-gray-600 leading-relaxed text-base">
+              <div className="w-8 h-0.5 bg-gray-500 mb-4" />
+              <p className="text-gray-400 leading-relaxed text-base">
                 Every graded take feeds into that analyst&apos;s overall TakeScore — a rolling 0–100 rating of how sharp they really are. Recent takes carry more weight. Go quiet and your score decays. Spam safe takes and the formula knows. The best analysts rise. The noise merchants fall. The tape doesn&apos;t lie.
               </p>
             </div>

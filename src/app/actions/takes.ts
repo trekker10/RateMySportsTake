@@ -167,6 +167,91 @@ export async function submitTake(formData: FormData) {
   redirect(`/takes/${take.take_id}`);
 }
 
+// ── Submit a fantasy take from the public submit form ─────────────────────────
+export async function submitFantasyTake(formData: FormData) {
+  const supabase = createAdminClient();
+
+  const expertName   = (formData.get("expert_name") as string).trim();
+  const expertOutlet = (formData.get("expert_outlet") as string)?.trim() || null;
+  const expertTwitter = (formData.get("expert_twitter") as string)?.trim() || null;
+  const rawText      = (formData.get("raw_text") as string).trim();
+  const dateMade     = formData.get("date_made") as string;
+  const category     = (formData.get("fantasy_category") as string)?.trim() || "breakout_call";
+  const playerName   = (formData.get("player_name") as string)?.trim() || null;
+  const playerPosition = (formData.get("player_position") as string)?.trim() || null;
+  const playerAdpRaw = formData.get("player_adp") as string;
+  const playerAdp    = playerAdpRaw ? parseFloat(playerAdpRaw) : null;
+  const timingWindow = (formData.get("timing_window") as string)?.trim() || null;
+  const boldnessRaw  = formData.get("boldness_score") as string;
+  const boldnessScore = boldnessRaw ? parseInt(boldnessRaw, 10) : null;
+  const resolutionDate = (formData.get("resolution_date") as string)?.trim() || null;
+  const sportSeason  = (formData.get("sport_season") as string)?.trim() || null;
+
+  // Find or create expert
+  const { data: existingExpert } = await supabase
+    .from("experts")
+    .select("expert_id")
+    .ilike("name", expertName)
+    .maybeSingle();
+
+  let expertId: string;
+  if (existingExpert) {
+    expertId = existingExpert.expert_id;
+  } else {
+    const { data: newExpert, error } = await supabase
+      .from("experts")
+      .insert({
+        name: expertName,
+        outlet: expertOutlet,
+        twitter_handle: expertTwitter,
+        is_fantasy_guru: true,
+      })
+      .select("expert_id")
+      .single();
+    if (error || !newExpert) throw new Error(`Failed to create expert: ${error?.message}`);
+    expertId = newExpert.expert_id;
+  }
+
+  // Compute timing modifier
+  const { getFantasyConfig } = await import("@/app/actions/fantasy-takescore");
+  const cfg = await getFantasyConfig();
+  let timingModifier = 0;
+  if (timingWindow) {
+    const mods: Record<string, number> = {
+      preseason:    cfg.timing_preseason_mod,
+      post_draft:   cfg.timing_post_draft_mod,
+      early_season: cfg.timing_early_season_mod,
+      midseason:    cfg.timing_midseason_mod,
+      late_season:  cfg.timing_late_season_mod,
+      playoffs:     cfg.timing_playoffs_mod,
+    };
+    timingModifier = mods[timingWindow] ?? 0;
+  }
+
+  const { error: takeError } = await supabase.from("fantasy_takes").insert({
+    expert_id:       expertId,
+    category,
+    raw_text:        rawText,
+    player_name:     playerName,
+    player_position: playerPosition,
+    player_adp:      playerAdp,
+    timing_window:   timingWindow,
+    timing_modifier: timingModifier,
+    boldness_score:  boldnessScore,
+    date_made:       dateMade,
+    resolution_date: resolutionDate,
+    sport_season:    sportSeason,
+    outcome_status:  "pending",
+  });
+
+  if (takeError) throw new Error(`Failed to insert fantasy take: ${takeError.message}`);
+
+  const { recalculateFantasyScore } = await import("@/app/actions/fantasy-takescore");
+  await recalculateFantasyScore(expertId);
+
+  redirect(`/experts/${expertId}`);
+}
+
 // Used by batch import — same logic but returns result instead of redirecting
 export async function importTake(params: {
   expertName: string;

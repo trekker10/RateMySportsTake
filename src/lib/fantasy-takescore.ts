@@ -138,6 +138,7 @@ export interface FantasyScoredTake {
   impact_score: number | null;
   recency_weight: number | null;
   boldness_credit: number | null;
+  format: "dynasty" | "redraft" | "both" | null;
 }
 
 // ─── Score computation ────────────────────────────────────────────────────────

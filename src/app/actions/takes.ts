@@ -186,6 +186,7 @@ export async function submitFantasyTake(formData: FormData) {
   const boldnessScore = boldnessRaw ? parseInt(boldnessRaw, 10) : null;
   const resolutionDate = (formData.get("resolution_date") as string)?.trim() || null;
   const sportSeason  = (formData.get("sport_season") as string)?.trim() || null;
+  const format       = (formData.get("fantasy_format") as string)?.trim() || "both";
 
   // Find or create expert
   const { data: existingExpert } = await supabase
@@ -241,6 +242,7 @@ export async function submitFantasyTake(formData: FormData) {
     date_made:       dateMade,
     resolution_date: resolutionDate,
     sport_season:    sportSeason,
+    format,
     outcome_status:  "pending",
   });
 
@@ -250,6 +252,69 @@ export async function submitFantasyTake(formData: FormData) {
   await recalculateFantasyScore(expertId);
 
   redirect(`/experts/${expertId}`);
+}
+
+// ── Import a fantasy take from the bulk import page (no redirect) ─────────────
+export async function importFantasyTake(params: {
+  expertName: string;
+  rawText: string;
+  dateMade: string;
+  category: string;
+  timingWindow: string;
+  format: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = createAdminClient();
+
+  // Find or create expert
+  const { data: existingExpert } = await supabase
+    .from("experts")
+    .select("expert_id")
+    .ilike("name", params.expertName)
+    .maybeSingle();
+
+  let expertId: string;
+  if (existingExpert) {
+    expertId = existingExpert.expert_id;
+  } else {
+    const { data: newExpert, error } = await supabase
+      .from("experts")
+      .insert({ name: params.expertName, is_fantasy_guru: true })
+      .select("expert_id")
+      .single();
+    if (error || !newExpert) return { success: false, error: error?.message };
+    expertId = newExpert.expert_id;
+  }
+
+  // Compute timing modifier
+  const { getFantasyConfig } = await import("@/app/actions/fantasy-takescore");
+  const cfg = await getFantasyConfig();
+  const mods: Record<string, number> = {
+    preseason:    cfg.timing_preseason_mod,
+    post_draft:   cfg.timing_post_draft_mod,
+    early_season: cfg.timing_early_season_mod,
+    midseason:    cfg.timing_midseason_mod,
+    late_season:  cfg.timing_late_season_mod,
+    playoffs:     cfg.timing_playoffs_mod,
+  };
+  const timingModifier = mods[params.timingWindow] ?? 0;
+
+  const { error: takeError } = await supabase.from("fantasy_takes").insert({
+    expert_id:      expertId,
+    category:       params.category,
+    raw_text:       params.rawText,
+    timing_window:  params.timingWindow || null,
+    timing_modifier: timingModifier,
+    format:         params.format || "both",
+    date_made:      params.dateMade,
+    outcome_status: "pending",
+  });
+
+  if (takeError) return { success: false, error: takeError.message };
+
+  const { recalculateFantasyScore } = await import("@/app/actions/fantasy-takescore");
+  await recalculateFantasyScore(expertId);
+
+  return { success: true };
 }
 
 // Used by batch import — same logic but returns result instead of redirecting

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { searchExpertTakes, type FoundTake } from "@/app/actions/search";
-import { importTake, submitFantasyTake } from "@/app/actions/takes";
+import { importTake, importFantasyTake } from "@/app/actions/takes";
 import type { SourceType } from "@/types/database";
 
 const SPORTS = [
@@ -131,18 +131,14 @@ export default function ImportSearch() {
       let result: { success: boolean; error?: string };
 
       if (takeType === "fantasy") {
-        const fd = new FormData();
-        fd.set("expert_name",      expertName);
-        fd.set("raw_text",         item.take.raw_text);
-        fd.set("date_made",        item.take.date_made || new Date().toISOString().split("T")[0]);
-        fd.set("fantasy_category", item.fantasyCategory);
-        fd.set("timing_window",    item.timingWindow);
-        try {
-          await submitFantasyTake(fd);
-          result = { success: true };
-        } catch {
-          result = { success: false, error: "Failed" };
-        }
+        result = await importFantasyTake({
+          expertName,
+          rawText:      item.take.raw_text,
+          dateMade:     item.take.date_made || new Date().toISOString().split("T")[0],
+          category:     item.fantasyCategory,
+          timingWindow: item.timingWindow,
+          format:       "both",
+        });
       } else {
         result = await importTake({
           expertName,

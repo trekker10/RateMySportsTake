@@ -3,6 +3,7 @@ import { checkIsAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import VerifiedToggle from "@/components/VerifiedToggle";
+import FantasyGuruToggle from "@/components/FantasyGuruToggle";
 
 export default async function AdminExpertsPage() {
   const isAdmin = await checkIsAdmin();
@@ -11,7 +12,7 @@ export default async function AdminExpertsPage() {
   const supabase = await createClient();
   const { data: experts } = await supabase
     .from("experts")
-    .select("expert_id, name, outlet, twitter_handle, avatar_url, total_takes, verified")
+    .select("expert_id, name, outlet, twitter_handle, avatar_url, total_takes, verified, is_fantasy_guru")
     .order("name");
 
   return (
@@ -49,7 +50,19 @@ export default async function AdminExpertsPage() {
                 </p>
               </div>
               <div className="text-sm text-zinc-500 shrink-0">{expert.total_takes} takes</div>
-              <VerifiedToggle expertId={expert.expert_id} initialVerified={expert.verified ?? false} />
+
+              {/* Toggles with labels */}
+              <div className="flex items-center gap-5 shrink-0">
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Analyst</span>
+                  <VerifiedToggle expertId={expert.expert_id} initialVerified={expert.verified ?? false} />
+                </div>
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-[10px] font-mono tracking-widest uppercase" style={{ color: "#16a34a" }}>Fantasy Guru</span>
+                  <FantasyGuruToggle expertId={expert.expert_id} initialValue={expert.is_fantasy_guru ?? false} />
+                </div>
+              </div>
+
               <Link
                 href={`/admin/experts/${expert.expert_id}/edit`}
                 className="shrink-0 rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 transition-colors"

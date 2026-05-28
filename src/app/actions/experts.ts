@@ -16,6 +16,18 @@ export async function toggleVerified(expertId: string, verified: boolean) {
   revalidatePath("/");
 }
 
+export async function toggleFantasyGuru(expertId: string, isFantasyGuru: boolean) {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const supabase = createAdminClient();
+  await supabase.from("experts").update({ is_fantasy_guru: isFantasyGuru }).eq("expert_id", expertId);
+
+  revalidatePath("/admin/experts");
+  revalidatePath("/experts");
+  revalidatePath("/fantasy");
+}
+
 export async function updateExpert(expertId: string, formData: FormData) {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) throw new Error("Unauthorized");

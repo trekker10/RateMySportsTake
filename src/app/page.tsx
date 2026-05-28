@@ -67,7 +67,7 @@ export default async function HomePage() {
 
       {/* ── How It Works ── */}
       <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#f5f1e8" }}>
-        <div className="max-w-5xl mx-auto px-6 pt-12 pb-0">
+        <div className="max-w-7xl mx-auto px-6 pt-12 pb-0">
           {/* Section header */}
           <h2 className="font-black italic leading-none tracking-tighter text-gray-900 pb-6 border-b border-dashed border-gray-400"
             style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}>

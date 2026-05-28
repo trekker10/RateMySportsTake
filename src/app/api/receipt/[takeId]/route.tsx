@@ -48,6 +48,16 @@ export async function GET(
   const { takeId } = await params;
   const supabase = await createClient();
 
+  // Load Inter Black (weight 900) for truly bold rendering
+  const fontRes = await fetch(
+    "https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap"
+  );
+  const css = await fontRes.text();
+  const fontUrl = css.match(/src: url\((.+?)\) format\('woff2'\)/)?.[1];
+  const interBlack = fontUrl
+    ? await fetch(fontUrl).then((r) => r.arrayBuffer())
+    : null;
+
   const { data: take } = await supabase
     .from("takes")
     .select("*, experts(name, twitter_handle)")
@@ -95,7 +105,7 @@ export async function GET(
         {/* Receipt card */}
         <div
           style={{
-            width: 800,
+            width: 880,
             backgroundColor: cream,
             display: "flex",
             flexDirection: "column",
@@ -108,11 +118,11 @@ export async function GET(
           <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 4 }}>
             {["RATE", "MY", "SPORTS", "TAKE"].map((word, i) => (
               <div key={word} style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ fontSize: 36, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.02em", fontFamily: "sans-serif" }}>
+                <span style={{ fontSize: 44, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em", fontFamily: "Inter, sans-serif" }}>
                   {word}
                 </span>
                 {i < 3 && (
-                  <span style={{ fontSize: 36, fontWeight: 900, color: "#e2241a", fontFamily: "sans-serif" }}>/</span>
+                  <span style={{ fontSize: 44, fontWeight: 900, color: "#e2241a", fontFamily: "Inter, sans-serif" }}>/</span>
                 )}
               </div>
             ))}
@@ -125,7 +135,7 @@ export async function GET(
           <Divider label="ANALYST" />
 
           {/* Name */}
-          <p style={{ fontSize: 48, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.02em", fontFamily: "sans-serif", margin: "12px 0 0", textAlign: "center", textTransform: "uppercase" }}>
+          <p style={{ fontSize: 58, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em", fontFamily: "Inter, sans-serif", margin: "12px 0 0", textAlign: "center", textTransform: "uppercase" }}>
             {expert?.name ?? "Unknown Analyst"}
           </p>
           {handle && (
@@ -194,6 +204,9 @@ export async function GET(
     {
       width: 1080,
       height: 1080,
+      ...(interBlack ? {
+        fonts: [{ name: "Inter", data: interBlack, weight: 900, style: "normal" as const }],
+      } : {}),
     }
   );
 }

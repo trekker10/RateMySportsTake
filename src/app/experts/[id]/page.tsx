@@ -45,23 +45,30 @@ export default async function ExpertProfilePage({
   // Load config first so we can use grade thresholds in the query
   const gradeConfig = await getTakeScoreConfig();
 
-  // Grade label → numeric range based on config thresholds
-  const GRADE_LABELS = ["A", "B+", "B", "B−", "C+", "C", "C−", "D", "F"] as const;
-  type GradeLabel = typeof GRADE_LABELS[number];
-  function gradeRange(label: GradeLabel): { min: number; max: number } {
+  // 5-category grade system: B groups B+/B/B−, C groups C+/C/C−
+  const GRADE_CATS = ["A", "B", "C", "D", "F"] as const;
+  type GradeCat = typeof GRADE_CATS[number];
+
+  // Each category maps to a numeric range spanning all its sub-tiers
+  function catRange(cat: GradeCat): { min: number; max: number } {
     const c = gradeConfig;
-    if (label === "A")  return { min: c.grade_a_min,      max: 101 };
-    if (label === "B+") return { min: c.grade_bplus_min,  max: c.grade_a_min };
-    if (label === "B")  return { min: c.grade_b_min,      max: c.grade_bplus_min };
-    if (label === "B−") return { min: c.grade_bminus_min, max: c.grade_b_min };
-    if (label === "C+") return { min: c.grade_cplus_min,  max: c.grade_bminus_min };
-    if (label === "C")  return { min: c.grade_c_min,      max: c.grade_cplus_min };
-    if (label === "C−") return { min: c.grade_cminus_min, max: c.grade_c_min };
-    if (label === "D")  return { min: c.grade_d_min,      max: c.grade_cminus_min };
-    return { min: 0, max: c.grade_d_min };
+    if (cat === "A") return { min: c.grade_a_min,      max: 101 };
+    if (cat === "B") return { min: c.grade_bminus_min, max: c.grade_a_min };
+    if (cat === "C") return { min: c.grade_cminus_min, max: c.grade_bminus_min };
+    if (cat === "D") return { min: c.grade_d_min,      max: c.grade_cminus_min };
+    return                  { min: 0,                  max: c.grade_d_min };
   }
 
-  const activeGrade = GRADE_LABELS.includes(gradeParam as GradeLabel) ? (gradeParam as GradeLabel) : null;
+  // Sub-tiers that belong to each category (for scoreToGrade matching)
+  const CAT_SUBTIERS: Record<GradeCat, string[]> = {
+    A: ["A"],
+    B: ["B+", "B", "B−"],
+    C: ["C+", "C", "C−"],
+    D: ["D"],
+    F: ["F"],
+  };
+
+  const activeGrade = GRADE_CATS.includes(gradeParam as GradeCat) ? (gradeParam as GradeCat) : null;
 
   // Build takes query
   let takesQuery = supabase
@@ -75,7 +82,7 @@ export default async function ExpertProfilePage({
   if (verdict === "wrong")   takesQuery = takesQuery.in("outcome_status", ["confirmed_false", "partially_true"]);
   if (verdict === "pending") takesQuery = takesQuery.eq("outcome_status", "pending");
   if (activeGrade) {
-    const { min, max } = gradeRange(activeGrade);
+    const { min, max } = catRange(activeGrade);
     takesQuery = takesQuery.gte("grade", min).lt("grade", max);
   }
 
@@ -97,10 +104,12 @@ export default async function ExpertProfilePage({
 
   if (!expert) notFound();
 
-  // Build grade distribution
-  const distribution = GRADE_LABELS.map(label => ({
-    label,
-    count: (allGradedTakes ?? []).filter(t => t.grade != null && scoreToGrade(t.grade, gradeConfig) === label).length,
+  // Build 5-bucket distribution (B and C aggregate their sub-tiers)
+  const distribution = GRADE_CATS.map(cat => ({
+    cat,
+    count: (allGradedTakes ?? []).filter(t =>
+      t.grade != null && CAT_SUBTIERS[cat].includes(scoreToGrade(t.grade, gradeConfig))
+    ).length,
   }));
   const maxDistCount = Math.max(...distribution.map(d => d.count), 1);
 
@@ -316,6 +325,18 @@ export default async function ExpertProfilePage({
                           <p className="text-sm text-gray-600 leading-relaxed">{analysis}</p>
                         </div>
                       )}
+                      {/* Action buttons */}
+                      <div className="px-4 py-2.5 border-t border-gray-200 flex flex-wrap gap-2">
+                        <Link
+                          href={`/takes/${take.take_id}`}
+                          className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+                        >
+                          See Full Context
+                        </Link>
+                        <button className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase">
+                          Share Receipt
+                        </button>
+                      </div>
                     </div>
 
                     {/* Verdict + impact */}
@@ -361,20 +382,20 @@ export default async function ExpertProfilePage({
                 <p className="italic text-sm text-gray-400">No graded takes yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {distribution.map(({ label, count }) => {
+                  {distribution.map(({ cat, count }) => {
                     const barPct = count > 0 ? Math.round((count / maxDistCount) * 100) : 0;
-                    const isActive = activeGrade === label;
+                    const isActive = activeGrade === cat;
                     const href = isActive
                       ? `/experts/${id}${verdict !== "all" ? `?verdict=${verdict}` : ""}`
-                      : `/experts/${id}?grade=${encodeURIComponent(label)}${verdict !== "all" ? `&verdict=${verdict}` : ""}`;
+                      : `/experts/${id}?grade=${encodeURIComponent(cat)}${verdict !== "all" ? `&verdict=${verdict}` : ""}`;
                     return (
                       <Link
-                        key={label}
+                        key={cat}
                         href={href}
                         className={`flex items-center gap-3 group transition-opacity ${count === 0 ? "pointer-events-none opacity-30" : ""}`}
                       >
                         <span className={`w-6 font-mono text-xs text-right shrink-0 ${isActive ? "font-black text-gray-900" : "text-gray-500"}`}>
-                          {label}
+                          {cat}
                         </span>
                         <div className="flex-1 bg-gray-100 h-5 rounded-sm overflow-hidden">
                           <div

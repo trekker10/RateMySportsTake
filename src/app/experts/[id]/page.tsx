@@ -147,6 +147,9 @@ export default async function ExpertProfilePage({
     { label: "ACCOUNTABILITY",value: accountability.label,  sub: "",               color: accountability.color },
     { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes",          color: "#111827" },
     { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops",     color: "#111827" },
+    ...(expert.is_fantasy_guru && expert.fantasy_overall_rating > 0
+      ? [{ label: "FANTASY SCORE", value: scoreToGrade(expert.fantasy_overall_rating, gradeConfig), sub: "fantasy guru rating", color: "#15803d" }]
+      : []),
   ];
 
   return (
@@ -202,6 +205,14 @@ export default async function ExpertProfilePage({
                 </span>
                 {rank > 0 && <span className="font-mono text-[10px] text-gray-400">#{rank}</span>}
               </div>
+              {expert.is_fantasy_guru && expert.fantasy_overall_rating > 0 && (
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</span>
+                  <span className="font-black text-xl leading-none" style={{ color: "#15803d" }}>
+                    {scoreToGrade(expert.fantasy_overall_rating, gradeConfig)}
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>
@@ -241,13 +252,21 @@ export default async function ExpertProfilePage({
               {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
             </p>
             {rank > 0 && <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>}
+            {expert.is_fantasy_guru && expert.fantasy_overall_rating > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-300">
+                <p className="font-mono text-[10px] tracking-[0.18em] uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</p>
+                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(2.5rem, 4vw, 4rem)", color: "#15803d" }}>
+                  {scoreToGrade(expert.fantasy_overall_rating, gradeConfig)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── Sub-metric bar ── */}
       <div className="bg-white border-b-2 border-gray-900">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900">
+        <div className={`max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 ${subMetrics.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5"} divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900`}>
           {subMetrics.map((m) => (
             <div key={m.label} className="px-4 py-4">
               <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>

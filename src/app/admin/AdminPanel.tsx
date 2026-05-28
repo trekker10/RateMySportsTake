@@ -103,6 +103,7 @@ export default function AdminPanel({
             { label: "Manage Profiles", href: "/admin/experts" },
             { label: "Review Takes", href: "/admin/takes" },
             { label: "TakeScore Admin", href: "/admin/takescore" },
+            { label: "Fantasy TakeScore Admin", href: "/admin/fantasy-take-score" },
             { label: "Submit a Take", href: "/submit" },
             { label: "Import Takes", href: "/import" },
             { label: "Grade Dashboard", href: "/grade" },

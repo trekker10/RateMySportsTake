@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import HeroSearch from "@/components/HeroSearch";
+import HeroSection from "@/components/HeroSection";
 import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
@@ -47,21 +47,8 @@ export default async function HomePage() {
           <p className="font-mono text-xs tracking-[0.2em] uppercase" style={{ color: "#e2241a" }}>
             ━━ THE SPORTS ACCOUNTABILITY INDEX
           </p>
-          <h1
-            className="mt-4 font-black italic leading-none tracking-tighter text-gray-900"
-            style={{ fontSize: "clamp(2.2rem, 9.5vw, 7rem)" }}
-          >
-            HOLD<br />
-            <span style={{ color: "#e2241a" }}>THE TAKES</span><br />
-            <span style={{ WebkitTextStroke: "2px #1a1a1a", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
-              ACCOUNTABLE.
-            </span>
-          </h1>
-          <p className="mt-6 text-xl text-gray-500 max-w-xl">
-            Popular sports analysts make takes, AI keeps receipts, AI grades them.
-          </p>
 
-          <HeroSearch />
+          <HeroSection />
         </div>
       </div>
 

@@ -3,29 +3,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import FollowButton from "@/components/FollowButton";
 import Avatar from "@/components/Avatar";
-import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
+import TakeLogSection from "./TakeLogSection";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
-
-function verdictTag(status: string) {
-  if (status === "confirmed_true")  return { label: "RIGHT",      bg: "#0a7a3b", text: "#fff" };
-  if (status === "confirmed_false") return { label: "WRONG",      bg: "#e2241a", text: "#fff" };
-  if (status === "partially_true")  return { label: "PARTLY RIGHT", bg: "#d97706", text: "#fff" };
-  if (status === "unresolvable")    return { label: "N/A",         bg: "#6b7280", text: "#fff" };
-  return                                   { label: "PENDING",    bg: "#e5e7eb", text: "#4b5563" };
-}
-
-function gradeArrows(grade: number | null): { arrows: string; positive: boolean } | null {
-  if (grade == null) return null;
-  const delta = Math.abs(Math.round(grade - 50));
-  const positive = Math.round(grade) >= 50;
-  const count = delta <= 15 ? 1 : delta <= 30 ? 2 : 3;
-  const arrow = positive ? "↗" : "↘";
-  return { arrows: arrow.repeat(count), positive };
-}
 
 export default async function ExpertProfilePage({
   params,
@@ -71,31 +54,40 @@ export default async function ExpertProfilePage({
 
   const activeGrade = GRADE_CATS.includes(gradeParam as GradeCat) ? (gradeParam as GradeCat) : null;
 
-  // Build takes query
+  // Build takes query — 4 initially, load more client-side
+  const gradeRange = activeGrade ? catRange(activeGrade) : null;
+
   let takesQuery = supabase
     .from("takes")
-    .select("*")
+    .select("take_id, date_made, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
     .eq("expert_id", id)
     .order("date_made", { ascending: false })
-    .limit(20);
+    .limit(4);
 
-  if (verdict === "right")   takesQuery = takesQuery.eq("outcome_status", "confirmed_true");
-  if (verdict === "wrong")   takesQuery = takesQuery.in("outcome_status", ["confirmed_false", "partially_true"]);
-  if (verdict === "pending") takesQuery = takesQuery.eq("outcome_status", "pending");
-  if (activeGrade) {
-    const { min, max } = catRange(activeGrade);
-    takesQuery = takesQuery.gte("grade", min).lt("grade", max);
+  let countQuery = supabase
+    .from("takes")
+    .select("take_id", { count: "exact", head: true })
+    .eq("expert_id", id);
+
+  if (verdict === "right")   { takesQuery = takesQuery.eq("outcome_status", "confirmed_true");  countQuery = countQuery.eq("outcome_status", "confirmed_true"); }
+  if (verdict === "wrong")   { takesQuery = takesQuery.in("outcome_status", ["confirmed_false", "partially_true"]); countQuery = countQuery.in("outcome_status", ["confirmed_false", "partially_true"]); }
+  if (verdict === "pending") { takesQuery = takesQuery.eq("outcome_status", "pending"); countQuery = countQuery.eq("outcome_status", "pending"); }
+  if (gradeRange) {
+    takesQuery = takesQuery.gte("grade", gradeRange.min).lt("grade", gradeRange.max);
+    countQuery  = countQuery.gte("grade", gradeRange.min).lt("grade", gradeRange.max);
   }
 
   const [
     { data: expert },
     { data: takes },
+    { count: filteredCount },
     { data: allExperts },
     { data: followRow },
     { data: allGradedTakes },
   ] = await Promise.all([
     supabase.from("experts").select("*").eq("expert_id", id).single(),
     takesQuery,
+    countQuery,
     supabase.from("experts").select("expert_id, overall_rating").gt("overall_rating", 0).order("overall_rating", { ascending: false }),
     user
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
@@ -297,83 +289,15 @@ export default async function ExpertProfilePage({
               )}
             </div>
 
-            <div className="bg-white border-2 border-gray-900">
-              {takes && takes.length > 0 ? takes.map((take, i) => {
-                const v = verdictTag(take.outcome_status);
-                const impact = gradeArrows(take.grade);
-                const displayText = (take.summary ?? take.raw_text).replace(/^The analyst/i, "Analyst");
-                const analysis = take.outcome_notes ?? take.grade_notes;
-                return (
-                  <div
-                    key={take.take_id}
-                    className="flex"
-                    style={{ borderTop: i > 0 ? "1px dashed #d1d5db" : undefined }}
-                  >
-                    {/* Date */}
-                    <div className="w-16 shrink-0 px-3 pt-4 font-mono text-[10px] tracking-wider text-gray-400 uppercase">
-                      {new Date(take.date_made).toLocaleDateString("en-US", { month: "short", year: "2-digit" }).toUpperCase()}
-                    </div>
-
-                    {/* Take + analysis stacked */}
-                    <div className="flex-1 min-w-0">
-                      <div className="px-4 py-3.5" style={{ backgroundColor: "#f5f1e9" }}>
-                        <p className="italic text-base leading-snug text-gray-800">
-                          &ldquo;{displayText}&rdquo;
-                        </p>
-                      </div>
-                      {analysis && (
-                        <div className="px-4 py-3 border-t border-gray-200">
-                          <p className="text-sm text-gray-600 leading-relaxed">{analysis}</p>
-                        </div>
-                      )}
-                      {/* Action buttons */}
-                      <div className="px-4 py-2.5 border-t border-gray-200 flex flex-wrap gap-2">
-                        <Link
-                          href={`/takes/${take.take_id}`}
-                          className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
-                        >
-                          See Full Context
-                        </Link>
-                        <ShareReceiptButton
-                          takeId={take.take_id}
-                          className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
-                        >
-                          Share Receipt
-                        </ShareReceiptButton>
-                      </div>
-                    </div>
-
-                    {/* Verdict + impact */}
-                    <div className="shrink-0 px-4 py-4 flex flex-col items-end gap-2">
-                      <span
-                        className="font-mono text-[10px] tracking-wider px-2 py-1 whitespace-nowrap font-semibold"
-                        style={{ backgroundColor: v.bg, color: v.text }}
-                      >
-                        {v.label}
-                      </span>
-                      {impact != null ? (
-                        <p className={`italic text-xl tracking-tight leading-none ${impact.positive ? "text-emerald-600" : "text-red-600"}`}>
-                          {impact.arrows}
-                        </p>
-                      ) : (
-                        <p className="text-lg text-gray-300">—</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div className="px-4 py-12 text-center italic text-gray-400">
-                  No takes found for this filter.
-                </div>
-              )}
-
-              <div className="px-4 py-3 border-t-2 border-gray-900 flex items-center justify-between">
-                <Link href={`/experts/${id}?verdict=all`} className="italic text-gray-500 hover:text-gray-900 text-sm transition-colors">
-                  see all {expert.total_takes} takes
-                </Link>
-                <span className="font-black text-xl text-gray-400">→</span>
-              </div>
-            </div>
+            <TakeLogSection
+              expertId={id}
+              initialTakes={(takes ?? []) as import("@/app/actions/takes").ProfileTake[]}
+              totalTakes={filteredCount ?? 0}
+              verdict={verdict}
+              gradeMin={gradeRange?.min ?? null}
+              gradeMax={gradeRange?.max ?? null}
+              activeGrade={activeGrade}
+            />
           </div>
 
           {/* Sidebar */}

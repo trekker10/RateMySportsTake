@@ -5,6 +5,44 @@ import { rateTake } from "@/lib/ai/rate-take";
 import { redirect } from "next/navigation";
 import type { SourceType } from "@/types/database";
 
+export interface ProfileTake {
+  take_id: string;
+  date_made: string;
+  raw_text: string;
+  summary: string | null;
+  outcome_status: string;
+  outcome_notes: string | null;
+  grade_notes: string | null;
+  grade: number | null;
+}
+
+export async function getExpertTakesPage(
+  expertId: string,
+  verdict: string,
+  gradeMin: number | null,
+  gradeMax: number | null,
+  offset: number,
+  limit: number
+): Promise<ProfileTake[]> {
+  const supabase = createAdminClient();
+
+  let q = supabase
+    .from("takes")
+    .select("take_id, date_made, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
+    .eq("expert_id", expertId)
+    .order("date_made", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (verdict === "right")   q = q.eq("outcome_status", "confirmed_true");
+  if (verdict === "wrong")   q = q.in("outcome_status", ["confirmed_false", "partially_true"]);
+  if (verdict === "pending") q = q.eq("outcome_status", "pending");
+  if (gradeMin != null)      q = q.gte("grade", gradeMin);
+  if (gradeMax != null)      q = q.lt("grade", gradeMax);
+
+  const { data } = await q;
+  return (data ?? []) as ProfileTake[];
+}
+
 export async function deleteTake(takeId: string): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = createAdminClient();
   const { error } = await supabase.from("takes").delete().eq("take_id", takeId);

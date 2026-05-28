@@ -95,12 +95,12 @@ export async function GET(
         {/* Receipt card */}
         <div
           style={{
-            width: 700,
+            width: 800,
             backgroundColor: cream,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "48px 56px 40px",
+            padding: "52px 64px 44px",
             gap: 0,
           }}
         >
@@ -108,11 +108,11 @@ export async function GET(
           <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 4 }}>
             {["RATE", "MY", "SPORTS", "TAKE"].map((word, i) => (
               <div key={word} style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ fontSize: 28, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.02em", fontFamily: "sans-serif" }}>
+                <span style={{ fontSize: 36, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.02em", fontFamily: "sans-serif" }}>
                   {word}
                 </span>
                 {i < 3 && (
-                  <span style={{ fontSize: 28, fontWeight: 900, color: "#e2241a", fontFamily: "sans-serif" }}>/</span>
+                  <span style={{ fontSize: 36, fontWeight: 900, color: "#e2241a", fontFamily: "sans-serif" }}>/</span>
                 )}
               </div>
             ))}
@@ -125,7 +125,7 @@ export async function GET(
           <Divider label="ANALYST" />
 
           {/* Name */}
-          <p style={{ fontSize: 38, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.01em", fontFamily: "sans-serif", margin: "12px 0 0", textAlign: "center", textTransform: "uppercase" }}>
+          <p style={{ fontSize: 48, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.02em", fontFamily: "sans-serif", margin: "12px 0 0", textAlign: "center", textTransform: "uppercase" }}>
             {expert?.name ?? "Unknown Analyst"}
           </p>
           {handle && (

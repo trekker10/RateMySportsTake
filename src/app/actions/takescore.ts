@@ -19,8 +19,12 @@ import {
 export async function getTakeScoreConfig(): Promise<TakeScoreConfig> {
   const supabase = createAdminClient();
   const { data } = await supabase.from("take_score_config").select("*").eq("id", "default").single();
-  // Merge with defaults so new fields work even before DB migration
-  return { ...DEFAULT_CONFIG, ...(data ?? {}) } as TakeScoreConfig;
+  // Strip null/undefined DB values before merging so defaults are never overridden by nulls
+  // (grade threshold columns may be null in the DB if added via migration without defaults)
+  const dbValues = Object.fromEntries(
+    Object.entries(data ?? {}).filter(([, v]) => v != null)
+  );
+  return { ...DEFAULT_CONFIG, ...dbValues } as TakeScoreConfig;
 }
 
 export async function saveTakeScoreConfig(

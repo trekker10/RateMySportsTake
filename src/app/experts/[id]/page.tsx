@@ -34,13 +34,18 @@ export default async function ExpertProfilePage({
   type GradeCat = typeof GRADE_CATS[number];
 
   // Each category maps to a numeric range spanning all its sub-tiers
+  // Fall back to hardcoded defaults so null DB values never break the filter
   function catRange(cat: GradeCat): { min: number; max: number } {
     const c = gradeConfig;
-    if (cat === "A") return { min: c.grade_a_min,      max: 101 };
-    if (cat === "B") return { min: c.grade_bminus_min, max: c.grade_a_min };
-    if (cat === "C") return { min: c.grade_cminus_min, max: c.grade_bminus_min };
-    if (cat === "D") return { min: c.grade_d_min,      max: c.grade_cminus_min };
-    return                  { min: 0,                  max: c.grade_d_min };
+    const aMin      = c.grade_a_min      ?? 80;
+    const bMinusMin = c.grade_bminus_min ?? 50;
+    const cMinusMin = c.grade_cminus_min ?? 20;
+    const dMin      = c.grade_d_min      ?? 10;
+    if (cat === "A") return { min: aMin,      max: 101 };
+    if (cat === "B") return { min: bMinusMin, max: aMin };
+    if (cat === "C") return { min: cMinusMin, max: bMinusMin };
+    if (cat === "D") return { min: dMin,      max: cMinusMin };
+    return                  { min: 0,         max: dMin };
   }
 
   // Sub-tiers that belong to each category (for scoreToGrade matching)

@@ -113,6 +113,26 @@ export default function ExpertEditForm({ expert }: { expert: Record<string, unkn
         </label>
       </div>
 
+      {/* Fantasy Guru toggle */}
+      <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">Fantasy Guru</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Fantasy gurus appear on the Fantasy leaderboard instead of (or in addition to) the Analysts leaderboard.
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer ml-6 shrink-0">
+          <input
+            type="checkbox"
+            name="is_fantasy_guru"
+            value="true"
+            defaultChecked={!!(expert.is_fantasy_guru as boolean)}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600" />
+        </label>
+      </div>
+
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <div className="flex items-center gap-4">

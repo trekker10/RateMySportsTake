@@ -22,12 +22,13 @@ export async function updateExpert(expertId: string, formData: FormData) {
 
   const supabase = createAdminClient();
   await supabase.from("experts").update({
-    name:           formData.get("name") as string,
-    outlet:         (formData.get("outlet") as string) || null,
-    twitter_handle: (formData.get("twitter_handle") as string) || null,
-    bio:            (formData.get("bio") as string) || null,
-    avatar_url:     (formData.get("avatar_url") as string) || null,
-    verified:       formData.get("verified") === "true",
+    name:             formData.get("name") as string,
+    outlet:           (formData.get("outlet") as string) || null,
+    twitter_handle:   (formData.get("twitter_handle") as string) || null,
+    bio:              (formData.get("bio") as string) || null,
+    avatar_url:       (formData.get("avatar_url") as string) || null,
+    verified:         formData.get("verified") === "true",
+    is_fantasy_guru:  formData.get("is_fantasy_guru") === "true",
   }).eq("expert_id", expertId);
 
   revalidatePath(`/experts/${expertId}`);

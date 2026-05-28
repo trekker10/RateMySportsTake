@@ -25,12 +25,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <span className="text-sm italic text-gray-500 hidden sm:block">We rate the takes so you don&apos;t have to.</span>
             </a>
             <div className="flex items-center gap-6">
-              <nav className="hidden sm:flex gap-6 font-mono text-xs tracking-widest text-gray-600 uppercase">
-                <a href="/experts" className="hover:text-gray-900 transition-colors">Leaderboard</a>
-                <a href="/experts" className="hover:text-gray-900 transition-colors">Analysts</a>
-                <a href="/takes"   className="hover:text-gray-900 transition-colors">Takes</a>
+              <nav className="hidden sm:flex gap-6 font-mono text-xs tracking-widest uppercase">
+                <a href="/experts" className="text-gray-600 hover:text-gray-900 transition-colors">Analysts</a>
+                <a href="/fantasy" className="hover:opacity-80 transition-opacity font-black" style={{ color: "#15803d" }}>Fantasy</a>
+                <a href="/takes"   className="text-gray-600 hover:text-gray-900 transition-colors">Takes</a>
                 {showSubmit && (
-                  <a href="/submit" className="hover:text-gray-900 transition-colors">Submit</a>
+                  <a href="/submit" className="text-gray-600 hover:text-gray-900 transition-colors">Submit</a>
                 )}
               </nav>
               <Suspense fallback={<div className="w-16 h-7 rounded bg-gray-300 animate-pulse" />}>

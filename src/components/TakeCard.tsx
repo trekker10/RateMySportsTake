@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Take, Expert } from "@/types/database";
+import ShareReceiptButton from "@/components/ShareReceiptButton";
 
 type TakeWithExpert = Take & {
   experts?: Pick<Expert, "name" | "expert_id" | "outlet"> | null;
@@ -110,9 +111,12 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
           >
             See Full Context
           </Link>
-          <button className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase">
+          <ShareReceiptButton
+            takeId={take.take_id}
+            className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+          >
             Share Receipt
-          </button>
+          </ShareReceiptButton>
           {expert && (
             <Link
               href={`/experts/${expert.expert_id}`}

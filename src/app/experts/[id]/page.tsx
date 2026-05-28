@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import FollowButton from "@/components/FollowButton";
 import Avatar from "@/components/Avatar";
+import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
 
@@ -333,9 +334,12 @@ export default async function ExpertProfilePage({
                         >
                           See Full Context
                         </Link>
-                        <button className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase">
+                        <ShareReceiptButton
+                          takeId={take.take_id}
+                          className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+                        >
                           Share Receipt
-                        </button>
+                        </ShareReceiptButton>
                       </div>
                     </div>
 

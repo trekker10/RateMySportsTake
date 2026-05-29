@@ -38,6 +38,7 @@ const selectClass =
 export default function SubmitForm() {
   const [step, setStep]           = useState<"url" | "review">("url");
   const [takeType, setTakeType]   = useState<TakeType>("analyst");
+  const [outlet, setOutlet]       = useState("");
   const [tweetUrl, setTweetUrl]   = useState("");
   const [prefilled, setPrefilled] = useState<TweetData | null>(null);
   const [fetchError, setFetchError]   = useState<string | null>(null);
@@ -61,6 +62,12 @@ export default function SubmitForm() {
   const [boldnessScore, setBoldnessScore]     = useState("");
   const [sportSeason, setSportSeason]         = useState("2026 NFL");
   const [resolutionDate, setResolutionDate]   = useState("");
+
+  function handleTakeTypeChange(next: TakeType) {
+    setTakeType(next);
+    if (next === "fantasy" && outlet === "") setOutlet("Fantasy Football");
+    if (next === "analyst" && outlet === "Fantasy Football") setOutlet("");
+  }
 
   function handleFetch(e: React.FormEvent) {
     e.preventDefault();
@@ -131,7 +138,7 @@ export default function SubmitForm() {
         </div>
 
         {/* Take type toggle */}
-        <TakeTypeToggle value={takeType} onChange={setTakeType} />
+        <TakeTypeToggle value={takeType} onChange={handleTakeTypeChange} />
 
         <form onSubmit={handleFetch} className="space-y-4 mt-6">
           <div>
@@ -179,7 +186,7 @@ export default function SubmitForm() {
       </div>
 
       {/* Take type toggle */}
-      <TakeTypeToggle value={takeType} onChange={setTakeType} />
+      <TakeTypeToggle value={takeType} onChange={handleTakeTypeChange} />
 
       <form onSubmit={handleSubmit} className="space-y-8 mt-6">
         <input type="hidden" name="source_type" value="tweet" />
@@ -197,7 +204,7 @@ export default function SubmitForm() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="expert_outlet" className="block text-sm font-medium text-zinc-300 mb-1">Outlet</label>
-              <input id="expert_outlet" name="expert_outlet" type="text" placeholder="e.g. ESPN" className={inputClass} />
+              <input id="expert_outlet" name="expert_outlet" type="text" placeholder="e.g. ESPN" value={outlet} onChange={e => setOutlet(e.target.value)} className={inputClass} />
             </div>
             <div>
               <label htmlFor="expert_twitter" className="block text-sm font-medium text-zinc-300 mb-1">Twitter / X</label>

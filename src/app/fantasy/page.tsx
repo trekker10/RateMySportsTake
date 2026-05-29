@@ -83,7 +83,8 @@ export default async function FantasyPage({
 
     if (q) ftQuery = ftQuery.ilike("raw_text", `%${q}%`);
     const { data } = await ftQuery;
-    fantasyTakes = (data ?? []) as typeof fantasyTakes;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fantasyTakes = (data ?? []) as unknown as typeof fantasyTakes;
   }
 
   // ── URL helpers ───────────────────────────────────────────────────────────

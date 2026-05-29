@@ -62,7 +62,8 @@ export default async function ExpertsPage({
   }));
 
   // ── Takes query (only when view=takes) ────────────────────────────────────
-  let takesRows: Awaited<ReturnType<typeof supabase.from<"takes", never>>>["data"] = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let takesRows: any[] | null = null;
   if (activeView === "takes" && expertIds.length > 0) {
     let takesQuery = supabase
       .from("takes")

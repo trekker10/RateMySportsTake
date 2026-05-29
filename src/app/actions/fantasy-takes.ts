@@ -5,6 +5,7 @@ import { checkIsAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { getFantasyConfig, recalculateFantasyScore } from "@/app/actions/fantasy-takescore";
 import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
+import { gradeFantasyTake as aiGradeFantasyTake } from "@/lib/ai/grade-fantasy-take";
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 
@@ -191,6 +192,65 @@ export async function saveFantasyTakeEdits(
   revalidatePath("/fantasy");
 
   return { success: true };
+}
+
+export async function gradeFantasyTakeSingle(
+  fantasyTakeId: string,
+): Promise<{ success: boolean; accuracy_score?: number; grader_note?: string; error?: string }> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  const supabase = createAdminClient();
+
+  const { data: take } = await supabase
+    .from("fantasy_takes")
+    .select("*, experts(name)")
+    .eq("fantasy_take_id", fantasyTakeId)
+    .single();
+
+  if (!take) return { success: false, error: "Take not found" };
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expertName = (take.experts as any)?.name ?? "Unknown";
+
+    const result = await aiGradeFantasyTake({
+      expertName,
+      rawText: take.raw_text,
+      category: take.category,
+      playerName: take.player_name,
+      playerPosition: take.player_position,
+      playerAdp: take.player_adp,
+      timingWindow: take.timing_window,
+      boldnessScore: take.boldness_score,
+      dateMade: take.date_made,
+      resolutionDate: take.resolution_date,
+      sportSeason: take.sport_season,
+    });
+
+    await supabase
+      .from("fantasy_takes")
+      .update({
+        accuracy_score: result.accuracy_score,
+        grader_note: result.grader_note,
+        outcome_status: "resolved",
+      })
+      .eq("fantasy_take_id", fantasyTakeId);
+
+    await recalculateFantasyScore(take.expert_id);
+
+    revalidatePath("/admin/takes");
+    revalidatePath(`/experts/${take.expert_id}`);
+    revalidatePath("/experts");
+    revalidatePath("/fantasy");
+
+    return { success: true, accuracy_score: result.accuracy_score, grader_note: result.grader_note };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "AI grading failed",
+    };
+  }
 }
 
 export async function gradeFantasyTake(

@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
-import { getAllFantasyTakesAdmin, gradeFantasyTake, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
+import { getAllFantasyTakesAdmin, gradeFantasyTake, gradeFantasyTakeSingle, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
 import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
 import Link from "next/link";
 
@@ -776,6 +776,8 @@ function FantasyTakesPanel() {
   const [gradeNote, setGradeNote] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editExpandedId, setEditExpandedId] = useState<string | null>(null);
+  const [aiGradingId, setAiGradingId] = useState<string | null>(null);
+  const [aiGradeError, setAiGradeError] = useState<Record<string, string>>({});
 
   useEffect(() => {
     startLoad(async () => {
@@ -802,6 +804,24 @@ function FantasyTakesPanel() {
 
   function updateFantasyTake(takeId: string, updated: Partial<FantasyTakeRow>) {
     setTakes(prev => prev!.map(t => t.fantasy_take_id === takeId ? { ...t, ...updated } : t));
+  }
+
+  async function handleAiGrade(takeId: string) {
+    setAiGradingId(takeId);
+    setAiGradeError(prev => { const n = { ...prev }; delete n[takeId]; return n; });
+    const result = await gradeFantasyTakeSingle(takeId);
+    if (result.success && result.accuracy_score != null) {
+      setTakes(prev =>
+        prev!.map(t => t.fantasy_take_id === takeId
+          ? { ...t, outcome_status: "resolved", accuracy_score: result.accuracy_score! }
+          : t
+        )
+      );
+      setExpandedId(null);
+    } else {
+      setAiGradeError(prev => ({ ...prev, [takeId]: result.error ?? "AI grading failed" }));
+    }
+    setAiGradingId(null);
   }
 
   async function handleDelete(takeId: string) {
@@ -932,8 +952,21 @@ function FantasyTakesPanel() {
                         : "PENDING"}
                     </span>
 
-                    <div className="flex items-center gap-2">
-                      {/* Grade button — only for unresolved */}
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {/* AI Grade it button — only for unresolved */}
+                      {!isResolved && aiGradingId !== take.fantasy_take_id && (
+                        <button
+                          onClick={() => handleAiGrade(take.fantasy_take_id)}
+                          disabled={aiGradingId !== null}
+                          className="rounded-lg border border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-800 hover:bg-blue-50 px-3 py-1 text-xs transition-colors disabled:opacity-40"
+                        >
+                          Grade it ✦
+                        </button>
+                      )}
+                      {aiGradingId === take.fantasy_take_id && (
+                        <span className="text-xs text-blue-500 animate-pulse">Searching…</span>
+                      )}
+                      {/* Manual Grade panel toggle */}
                       {!isResolved && (
                         <button
                           onClick={() => { setExpandedId(isGradeExpanded ? null : take.fantasy_take_id); setEditExpandedId(null); }}
@@ -966,6 +999,11 @@ function FantasyTakesPanel() {
                         🗑
                       </button>
                     </div>
+                    {aiGradeError[take.fantasy_take_id] && (
+                      <p className="text-[10px] text-red-400 text-right max-w-[200px]">
+                        {aiGradeError[take.fantasy_take_id]}
+                      </p>
+                    )}
                   </div>
                 </div>
 

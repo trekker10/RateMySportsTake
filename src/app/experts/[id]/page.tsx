@@ -384,7 +384,7 @@ export default async function ExpertProfilePage({
                                   {ft.player_name}{ft.player_position ? ` · ${ft.player_position}` : ""}
                                 </p>
                               )}
-                              <p className="italic text-lg leading-snug text-gray-800">
+                              <p className="italic text-lg leading-snug text-gray-800 whitespace-pre-wrap">
                                 &ldquo;{ft.raw_text}&rdquo;
                               </p>
                             </div>

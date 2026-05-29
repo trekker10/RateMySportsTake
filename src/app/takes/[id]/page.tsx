@@ -40,7 +40,7 @@ export default async function TakePage({
 
       {/* The take */}
       <blockquote className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-lg leading-relaxed text-gray-800">"{take.raw_text}"</p>
+        <p className="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap">"{take.raw_text}"</p>
         <footer className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-400">
           <span className="capitalize">{sourceLabel}</span>
           <span>·</span>

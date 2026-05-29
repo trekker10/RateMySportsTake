@@ -82,7 +82,7 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
 
       {/* Quote */}
       <div className="px-4 py-4" style={{ backgroundColor: "#f5f1e9" }}>
-        <p className="italic text-lg leading-snug text-gray-800">
+        <p className="italic text-lg leading-snug text-gray-800 whitespace-pre-wrap">
           &ldquo;{take.raw_text}&rdquo;
         </p>
       </div>

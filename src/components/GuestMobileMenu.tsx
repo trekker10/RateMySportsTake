@@ -3,10 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 
 const NAV_LINKS = [
-  { label: "Leaderboard", href: "/experts" },
-  { label: "Analysts",    href: "/experts" },
-  { label: "Takes",       href: "/takes" },
-  { label: "Submit",      href: "/submit" },
+  { label: "Analysts",      href: "/experts" },
+  { label: "Fantasy Gurus", href: "/fantasy" },
 ];
 
 export default function GuestMobileMenu() {

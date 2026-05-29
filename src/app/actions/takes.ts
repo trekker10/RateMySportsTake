@@ -229,7 +229,7 @@ export async function submitFantasyTake(formData: FormData) {
     timingModifier = mods[timingWindow] ?? 0;
   }
 
-  const { error: takeError } = await supabase.from("fantasy_takes").insert({
+  const { data: insertedTake, error: takeError } = await supabase.from("fantasy_takes").insert({
     expert_id:       expertId,
     category,
     raw_text:        rawText,
@@ -242,11 +242,18 @@ export async function submitFantasyTake(formData: FormData) {
     date_made:       dateMade,
     resolution_date: resolutionDate,
     sport_season:    sportSeason,
-    format,
     outcome_status:  "pending",
-  });
+  }).select("fantasy_take_id").single();
 
   if (takeError) throw new Error(`Failed to insert fantasy take: ${takeError.message}`);
+
+  // Try to set format — gracefully skip if column hasn't been migrated yet
+  if (insertedTake?.fantasy_take_id && format) {
+    await supabase.from("fantasy_takes")
+      .update({ format })
+      .eq("fantasy_take_id", insertedTake.fantasy_take_id)
+      .then(() => {/* ignore error if column missing */});
+  }
 
   const { recalculateFantasyScore } = await import("@/app/actions/fantasy-takescore");
   await recalculateFantasyScore(expertId);
@@ -298,18 +305,24 @@ export async function importFantasyTake(params: {
   };
   const timingModifier = mods[params.timingWindow] ?? 0;
 
-  const { error: takeError } = await supabase.from("fantasy_takes").insert({
+  const { data: insertedTake2, error: takeError } = await supabase.from("fantasy_takes").insert({
     expert_id:      expertId,
     category:       params.category,
     raw_text:       params.rawText,
     timing_window:  params.timingWindow || null,
     timing_modifier: timingModifier,
-    format:         params.format || "both",
     date_made:      params.dateMade,
     outcome_status: "pending",
-  });
+  }).select("fantasy_take_id").single();
 
   if (takeError) return { success: false, error: takeError.message };
+
+  if (insertedTake2?.fantasy_take_id && params.format) {
+    await supabase.from("fantasy_takes")
+      .update({ format: params.format })
+      .eq("fantasy_take_id", insertedTake2.fantasy_take_id)
+      .then(() => {/* ignore if column missing */});
+  }
 
   const { recalculateFantasyScore } = await import("@/app/actions/fantasy-takescore");
   await recalculateFantasyScore(expertId);

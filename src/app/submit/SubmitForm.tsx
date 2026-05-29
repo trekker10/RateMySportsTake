@@ -43,6 +43,7 @@ export default function SubmitForm() {
   const [fetchError, setFetchError]   = useState<string | null>(null);
   const [isFetching, startFetch]      = useTransition();
   const [isSubmitting, startSubmit]   = useTransition();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isAnalyzing, startAnalyze]   = useTransition();
   const [dateOverride, setDateOverride] = useState(false);
 
@@ -103,12 +104,21 @@ export default function SubmitForm() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSubmitError(null);
     const formData = new FormData(e.currentTarget);
-    if (takeType === "fantasy") {
-      startSubmit(() => submitFantasyTake(formData));
-    } else {
-      startSubmit(() => submitTake(formData));
-    }
+    startSubmit(async () => {
+      try {
+        if (takeType === "fantasy") {
+          await submitFantasyTake(formData);
+        } else {
+          await submitTake(formData);
+        }
+      } catch (err) {
+        // redirect() throws a special Next.js error — let it propagate
+        if (err instanceof Error && err.message.includes("NEXT_REDIRECT")) throw err;
+        setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      }
+    });
   }
 
   // ── Step 1 ───────────────────────────────────────────────────────────────────
@@ -424,6 +434,12 @@ export default function SubmitForm() {
             </div>
           </div>
         </section>
+
+        {submitError && (
+          <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <strong>Submission failed:</strong> {submitError}
+          </div>
+        )}
 
         <button
           type="submit" disabled={isSubmitting}

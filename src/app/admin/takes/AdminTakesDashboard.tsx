@@ -3,6 +3,9 @@
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
+import { getAllFantasyTakesAdmin } from "@/app/actions/fantasy-takes";
+import { gradeFantasyTake, deleteFantasyTake } from "@/app/actions/fantasy-takes";
+import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
 import Link from "next/link";
 
 type TakeState = AdminTake & {
@@ -11,6 +14,7 @@ type TakeState = AdminTake & {
   errorMsg?: string;
 };
 type Filter = "all" | "pending" | "graded" | "unrated";
+type TakeTypeTab = "analyst" | "fantasy";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending:         { label: "PENDING",       color: "#d97706" },
@@ -179,6 +183,7 @@ function ResolveBadge({ date }: { date: string }) {
 }
 
 export default function AdminTakesDashboard() {
+  const [takeTypeTab, setTakeTypeTab] = useState<TakeTypeTab>("analyst");
   const [takes, setTakes] = useState<TakeState[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [isLoading, startLoad] = useTransition();
@@ -325,7 +330,7 @@ export default function AdminTakesDashboard() {
             Review all takes and trigger AI grading on any of them.
           </p>
         </div>
-        {pendingGradeable > 0 && (
+        {takeTypeTab === "analyst" && pendingGradeable > 0 && (
           <button
             onClick={gradeAllPending}
             disabled={gradingAll}
@@ -335,6 +340,35 @@ export default function AdminTakesDashboard() {
           </button>
         )}
       </div>
+
+      {/* Analyst / Fantasy tab switcher */}
+      <div className="flex border-b-2 border-gray-200">
+        <button
+          onClick={() => setTakeTypeTab("analyst")}
+          className={`px-5 py-2 font-mono text-[11px] tracking-widest uppercase font-semibold transition-colors border-b-2 -mb-0.5 ${
+            takeTypeTab === "analyst"
+              ? "border-gray-900 text-gray-900"
+              : "border-transparent text-gray-400 hover:text-gray-700"
+          }`}
+        >
+          Analyst Takes
+        </button>
+        <button
+          onClick={() => setTakeTypeTab("fantasy")}
+          className={`px-5 py-2 font-mono text-[11px] tracking-widest uppercase font-semibold transition-colors border-b-2 -mb-0.5 ${
+            takeTypeTab === "fantasy"
+              ? "text-white border-b-2"
+              : "border-transparent text-gray-400 hover:text-gray-700"
+          }`}
+          style={takeTypeTab === "fantasy" ? { borderColor: "#15803d", color: "#15803d" } : {}}
+        >
+          Fantasy Takes
+        </button>
+      </div>
+
+      {takeTypeTab === "fantasy" && <FantasyTakesPanel />}
+
+      {takeTypeTab === "analyst" && <>
 
       {/* Search + sort */}
       <div className="flex flex-wrap gap-3 items-center">
@@ -533,6 +567,256 @@ export default function AdminTakesDashboard() {
       <Link href="/admin" className="inline-block text-sm text-gray-500 hover:text-gray-800 transition-colors">
         ← Back to Admin
       </Link>
+
+      </> /* end takeTypeTab === "analyst" */ }
+
+      {takeTypeTab === "fantasy" && (
+        <Link href="/admin" className="inline-block text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          ← Back to Admin
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// ── Fantasy Takes Panel ───────────────────────────────────────────────────────
+
+const CATEGORY_LABELS: Record<string, string> = {
+  breakout_call: "Breakout Call", bust_call: "Bust Call",
+  sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
+};
+
+const ACCURACY_TIERS = [
+  { score: 100, label: "Nailed It" },
+  { score: 75,  label: "Mostly Right" },
+  { score: 60,  label: "Directionally Right" },
+  { score: 50,  label: "Half Right" },
+  { score: 25,  label: "Mostly Wrong" },
+  { score: 0,   label: "Wrong" },
+];
+
+type FantasyTakeRow = FantasyScoredTake & { expert_name: string; avatar_url: string | null };
+
+function FantasyTakesPanel() {
+  const [takes, setTakes] = useState<FantasyTakeRow[] | null>(null);
+  const [isLoading, startLoad] = useTransition();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "pending" | "resolved">("all");
+  const [gradingId, setGradingId] = useState<string | null>(null);
+  const [gradeNote, setGradeNote] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    startLoad(async () => {
+      const all = await getAllFantasyTakesAdmin();
+      setTakes(all as FantasyTakeRow[]);
+    });
+  }, []);
+
+  async function handleGrade(takeId: string, score: number) {
+    setGradingId(takeId);
+    const result = await gradeFantasyTake(takeId, score, gradeNote[takeId] ?? "");
+    if (result.success) {
+      setTakes(prev =>
+        prev!.map(t => t.fantasy_take_id === takeId
+          ? { ...t, outcome_status: "resolved", accuracy_score: score }
+          : t
+        )
+      );
+      setExpandedId(null);
+    }
+    setGradingId(null);
+  }
+
+  async function handleDelete(takeId: string) {
+    if (!confirm("Delete this fantasy take permanently?")) return;
+    const result = await deleteFantasyTake(takeId);
+    if (result.success) setTakes(prev => prev!.filter(t => t.fantasy_take_id !== takeId));
+  }
+
+  const allTakes = takes ?? [];
+
+  const filtered = allTakes
+    .filter(t => {
+      if (filter === "pending")  return t.outcome_status === "pending";
+      if (filter === "resolved") return t.outcome_status === "resolved";
+      return true;
+    })
+    .filter(t => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        t.expert_name.toLowerCase().includes(q) ||
+        t.raw_text.toLowerCase().includes(q) ||
+        (t.player_name ?? "").toLowerCase().includes(q)
+      );
+    });
+
+  const counts = {
+    all: allTakes.length,
+    pending: allTakes.filter(t => t.outcome_status === "pending").length,
+    resolved: allTakes.filter(t => t.outcome_status === "resolved").length,
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Search */}
+      <input
+        type="text"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search by guru, player, or take text…"
+        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
+      />
+
+      {/* Filter tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {(["all", "pending", "resolved"] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filter === f
+                ? "text-white"
+                : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
+            }`}
+            style={filter === f ? { backgroundColor: "#15803d" } : {}}
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-70">({counts[f]})</span>
+          </button>
+        ))}
+      </div>
+
+      {isLoading && takes === null && (
+        <div className="rounded-xl border border-gray-300 p-8 text-center text-gray-400" style={{ backgroundColor: "#f0fdf4" }}>
+          Loading fantasy takes…
+        </div>
+      )}
+
+      {takes !== null && filtered.length === 0 && (
+        <div className="rounded-xl border border-gray-300 p-8 text-center text-gray-400" style={{ backgroundColor: "#f0fdf4" }}>
+          No fantasy takes in this category.
+        </div>
+      )}
+
+      {filtered.length > 0 && (
+        <div className="rounded-xl border-2 divide-y divide-gray-200" style={{ borderColor: "#15803d", backgroundColor: "#f0fdf4" }}>
+          {filtered.map(take => {
+            const isExpanded = expandedId === take.fantasy_take_id;
+            const isResolved = take.outcome_status === "resolved";
+
+            return (
+              <div key={take.fantasy_take_id} className="px-5 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link href={`/experts/${take.expert_id}`} className="font-semibold text-gray-900 hover:text-black text-sm">
+                        {take.expert_name}
+                      </Link>
+                      <span className="text-gray-400 text-xs">·</span>
+                      <span className="text-gray-500 text-xs">{take.date_made}</span>
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: "#15803d" }}>
+                        {CATEGORY_LABELS[take.category] ?? take.category}
+                      </span>
+                      {take.player_name && (
+                        <span className="text-gray-700 text-xs font-semibold">
+                          {take.player_name}{take.player_position ? ` (${take.player_position})` : ""}
+                        </span>
+                      )}
+                      {take.timing_window && (
+                        <span className="text-gray-400 text-xs">{take.timing_window.replace(/_/g, " ")}</span>
+                      )}
+                      {(take as FantasyTakeRow & { format?: string }).format && (take as FantasyTakeRow & { format?: string }).format !== "both" && (
+                        <span className="rounded px-1.5 py-0.5 text-[10px] font-mono"
+                          style={{
+                            backgroundColor: (take as FantasyTakeRow & { format?: string }).format === "dynasty" ? "#ede9fe" : "#e0f2fe",
+                            color: (take as FantasyTakeRow & { format?: string }).format === "dynasty" ? "#7c3aed" : "#0284c7"
+                          }}>
+                          {(take as FantasyTakeRow & { format?: string }).format}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-1.5 text-sm text-gray-700 leading-relaxed line-clamp-2">
+                      "{take.raw_text}"
+                    </p>
+
+                    <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-gray-400 font-mono">
+                      {take.resolution_date && (
+                        <span>Resolves {take.resolution_date}</span>
+                      )}
+                      {take.sport_season && <span>· {take.sport_season}</span>}
+                      {take.boldness_score != null && <span>· Boldness {take.boldness_score}</span>}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 flex flex-col items-end gap-2">
+                    <span className="font-mono text-xs font-black" style={{ color: isResolved ? "#15803d" : "#d97706" }}>
+                      {isResolved
+                        ? take.accuracy_score != null ? `${take.accuracy_score}% ACC` : "RESOLVED"
+                        : "PENDING"}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {!isResolved && (
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : take.fantasy_take_id)}
+                          className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
+                            isExpanded
+                              ? "border-green-600 text-green-800 bg-green-50"
+                              : "border-gray-300 text-gray-500 hover:border-gray-500"
+                          }`}
+                        >
+                          {isExpanded ? "Close" : "Grade"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(take.fantasy_take_id)}
+                        className="rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
+                        title="Delete"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grade panel */}
+                {isExpanded && (
+                  <div className="mt-3 rounded-lg border border-green-200 bg-white p-4 space-y-3">
+                    <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Grade this take</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ACCURACY_TIERS.map(tier => (
+                        <button
+                          key={tier.score}
+                          onClick={() => handleGrade(take.fantasy_take_id, tier.score)}
+                          disabled={gradingId === take.fantasy_take_id}
+                          className="px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors disabled:opacity-50 hover:text-white"
+                          style={{ borderColor: "#15803d", color: "#15803d" }}
+                          onMouseEnter={e => { (e.target as HTMLElement).style.backgroundColor = "#15803d"; (e.target as HTMLElement).style.color = "white"; }}
+                          onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = ""; (e.target as HTMLElement).style.color = "#15803d"; }}
+                        >
+                          {tier.score}% — {tier.label}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Grader note (optional)…"
+                      value={gradeNote[take.fantasy_take_id] ?? ""}
+                      onChange={e => setGradeNote(prev => ({ ...prev, [take.fantasy_take_id]: e.target.value }))}
+                      className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                    />
+                    {gradingId === take.fantasy_take_id && (
+                      <p className="text-xs text-green-600 animate-pulse">Saving…</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

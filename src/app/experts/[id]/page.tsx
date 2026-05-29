@@ -89,6 +89,7 @@ export default async function ExpertProfilePage({
     { data: allExperts },
     { data: followRow },
     { data: allGradedTakes },
+    { data: fantasyTakes },
   ] = await Promise.all([
     supabase.from("experts").select("*").eq("expert_id", id).single(),
     takesQuery,
@@ -98,6 +99,7 @@ export default async function ExpertProfilePage({
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("takes").select("grade").eq("expert_id", id).not("grade", "is", null),
+    supabase.from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, date_made, resolution_date, sport_season, format").eq("expert_id", id).order("date_made", { ascending: false }),
   ]);
 
   if (!expert) notFound();
@@ -369,6 +371,58 @@ export default async function ExpertProfilePage({
                 </p>
               )}
             </div>
+
+            {/* Fantasy Takes */}
+            {(fantasyTakes ?? []).length > 0 && (
+              <div className="bg-white border-2 p-5" style={{ borderColor: "#15803d" }}>
+                <p className="font-mono text-[11px] tracking-[0.18em] uppercase mb-4" style={{ color: "#15803d" }}>Fantasy Takes</p>
+                <div className="space-y-3">
+                  {(fantasyTakes ?? []).map((ft) => {
+                    const CATEGORY_LABELS: Record<string, string> = {
+                      breakout_call: "Breakout Call", bust_call: "Bust Call",
+                      sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
+                    };
+                    const STATUS_COLORS: Record<string, string> = {
+                      pending: "#d97706", resolved: "#15803d",
+                    };
+                    return (
+                      <div key={ft.fantasy_take_id} className="border border-gray-100 rounded-lg p-3 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-full text-white text-xs" style={{ backgroundColor: "#15803d" }}>
+                            {CATEGORY_LABELS[ft.category] ?? ft.category}
+                          </span>
+                          <span className="font-mono text-[10px] font-black" style={{ color: STATUS_COLORS[ft.outcome_status] ?? "#6b7280" }}>
+                            {ft.outcome_status === "resolved"
+                              ? ft.accuracy_score != null ? `${ft.accuracy_score}% ACC` : "RESOLVED"
+                              : "PENDING"}
+                          </span>
+                        </div>
+                        {ft.player_name && (
+                          <p className="font-semibold text-sm text-gray-900">
+                            {ft.player_name}{ft.player_position ? ` · ${ft.player_position}` : ""}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">"{ft.raw_text}"</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono text-gray-400">{ft.date_made}</span>
+                          {ft.timing_window && (
+                            <span className="text-[10px] font-mono text-gray-400">· {ft.timing_window.replace(/_/g, " ")}</span>
+                          )}
+                          {ft.sport_season && (
+                            <span className="text-[10px] font-mono text-gray-400">· {ft.sport_season}</span>
+                          )}
+                          {ft.format && ft.format !== "both" && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: ft.format === "dynasty" ? "#ede9fe" : "#e0f2fe", color: ft.format === "dynasty" ? "#7c3aed" : "#0284c7" }}>
+                              {ft.format}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* TakeScore Lifetime (placeholder sparkline) */}
             <div className="bg-white border-2 border-gray-900 p-5">

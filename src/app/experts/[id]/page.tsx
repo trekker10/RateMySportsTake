@@ -284,47 +284,105 @@ export default async function ExpertProfilePage({
       <div className="min-h-[60vh]" style={{ backgroundColor: "#ebedf0" }}>
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-5">
 
-          {/* Take Log */}
+          {/* Take Log — analyst takes OR fantasy takes depending on expert type */}
           <div>
-            <div className="flex flex-wrap items-baseline gap-3 mb-3">
-              <h2 className="font-black text-2xl tracking-tight">THE TAKE LOG</h2>
-              {VERDICT_FILTERS.map((v) => {
-                const href = activeGrade
-                  ? `/experts/${id}?verdict=${v}&grade=${encodeURIComponent(activeGrade)}`
-                  : `/experts/${id}?verdict=${v}`;
-                return (
-                  <Link
-                    key={v}
-                    href={href}
-                    className={`px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 transition-colors ${
-                      verdict === v
-                        ? "bg-gray-900 text-white border-gray-900"
-                        : "bg-white text-gray-500 border-gray-300 hover:border-gray-600"
-                    }`}
-                  >
-                    {v}
-                  </Link>
-                );
-              })}
-              {activeGrade && (
-                <Link
-                  href={`/experts/${id}?verdict=${verdict}`}
-                  className="px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 border-red-400 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-                >
-                  GRADE: {activeGrade} ×
-                </Link>
-              )}
-            </div>
-
-            <TakeLogSection
-              expertId={id}
-              initialTakes={(takes ?? []) as import("@/app/actions/takes").ProfileTake[]}
-              totalTakes={filteredCount ?? 0}
-              verdict={verdict}
-              gradeMin={gradeRange?.min ?? null}
-              gradeMax={gradeRange?.max ?? null}
-              activeGrade={activeGrade}
-            />
+            {expert.is_fantasy_guru ? (
+              <>
+                <h2 className="font-black text-2xl tracking-tight mb-3">THE TAKE LOG</h2>
+                {(fantasyTakes ?? []).length === 0 ? (
+                  <div className="bg-white border-2 border-gray-200 px-6 py-12 text-center italic text-gray-400">
+                    No fantasy takes yet.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(fantasyTakes ?? []).map((ft) => {
+                      const CATEGORY_LABELS: Record<string, string> = {
+                        breakout_call: "Breakout Call", bust_call: "Bust Call",
+                        sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
+                      };
+                      const isResolved = ft.outcome_status === "resolved";
+                      return (
+                        <div key={ft.fantasy_take_id} className="bg-white border-2 border-gray-200 overflow-hidden">
+                          {/* Card header */}
+                          <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-gray-100">
+                            <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: "#15803d" }}>
+                              {CATEGORY_LABELS[ft.category] ?? ft.category}
+                            </span>
+                            <span className="font-mono text-[11px] font-black" style={{ color: isResolved ? "#15803d" : "#d97706" }}>
+                              {isResolved
+                                ? ft.accuracy_score != null ? `${ft.accuracy_score}% ACC` : "RESOLVED"
+                                : "PENDING"}
+                            </span>
+                          </div>
+                          {/* Quote */}
+                          <div className="px-4 py-4" style={{ backgroundColor: "#f0fdf4" }}>
+                            {ft.player_name && (
+                              <p className="font-black text-sm uppercase tracking-wide mb-1.5" style={{ color: "#15803d" }}>
+                                {ft.player_name}{ft.player_position ? ` · ${ft.player_position}` : ""}
+                              </p>
+                            )}
+                            <p className="italic text-lg leading-snug text-gray-800">
+                              &ldquo;{ft.raw_text}&rdquo;
+                            </p>
+                          </div>
+                          {/* Footer */}
+                          <div className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-[10px] font-mono text-gray-400 border-t border-gray-100">
+                            <span>{ft.date_made}</span>
+                            {ft.timing_window && <span>· {ft.timing_window.replace(/_/g, " ")}</span>}
+                            {ft.sport_season && <span>· {ft.sport_season}</span>}
+                            {ft.boldness_score != null && <span>· Boldness {ft.boldness_score}</span>}
+                            {ft.resolution_date && (
+                              <span className="ml-auto">Resolves {ft.resolution_date}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-baseline gap-3 mb-3">
+                  <h2 className="font-black text-2xl tracking-tight">THE TAKE LOG</h2>
+                  {VERDICT_FILTERS.map((v) => {
+                    const href = activeGrade
+                      ? `/experts/${id}?verdict=${v}&grade=${encodeURIComponent(activeGrade)}`
+                      : `/experts/${id}?verdict=${v}`;
+                    return (
+                      <Link
+                        key={v}
+                        href={href}
+                        className={`px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 transition-colors ${
+                          verdict === v
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-500 border-gray-300 hover:border-gray-600"
+                        }`}
+                      >
+                        {v}
+                      </Link>
+                    );
+                  })}
+                  {activeGrade && (
+                    <Link
+                      href={`/experts/${id}?verdict=${verdict}`}
+                      className="px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 border-red-400 text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                    >
+                      GRADE: {activeGrade} ×
+                    </Link>
+                  )}
+                </div>
+                <TakeLogSection
+                  expertId={id}
+                  initialTakes={(takes ?? []) as import("@/app/actions/takes").ProfileTake[]}
+                  totalTakes={filteredCount ?? 0}
+                  verdict={verdict}
+                  gradeMin={gradeRange?.min ?? null}
+                  gradeMax={gradeRange?.max ?? null}
+                  activeGrade={activeGrade}
+                />
+              </>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -372,58 +430,6 @@ export default async function ExpertProfilePage({
                 </p>
               )}
             </div>
-
-            {/* Fantasy Takes */}
-            {(fantasyTakes ?? []).length > 0 && (
-              <div className="bg-white border-2 p-5" style={{ borderColor: "#15803d" }}>
-                <p className="font-mono text-[11px] tracking-[0.18em] uppercase mb-4" style={{ color: "#15803d" }}>Fantasy Takes</p>
-                <div className="space-y-3">
-                  {(fantasyTakes ?? []).map((ft) => {
-                    const CATEGORY_LABELS: Record<string, string> = {
-                      breakout_call: "Breakout Call", bust_call: "Bust Call",
-                      sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
-                    };
-                    const STATUS_COLORS: Record<string, string> = {
-                      pending: "#d97706", resolved: "#15803d",
-                    };
-                    return (
-                      <div key={ft.fantasy_take_id} className="border border-gray-100 rounded-lg p-3 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono text-[10px] tracking-wider px-2 py-0.5 rounded-full text-white text-xs" style={{ backgroundColor: "#15803d" }}>
-                            {CATEGORY_LABELS[ft.category] ?? ft.category}
-                          </span>
-                          <span className="font-mono text-[10px] font-black" style={{ color: STATUS_COLORS[ft.outcome_status] ?? "#6b7280" }}>
-                            {ft.outcome_status === "resolved"
-                              ? ft.accuracy_score != null ? `${ft.accuracy_score}% ACC` : "RESOLVED"
-                              : "PENDING"}
-                          </span>
-                        </div>
-                        {ft.player_name && (
-                          <p className="font-semibold text-sm text-gray-900">
-                            {ft.player_name}{ft.player_position ? ` · ${ft.player_position}` : ""}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">"{ft.raw_text}"</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono text-gray-400">{ft.date_made}</span>
-                          {ft.timing_window && (
-                            <span className="text-[10px] font-mono text-gray-400">· {ft.timing_window.replace(/_/g, " ")}</span>
-                          )}
-                          {ft.sport_season && (
-                            <span className="text-[10px] font-mono text-gray-400">· {ft.sport_season}</span>
-                          )}
-                          {(ft as any).format && (ft as any).format !== "both" && (
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: (ft as any).format === "dynasty" ? "#ede9fe" : "#e0f2fe", color: (ft as any).format === "dynasty" ? "#7c3aed" : "#0284c7" }}>
-                              {(ft as any).format}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* TakeScore Lifetime (placeholder sparkline) */}
             <div className="bg-white border-2 border-gray-900 p-5">

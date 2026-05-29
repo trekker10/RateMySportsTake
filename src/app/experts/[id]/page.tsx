@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import FollowButton from "@/components/FollowButton";
@@ -99,7 +100,7 @@ export default async function ExpertProfilePage({
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("takes").select("grade").eq("expert_id", id).not("grade", "is", null),
-    supabase.from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, date_made, resolution_date, sport_season").eq("expert_id", id).order("date_made", { ascending: false }),
+    createAdminClient().from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, date_made, resolution_date, sport_season").eq("expert_id", id).order("date_made", { ascending: false }),
   ]);
 
   if (!expert) notFound();

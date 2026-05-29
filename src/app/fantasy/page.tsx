@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
@@ -74,7 +75,8 @@ export default async function FantasyPage({
   }> = [];
 
   if (activeView === "takes" && expertIds.length > 0) {
-    let ftQuery = supabase
+    const adminSupabase = createAdminClient();
+    let ftQuery = adminSupabase
       .from("fantasy_takes")
       .select("fantasy_take_id, expert_id, category, raw_text, player_name, player_position, timing_window, boldness_score, accuracy_score, outcome_status, date_made, sport_season, experts(name, expert_id)")
       .in("expert_id", expertIds)

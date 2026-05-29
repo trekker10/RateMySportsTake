@@ -24,7 +24,6 @@ export default async function FantasyPage({
   let expertsQuery = supabase
     .from("experts")
     .select("*")
-    .eq("verified", true)
     .eq("is_fantasy_guru", true)
     .order("overall_rating", { ascending: false });
 

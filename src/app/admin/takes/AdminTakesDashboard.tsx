@@ -3,8 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
-import { getAllFantasyTakesAdmin } from "@/app/actions/fantasy-takes";
-import { gradeFantasyTake, deleteFantasyTake } from "@/app/actions/fantasy-takes";
+import { getAllFantasyTakesAdmin, gradeFantasyTake, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
 import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
 import Link from "next/link";
 
@@ -581,6 +580,177 @@ export default function AdminTakesDashboard() {
 
 // ── Fantasy Takes Panel ───────────────────────────────────────────────────────
 
+const FANTASY_CATEGORIES = [
+  { value: "breakout_call", label: "Breakout Call" },
+  { value: "bust_call",     label: "Bust Call" },
+  { value: "sleeper_pick",  label: "Sleeper Pick" },
+  { value: "start_sit",     label: "Start/Sit" },
+  { value: "waiver_add",    label: "Waiver Add" },
+];
+
+const TIMING_WINDOWS = [
+  { value: "",             label: "— None —" },
+  { value: "preseason",    label: "Preseason" },
+  { value: "post_draft",   label: "Post Draft" },
+  { value: "early_season", label: "Early Season" },
+  { value: "midseason",    label: "Midseason" },
+  { value: "late_season",  label: "Late Season" },
+  { value: "playoffs",     label: "Playoffs" },
+];
+
+const FANTASY_OUTCOME_OPTIONS = [
+  { value: "pending",  label: "Pending" },
+  { value: "resolved", label: "Resolved" },
+];
+
+function FantasyEditPanel({
+  take,
+  onSaved,
+  onClose,
+}: {
+  take: FantasyTakeRow;
+  onSaved: (updated: Partial<FantasyTakeRow>) => void;
+  onClose: () => void;
+}) {
+  const [rawText,       setRawText]       = useState(take.raw_text ?? "");
+  const [playerName,    setPlayerName]    = useState(take.player_name ?? "");
+  const [playerPos,     setPlayerPos]     = useState(take.player_position ?? "");
+  const [playerAdp,     setPlayerAdp]     = useState(take.player_adp != null ? String(take.player_adp) : "");
+  const [category,      setCategory]      = useState(take.category ?? "breakout_call");
+  const [timingWindow,  setTimingWindow]  = useState(take.timing_window ?? "");
+  const [boldness,      setBoldness]      = useState(take.boldness_score != null ? String(take.boldness_score) : "");
+  const [dateMade,      setDateMade]      = useState(take.date_made ?? "");
+  const [resDate,       setResDate]       = useState(take.resolution_date ?? "");
+  const [sportSeason,   setSportSeason]   = useState(take.sport_season ?? "");
+  const [outcome,       setOutcome]       = useState(take.outcome_status ?? "pending");
+  const [accuracy,      setAccuracy]      = useState(take.accuracy_score != null ? String(take.accuracy_score) : "");
+  const [graderNote,    setGraderNote]    = useState((take as FantasyTakeRow & { grader_note?: string }).grader_note ?? "");
+  const [saved,         setSaved]         = useState(false);
+  const [isPending,     startTransition]  = useTransition();
+
+  function handleSave() {
+    startTransition(async () => {
+      const edits = {
+        raw_text:        rawText.trim() || undefined,
+        player_name:     playerName.trim() || null,
+        player_position: playerPos.trim() || null,
+        player_adp:      playerAdp !== "" ? Number(playerAdp) : null,
+        category,
+        timing_window:   timingWindow || null,
+        boldness_score:  boldness !== "" ? Number(boldness) : null,
+        date_made:       dateMade || undefined,
+        resolution_date: resDate || null,
+        sport_season:    sportSeason.trim() || null,
+        outcome_status:  outcome,
+        accuracy_score:  accuracy !== "" ? Number(accuracy) : null,
+        grader_note:     graderNote.trim() || null,
+      };
+      const result = await saveFantasyTakeEdits(take.fantasy_take_id, edits);
+      if (result.success) {
+        setSaved(true);
+        onSaved({ ...edits, accuracy_score: accuracy !== "" ? Number(accuracy) : null } as Partial<FantasyTakeRow>);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    });
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-green-200 bg-white p-4 space-y-4">
+      {/* Raw text */}
+      <div>
+        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Take Text</label>
+        <textarea
+          value={rawText}
+          onChange={e => setRawText(e.target.value)}
+          rows={3}
+          className={`${inputClass} resize-none`}
+        />
+      </div>
+
+      {/* Player info + category */}
+      <div className="grid md:grid-cols-4 gap-3">
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Player Name</label>
+          <input type="text" value={playerName} onChange={e => setPlayerName(e.target.value)} className={inputClass} placeholder="e.g. CeeDee Lamb" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Position</label>
+          <input type="text" value={playerPos} onChange={e => setPlayerPos(e.target.value)} className={inputClass} placeholder="WR / RB / QB…" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">ADP</label>
+          <input type="number" value={playerAdp} onChange={e => setPlayerAdp(e.target.value)} className={inputClass} placeholder="e.g. 24.5" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Category</label>
+          <select value={category} onChange={e => setCategory(e.target.value)} className={inputClass}>
+            {FANTASY_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Timing + boldness + season */}
+      <div className="grid md:grid-cols-4 gap-3">
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Timing Window</label>
+          <select value={timingWindow} onChange={e => setTimingWindow(e.target.value)} className={inputClass}>
+            {TIMING_WINDOWS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Boldness (0–100)</label>
+          <input type="number" min={0} max={100} value={boldness} onChange={e => setBoldness(e.target.value)} className={inputClass} placeholder="e.g. 75" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Sport / Season</label>
+          <input type="text" value={sportSeason} onChange={e => setSportSeason(e.target.value)} className={inputClass} placeholder="e.g. 2025 NFL" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Date Made</label>
+          <input type="date" value={dateMade} onChange={e => setDateMade(e.target.value)} className={inputClass} />
+        </div>
+      </div>
+
+      {/* Outcome + accuracy + resolution + grader note */}
+      <div className="border-t border-gray-200 pt-4 grid md:grid-cols-4 gap-3">
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Outcome</label>
+          <select value={outcome} onChange={e => setOutcome(e.target.value)} className={inputClass}>
+            {FANTASY_OUTCOME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Accuracy Score</label>
+          <input type="number" min={0} max={100} value={accuracy} onChange={e => setAccuracy(e.target.value)} className={inputClass} placeholder="0–100" />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Resolution Date</label>
+          <input type="date" value={resDate} onChange={e => setResDate(e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Grader Note</label>
+          <input type="text" value={graderNote} onChange={e => setGraderNote(e.target.value)} className={inputClass} placeholder="What actually happened?" />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={isPending}
+          className="px-4 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors disabled:opacity-50"
+          style={{ backgroundColor: "#15803d" }}
+        >
+          {isPending ? "Saving…" : "Save changes"}
+        </button>
+        <button onClick={onClose} className="px-4 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-500 hover:text-gray-800 transition-colors">
+          Cancel
+        </button>
+        {saved && <span className="text-xs text-emerald-600">✓ Saved</span>}
+      </div>
+    </div>
+  );
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   breakout_call: "Breakout Call", bust_call: "Bust Call",
   sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
@@ -605,6 +775,7 @@ function FantasyTakesPanel() {
   const [gradingId, setGradingId] = useState<string | null>(null);
   const [gradeNote, setGradeNote] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editExpandedId, setEditExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     startLoad(async () => {
@@ -624,8 +795,13 @@ function FantasyTakesPanel() {
         )
       );
       setExpandedId(null);
+      setEditExpandedId(null);
     }
     setGradingId(null);
+  }
+
+  function updateFantasyTake(takeId: string, updated: Partial<FantasyTakeRow>) {
+    setTakes(prev => prev!.map(t => t.fantasy_take_id === takeId ? { ...t, ...updated } : t));
   }
 
   async function handleDelete(takeId: string) {
@@ -702,7 +878,8 @@ function FantasyTakesPanel() {
       {filtered.length > 0 && (
         <div className="rounded-xl border-2 divide-y divide-gray-200" style={{ borderColor: "#15803d", backgroundColor: "#f0fdf4" }}>
           {filtered.map(take => {
-            const isExpanded = expandedId === take.fantasy_take_id;
+            const isGradeExpanded = expandedId === take.fantasy_take_id;
+            const isEditExpanded  = editExpandedId === take.fantasy_take_id;
             const isResolved = take.outcome_status === "resolved";
 
             return (
@@ -742,9 +919,7 @@ function FantasyTakesPanel() {
                     </p>
 
                     <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-gray-400 font-mono">
-                      {take.resolution_date && (
-                        <span>Resolves {take.resolution_date}</span>
-                      )}
+                      {take.resolution_date && <span>Resolves {take.resolution_date}</span>}
                       {take.sport_season && <span>· {take.sport_season}</span>}
                       {take.boldness_score != null && <span>· Boldness {take.boldness_score}</span>}
                     </div>
@@ -758,18 +933,31 @@ function FantasyTakesPanel() {
                     </span>
 
                     <div className="flex items-center gap-2">
+                      {/* Grade button — only for unresolved */}
                       {!isResolved && (
                         <button
-                          onClick={() => setExpandedId(isExpanded ? null : take.fantasy_take_id)}
+                          onClick={() => { setExpandedId(isGradeExpanded ? null : take.fantasy_take_id); setEditExpandedId(null); }}
                           className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
-                            isExpanded
+                            isGradeExpanded
                               ? "border-green-600 text-green-800 bg-green-50"
                               : "border-gray-300 text-gray-500 hover:border-gray-500"
                           }`}
                         >
-                          {isExpanded ? "Close" : "Grade"}
+                          {isGradeExpanded ? "Close" : "Grade"}
                         </button>
                       )}
+                      {/* Edit button — always available */}
+                      <button
+                        onClick={() => { setEditExpandedId(isEditExpanded ? null : take.fantasy_take_id); setExpandedId(null); }}
+                        className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
+                          isEditExpanded
+                            ? "border-gray-600 text-gray-900 bg-gray-100"
+                            : "border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-800"
+                        }`}
+                      >
+                        {isEditExpanded ? "Close" : "Edit"}
+                      </button>
+                      {/* Delete */}
                       <button
                         onClick={() => handleDelete(take.fantasy_take_id)}
                         className="rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
@@ -782,7 +970,7 @@ function FantasyTakesPanel() {
                 </div>
 
                 {/* Grade panel */}
-                {isExpanded && (
+                {isGradeExpanded && (
                   <div className="mt-3 rounded-lg border border-green-200 bg-white p-4 space-y-3">
                     <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Grade this take</p>
                     <div className="flex flex-wrap gap-2">
@@ -811,6 +999,15 @@ function FantasyTakesPanel() {
                       <p className="text-xs text-green-600 animate-pulse">Saving…</p>
                     )}
                   </div>
+                )}
+
+                {/* Edit panel */}
+                {isEditExpanded && (
+                  <FantasyEditPanel
+                    take={take}
+                    onSaved={(updated) => updateFantasyTake(take.fantasy_take_id, updated)}
+                    onClose={() => setEditExpandedId(null)}
+                  />
                 )}
               </div>
             );

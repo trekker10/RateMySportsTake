@@ -126,6 +126,73 @@ export async function addFantasyTake(data: {
   return { success: true };
 }
 
+export async function saveFantasyTakeEdits(
+  fantasyTakeId: string,
+  edits: {
+    raw_text?: string;
+    player_name?: string | null;
+    player_position?: string | null;
+    player_adp?: number | null;
+    category?: string;
+    timing_window?: string | null;
+    boldness_score?: number | null;
+    date_made?: string;
+    resolution_date?: string | null;
+    sport_season?: string | null;
+    outcome_status?: string;
+    accuracy_score?: number | null;
+    grader_note?: string | null;
+  },
+): Promise<{ success: boolean; error?: string }> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  const supabase = createAdminClient();
+
+  // Recompute timing_modifier if timing_window changed
+  let timingModifier: number | undefined;
+  if (edits.timing_window !== undefined) {
+    const cfg = await getFantasyConfig();
+    const mods: Record<string, number> = {
+      preseason:    cfg.timing_preseason_mod,
+      post_draft:   cfg.timing_post_draft_mod,
+      early_season: cfg.timing_early_season_mod,
+      midseason:    cfg.timing_midseason_mod,
+      late_season:  cfg.timing_late_season_mod,
+      playoffs:     cfg.timing_playoffs_mod,
+    };
+    timingModifier = edits.timing_window ? (mods[edits.timing_window] ?? 0) : 0;
+  }
+
+  const payload: Record<string, unknown> = { ...edits };
+  if (timingModifier !== undefined) payload.timing_modifier = timingModifier;
+
+  const { error } = await supabase
+    .from("fantasy_takes")
+    .update(payload)
+    .eq("fantasy_take_id", fantasyTakeId);
+
+  if (error) return { success: false, error: error.message };
+
+  // Recalculate score for the expert
+  const { data: take } = await supabase
+    .from("fantasy_takes")
+    .select("expert_id")
+    .eq("fantasy_take_id", fantasyTakeId)
+    .single();
+
+  if (take) {
+    await recalculateFantasyScore(take.expert_id);
+    revalidatePath(`/experts/${take.expert_id}`);
+  }
+
+  revalidatePath("/admin/fantasy-take-score");
+  revalidatePath("/experts");
+  revalidatePath("/fantasy");
+
+  return { success: true };
+}
+
 export async function gradeFantasyTake(
   fantasyTakeId: string,
   accuracyScore: number,

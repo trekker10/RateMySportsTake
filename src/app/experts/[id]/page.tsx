@@ -185,7 +185,7 @@ export default async function ExpertProfilePage({
               <p className="font-mono text-[10px] tracking-[0.18em] text-gray-400 uppercase">Analyst · {rankLabel}</p>
               <h1 className="font-black italic leading-none tracking-tight mt-1" style={{ fontSize: "clamp(1.6rem, 6.5vw, 2.5rem)" }}>
                 {firstName && <>{firstName} </>}
-                <span style={{ color: "#e2241a" }}>{lastName}</span>
+                <span style={{ color: expert.is_fantasy_guru ? "#15803d" : "#e2241a" }}>{lastName}</span>
               </h1>
 
               <div className="mt-2 space-y-0.5">
@@ -207,19 +207,20 @@ export default async function ExpertProfilePage({
               <div className="mt-3 mb-1">
                 <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
               </div>
-              <div className="flex items-baseline gap-2 mt-3">
-                <span className="font-mono text-[9px] tracking-widest text-gray-400 uppercase">TakeScore</span>
-                <span className="font-black text-2xl leading-none" style={{ color: expert.overall_rating > 0 ? gradeColor(scoreToGrade(expert.overall_rating, gradeConfig)) : "#9ca3af" }}>
-                  {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
-                </span>
-                {rank > 0 && <span className="font-mono text-[10px] text-gray-400">#{rank}</span>}
-              </div>
-              {expert.is_fantasy_guru && expert.fantasy_overall_rating > 0 && (
-                <div className="flex items-baseline gap-2 mt-1.5">
+              {expert.is_fantasy_guru ? (
+                <div className="flex items-baseline gap-2 mt-3">
                   <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</span>
-                  <span className="font-black text-xl leading-none" style={{ color: "#15803d" }}>
-                    {scoreToGrade(expert.fantasy_overall_rating, gradeConfig)}
+                  <span className="font-black text-2xl leading-none" style={{ color: "#15803d" }}>
+                    {expert.fantasy_overall_rating > 0 ? scoreToGrade(expert.fantasy_overall_rating, gradeConfig) : "—"}
                   </span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2 mt-3">
+                  <span className="font-mono text-[9px] tracking-widest text-gray-400 uppercase">TakeScore</span>
+                  <span className="font-black text-2xl leading-none" style={{ color: expert.overall_rating > 0 ? gradeColor(scoreToGrade(expert.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                    {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
+                  </span>
+                  {rank > 0 && <span className="font-mono text-[10px] text-gray-400">#{rank}</span>}
                 </div>
               )}
             </div>
@@ -242,7 +243,7 @@ export default async function ExpertProfilePage({
             <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">Analyst · {rankLabel}</p>
             <h1 className="font-black italic leading-none tracking-tight mt-2" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
               {firstName && <>{firstName}<br /></>}
-              <span style={{ color: "#e2241a" }}>{lastName}</span>
+              <span style={{ color: expert.is_fantasy_guru ? "#15803d" : "#e2241a" }}>{lastName}</span>
             </h1>
             <p className="italic text-lg text-gray-500 mt-3">
               {[expert.bio, expert.outlet, expert.sport_focus?.join(", ")].filter(Boolean).join(" · ")}
@@ -256,18 +257,24 @@ export default async function ExpertProfilePage({
           </div>
 
           <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
-            <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
-            <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: expert.overall_rating > 0 ? gradeColor(scoreToGrade(expert.overall_rating, gradeConfig)) : "#9ca3af" }}>
-              {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
-            </p>
-            {rank > 0 && <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>}
-            {expert.is_fantasy_guru && expert.fantasy_overall_rating > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-300">
-                <p className="font-mono text-[10px] tracking-[0.18em] uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</p>
-                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(2.5rem, 4vw, 4rem)", color: "#15803d" }}>
-                  {scoreToGrade(expert.fantasy_overall_rating, gradeConfig)}
+            {expert.is_fantasy_guru ? (
+              <>
+                <p className="font-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</p>
+                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#15803d" }}>
+                  {expert.fantasy_overall_rating > 0 ? scoreToGrade(expert.fantasy_overall_rating, gradeConfig) : "—"}
                 </p>
-              </div>
+                {expert.fantasy_overall_rating > 0 && (
+                  <p className="italic text-gray-500 mt-2 text-sm">fantasy guru rating.</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">TakeScore</p>
+                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: expert.overall_rating > 0 ? gradeColor(scoreToGrade(expert.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                  {expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—"}
+                </p>
+                {rank > 0 && <p className="italic text-gray-500 mt-2 text-sm">ranked {rankLabel} overall.</p>}
+              </>
             )}
           </div>
         </div>

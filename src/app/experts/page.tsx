@@ -5,13 +5,20 @@ import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
+import TakeCard from "@/components/TakeCard";
+
+const RED = "#e2241a";
+const SPORTS = ["ALL SPORTS", "NBA", "NFL", "MLB", "NHL", "Soccer", "College Football", "MMA"];
 
 export default async function ExpertsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; sport?: string; view?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, sport, view: viewParam } = await searchParams;
+  const activeView  = viewParam === "takes" ? "takes" : "leaderboard";
+  const activeSport = sport ?? "ALL SPORTS";
+
   const supabase = await createClient();
   const gradeConfig = await getTakeScoreConfig();
 
@@ -19,9 +26,17 @@ export default async function ExpertsPage({
     .toISOString()
     .split("T")[0];
 
-  let expertsQuery = supabase.from("experts").select("*").eq("verified", true).neq("is_fantasy_guru", true).order("overall_rating", { ascending: false });
-  if (q) {
-    expertsQuery = expertsQuery.or(`name.ilike.%${q}%,outlet.ilike.%${q}%`);
+  // ── Experts query ─────────────────────────────────────────────────────────
+  let expertsQuery = supabase
+    .from("experts")
+    .select("*")
+    .eq("verified", true)
+    .neq("is_fantasy_guru", true)
+    .order("overall_rating", { ascending: false });
+
+  if (q) expertsQuery = expertsQuery.or(`name.ilike.%${q}%,outlet.ilike.%${q}%`);
+  if (activeSport !== "ALL SPORTS") {
+    expertsQuery = expertsQuery.contains("sport_focus", [activeSport]);
   }
 
   const [{ data: experts }, { data: recentTakes }] = await Promise.all([
@@ -31,6 +46,8 @@ export default async function ExpertsPage({
       .select("expert_id, grade, outcome_status, difficulty_score")
       .gte("date_made", thirtyDaysAgo),
   ]);
+
+  const expertIds = (experts ?? []).map((e) => e.expert_id);
 
   const allExpertSnaps = (experts ?? []).map((e) => ({
     expert_id: e.expert_id,
@@ -44,122 +61,237 @@ export default async function ExpertsPage({
     accolades: computeAccolades(e.expert_id, e.overall_rating, allExpertSnaps, recentTakes ?? []),
   }));
 
-  return (
-    <div className="space-y-6">
+  // ── Takes query (only when view=takes) ────────────────────────────────────
+  let takesRows: Awaited<ReturnType<typeof supabase.from<"takes", never>>>["data"] = null;
+  if (activeView === "takes" && expertIds.length > 0) {
+    let takesQuery = supabase
+      .from("takes")
+      .select("*, experts(name, expert_id, outlet)")
+      .in("expert_id", expertIds)
+      .order("date_made", { ascending: false })
+      .limit(50);
 
-      {/* Header */}
-      <div className="flex items-end justify-between flex-wrap gap-4">
-        <div>
-          <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">The Index · Default View</p>
-          <h1 className="text-4xl font-black tracking-tight mt-1">
-            TOP ANALYSTS{" "}
-            <span style={{ color: "#e2241a" }}>· LEADERBOARD</span>
-          </h1>
-          <p className="mt-1 italic text-gray-500">
-            {experts?.length ?? 0} expert{experts?.length !== 1 ? "s" : ""}
-            {q ? ` matching "${q}"` : " tracked · ranked by TakeScore"}
-          </p>
+    if (activeSport !== "ALL SPORTS") takesQuery = takesQuery.ilike("sport", `%${activeSport}%`);
+    if (q) takesQuery = takesQuery.or(`raw_text.ilike.%${q}%,summary.ilike.%${q}%`);
+
+    const { data } = await takesQuery;
+    takesRows = data;
+  }
+
+  // ── URL helpers ───────────────────────────────────────────────────────────
+  function sportHref(s: string) {
+    const sp = s === "ALL SPORTS" ? undefined : s;
+    const params = new URLSearchParams();
+    if (sp)  params.set("sport", sp);
+    if (q)   params.set("q", q);
+    params.set("view", activeView);
+    const str = params.toString();
+    return `/experts${str ? `?${str}` : ""}`;
+  }
+
+  function viewHref(v: "leaderboard" | "takes") {
+    const params = new URLSearchParams();
+    if (activeSport !== "ALL SPORTS") params.set("sport", activeSport);
+    if (q) params.set("q", q);
+    if (v !== "leaderboard") params.set("view", v);
+    const str = params.toString();
+    return `/experts${str ? `?${str}` : ""}`;
+  }
+
+  return (
+    <div className="space-y-0">
+
+      {/* ── Header band ── */}
+      <div className="mb-5">
+        <p className="font-mono text-[11px] tracking-[0.22em] text-gray-400 uppercase">
+          The Index · {activeView === "takes" ? "Takes Feed" : "Default View"}
+        </p>
+        <h1 className="text-4xl font-black tracking-tight mt-1">
+          TOP ANALYSTS{" "}
+          <span style={{ color: RED }}>· {activeView === "takes" ? "TAKES" : "LEADERBOARD"}</span>
+        </h1>
+        <p className="mt-1 italic text-gray-500">
+          {experts?.length ?? 0} analyst{experts?.length !== 1 ? "s" : ""}
+          {activeSport !== "ALL SPORTS" ? ` in ${activeSport}` : ""}
+          {q ? ` matching "${q}"` : " tracked · ranked by TakeScore"}
+        </p>
+      </div>
+
+      {/* ── Sport filter + view toggle row ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+        {/* Sport chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {SPORTS.map((s) => {
+            const isActive = s === activeSport;
+            return (
+              <Link
+                key={s}
+                href={sportHref(s)}
+                className={`px-3 py-1 font-mono text-[11px] tracking-wider border-2 transition-colors ${
+                  isActive
+                    ? "text-white border-gray-900"
+                    : "bg-white text-gray-500 border-gray-300 hover:border-gray-600 hover:text-gray-800"
+                }`}
+                style={isActive ? { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" } : {}}
+              >
+                {s}
+              </Link>
+            );
+          })}
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {["ALL SPORTS", "NBA", "NFL", "MLB", "NHL"].map((s, i) => (
-            <span
-              key={s}
-              className={`px-3 py-1 font-mono text-[11px] tracking-wider border ${
-                i === 0
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-500 border-gray-300"
-              }`}
-            >
-              {s}
-            </span>
-          ))}
+
+        {/* LEADERBOARD / TAKES toggle */}
+        <div className="flex border-2 border-gray-900 overflow-hidden shrink-0">
+          <Link
+            href={viewHref("leaderboard")}
+            className={`flex items-center gap-1.5 px-4 py-2 font-mono text-[11px] tracking-widest uppercase font-black transition-colors ${
+              activeView === "leaderboard"
+                ? "text-white"
+                : "bg-white text-gray-500 hover:text-gray-900"
+            }`}
+            style={activeView === "leaderboard" ? { backgroundColor: "#1a1a1a" } : {}}
+          >
+            <span>≡</span> Leaderboard
+          </Link>
+          <Link
+            href={viewHref("takes")}
+            className={`flex items-center gap-1.5 px-4 py-2 font-mono text-[11px] tracking-widest uppercase font-black border-l-2 border-gray-900 transition-colors ${
+              activeView === "takes"
+                ? "text-white"
+                : "bg-white text-gray-500 hover:text-gray-900"
+            }`}
+            style={activeView === "takes" ? { backgroundColor: RED } : {}}
+          >
+            <span>💬</span> Takes
+          </Link>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border-2 border-gray-900 overflow-hidden">
-
-        {/* Header row — desktop only */}
-        <div className="hidden md:grid items-center px-4 py-2.5 bg-gray-900 text-white"
-          style={{ gridTemplateColumns: "56px 1fr 150px 80px 110px" }}>
-          <div className="font-mono text-[10px] tracking-[0.15em]">RANK</div>
-          <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
-          <div className="font-mono text-[10px] tracking-[0.15em]">OUTLET</div>
-          <div className="font-mono text-[10px] tracking-[0.15em]">TAKES</div>
-          <div className="font-mono text-[10px] tracking-[0.15em]">TAKESCORE</div>
+      {/* ── Analyst/Fantasy tab strip ── */}
+      <div className="flex gap-0 border-b-2 border-gray-900 mb-5">
+        <div
+          className="px-5 py-2.5 font-mono text-[11px] tracking-widest uppercase font-black -mb-0.5 border-b-2"
+          style={{ color: RED, borderColor: RED }}
+        >
+          Analysts
         </div>
-        {/* Mobile header */}
-        <div className="grid md:hidden items-center px-4 py-2.5 bg-gray-900 text-white"
-          style={{ gridTemplateColumns: "44px 1fr 80px" }}>
-          <div className="font-mono text-[10px] tracking-[0.15em]">RK</div>
-          <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
-          <div className="font-mono text-[10px] tracking-[0.15em]">SCORE</div>
-        </div>
+        <Link
+          href="/fantasy"
+          className="px-5 py-2.5 font-mono text-[11px] tracking-widest uppercase border-b-2 border-transparent -mb-0.5 transition-colors font-black hover:opacity-80"
+          style={{ color: "#15803d" }}
+        >
+          Fantasy Gurus
+        </Link>
+      </div>
 
-        {rows.length > 0 ? rows.map((e, i) => (
-          <Link key={e.expert_id} href={`/experts/${e.expert_id}`} className="block">
-            {/* Desktop row */}
-            <div
-              className="hidden md:grid items-center px-4 py-3.5 hover:bg-gray-50 transition-colors"
-              style={{
-                gridTemplateColumns: "56px 1fr 150px 80px 110px",
-                borderTop: "1px dashed #d1d5db",
-                backgroundColor: i % 2 === 1 ? "#fafafa" : "#ffffff",
-              }}
-            >
-              <div className="font-black text-[2rem] leading-none" style={{ color: e.rank <= 3 ? "#e2241a" : "#d1d5db" }}>
-                {String(e.rank).padStart(2, "0")}
+      {/* ── LEADERBOARD view ── */}
+      {activeView === "leaderboard" && (
+        <div className="border-2 border-gray-900 overflow-hidden">
+          {/* Desktop header */}
+          <div className="hidden md:grid items-center px-4 py-2.5 bg-gray-900 text-white"
+            style={{ gridTemplateColumns: "56px 1fr 150px 80px 110px" }}>
+            <div className="font-mono text-[10px] tracking-[0.15em]">RANK</div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">OUTLET</div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">TAKES</div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">TAKESCORE</div>
+          </div>
+          {/* Mobile header */}
+          <div className="grid md:hidden items-center px-4 py-2.5 bg-gray-900 text-white"
+            style={{ gridTemplateColumns: "44px 1fr 80px" }}>
+            <div className="font-mono text-[10px] tracking-[0.15em]">RK</div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">SCORE</div>
+          </div>
+
+          {rows.length > 0 ? rows.map((e, i) => (
+            <Link key={e.expert_id} href={`/experts/${e.expert_id}`} className="block">
+              {/* Desktop row */}
+              <div
+                className="hidden md:grid items-center px-4 py-3.5 hover:bg-gray-50 transition-colors"
+                style={{
+                  gridTemplateColumns: "56px 1fr 150px 80px 110px",
+                  borderTop: "1px dashed #d1d5db",
+                  backgroundColor: i % 2 === 1 ? "#fafafa" : "#ffffff",
+                }}
+              >
+                <div className="font-black text-[2rem] leading-none" style={{ color: e.rank <= 3 ? RED : "#d1d5db" }}>
+                  {String(e.rank).padStart(2, "0")}
+                </div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
+                    <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-black text-base uppercase tracking-tight truncate">{e.name}</p>
+                    {e.bio && <p className="text-sm italic text-gray-400 truncate max-w-[280px]">{e.bio}</p>}
+                    {e.accolades.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {e.accolades.map((a: Accolade) => (
+                          <span key={a.label} className={`rounded-full px-2 py-0.5 text-[10px] ${a.className}`}>{a.emoji} {a.label}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-mono text-xs tracking-wider text-gray-700 uppercase truncate">{e.outlet ?? "—"}</p>
+                  {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
+                </div>
+                <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
+                <div className="font-black text-2xl" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                  {e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}
+                </div>
               </div>
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
+
+              {/* Mobile row */}
+              <div
+                className="md:hidden flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                style={{ borderTop: "1px dashed #d1d5db", backgroundColor: i % 2 === 1 ? "#fafafa" : "#ffffff" }}
+              >
+                <span className="font-black text-xl w-9 shrink-0 leading-none" style={{ color: e.rank <= 3 ? RED : "#d1d5db" }}>
+                  {String(e.rank).padStart(2, "0")}
+                </span>
+                <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
                   <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
                 </div>
-                <div className="min-w-0">
-                  <p className="font-black text-base uppercase tracking-tight truncate">{e.name}</p>
-                  {e.bio && <p className="text-sm italic text-gray-400 truncate max-w-[280px]">{e.bio}</p>}
-                  {e.accolades.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {e.accolades.map((a: Accolade) => (
-                        <span key={a.label} className={`rounded-full px-2 py-0.5 text-[10px] ${a.className}`}>{a.emoji} {a.label}</span>
-                      ))}
-                    </div>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
+                  <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.outlet ?? e.sport_focus?.[0] ?? "—"}</p>
                 </div>
+                <span className="font-black text-2xl shrink-0" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                  {e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}
+                </span>
               </div>
-              <div>
-                <p className="font-mono text-xs tracking-wider text-gray-700 uppercase truncate">{e.outlet ?? "—"}</p>
-                {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
-              </div>
-              <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
-              <div className="font-black text-2xl" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>{e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}</div>
+            </Link>
+          )) : (
+            <div className="px-4 py-12 text-center text-gray-400">
+              No analysts yet — they&apos;re created automatically when you submit a take.
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Mobile row */}
-            <div
-              className="md:hidden flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-              style={{ borderTop: "1px dashed #d1d5db", backgroundColor: i % 2 === 1 ? "#fafafa" : "#ffffff" }}
-            >
-              <span className="font-black text-xl w-9 shrink-0 leading-none" style={{ color: e.rank <= 3 ? "#e2241a" : "#d1d5db" }}>
-                {String(e.rank).padStart(2, "0")}
-              </span>
-              <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-bold text-gray-600">
-                <Avatar name={e.name} avatarUrl={e.avatar_url} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
-                <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.outlet ?? e.sport_focus?.[0] ?? "—"}</p>
-              </div>
-              <span className="font-black text-2xl shrink-0" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
-                {e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}
-              </span>
+      {/* ── TAKES view ── */}
+      {activeView === "takes" && (
+        <div>
+          {takesRows && takesRows.length > 0 ? (
+            <div className="space-y-3">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {takesRows.map((take) => <TakeCard key={take.take_id} take={take as any} showExpert />)}
             </div>
-          </Link>
-        )) : (
-          <div className="px-4 py-12 text-center text-gray-400">
-            No experts yet — they&apos;re created automatically when you submit a take.
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="border-2 border-gray-900 px-4 py-12 text-center italic text-gray-400 bg-white">
+              {expertIds.length === 0
+                ? "No analysts found with those filters."
+                : activeSport !== "ALL SPORTS"
+                ? `No takes found for ${activeSport} analysts.`
+                : "No takes yet from these analysts."}
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

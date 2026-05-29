@@ -99,7 +99,7 @@ export default async function ExpertProfilePage({
       ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("takes").select("grade").eq("expert_id", id).not("grade", "is", null),
-    supabase.from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, date_made, resolution_date, sport_season, format").eq("expert_id", id).order("date_made", { ascending: false }),
+    supabase.from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, date_made, resolution_date, sport_season").eq("expert_id", id).order("date_made", { ascending: false }),
   ]);
 
   if (!expert) notFound();
@@ -411,9 +411,9 @@ export default async function ExpertProfilePage({
                           {ft.sport_season && (
                             <span className="text-[10px] font-mono text-gray-400">· {ft.sport_season}</span>
                           )}
-                          {ft.format && ft.format !== "both" && (
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: ft.format === "dynasty" ? "#ede9fe" : "#e0f2fe", color: ft.format === "dynasty" ? "#7c3aed" : "#0284c7" }}>
-                              {ft.format}
+                          {(ft as any).format && (ft as any).format !== "both" && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: (ft as any).format === "dynasty" ? "#ede9fe" : "#e0f2fe", color: (ft as any).format === "dynasty" ? "#7c3aed" : "#0284c7" }}>
+                              {(ft as any).format}
                             </span>
                           )}
                         </div>

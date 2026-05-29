@@ -69,14 +69,14 @@ export default async function FantasyPage({
     raw_text: string; player_name: string | null; player_position: string | null;
     timing_window: string | null; boldness_score: number | null;
     accuracy_score: number | null; outcome_status: string;
-    date_made: string; sport_season: string | null; format: string | null;
+    date_made: string; sport_season: string | null; format?: string | null;
     experts: { name: string; expert_id: string } | null;
   }> = [];
 
   if (activeView === "takes" && expertIds.length > 0) {
     let ftQuery = supabase
       .from("fantasy_takes")
-      .select("fantasy_take_id, expert_id, category, raw_text, player_name, player_position, timing_window, boldness_score, accuracy_score, outcome_status, date_made, sport_season, format, experts(name, expert_id)")
+      .select("fantasy_take_id, expert_id, category, raw_text, player_name, player_position, timing_window, boldness_score, accuracy_score, outcome_status, date_made, sport_season, experts(name, expert_id)")
       .in("expert_id", expertIds)
       .order("date_made", { ascending: false })
       .limit(50);

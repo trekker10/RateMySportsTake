@@ -228,7 +228,7 @@ export default async function ExpertProfilePage({
               </div>
               {expert.is_fantasy_guru ? (
                 <div className="flex items-baseline gap-2 mt-3">
-                  <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</span>
+                  <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: "#15803d" }}>Overall Fantasy Take Score</span>
                   <span className="font-black text-2xl leading-none" style={{ color: "#15803d" }}>
                     {expert.fantasy_overall_rating > 0 ? scoreToGrade(expert.fantasy_overall_rating, gradeConfig) : "—"}
                   </span>
@@ -278,7 +278,7 @@ export default async function ExpertProfilePage({
           <div className="border-l-2 border-gray-900 px-6 py-6 flex flex-col justify-center" style={{ backgroundColor: "#f5f1e8" }}>
             {expert.is_fantasy_guru ? (
               <>
-                <p className="font-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: "#15803d" }}>Fantasy TakeScore</p>
+                <p className="font-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: "#15803d" }}>Overall Fantasy Take Score</p>
                 <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#15803d" }}>
                   {expert.fantasy_overall_rating > 0 ? scoreToGrade(expert.fantasy_overall_rating, gradeConfig) : "—"}
                 </p>
@@ -306,12 +306,11 @@ export default async function ExpertProfilePage({
           <div className="max-w-5xl mx-auto grid grid-cols-3 md:grid-cols-6 divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900">
             {positionGrades.map(({ pos, grade, color, count }) => (
               <div key={pos} className="px-4 py-4">
-                <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">Position</p>
-                <p className="font-black italic leading-none mt-1" style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", color }}>
+                <p className="font-mono text-[11px] tracking-wider text-gray-500 uppercase">{pos}</p>
+                <p className="font-black italic leading-none mt-1" style={{ fontSize: "clamp(2.8rem, 6vw, 4rem)", color }}>
                   {grade ?? "—"}
                 </p>
-                <p className="font-mono text-[11px] tracking-wider text-gray-500 mt-1 uppercase">{pos}</p>
-                <p className="italic text-xs text-gray-400">{count > 0 ? `${count} graded` : "no data"}</p>
+                <p className="italic text-xs text-gray-400 mt-1">{count > 0 ? `${count} graded` : "no data"}</p>
               </div>
             ))}
           </div>

@@ -161,6 +161,17 @@ export default async function ExpertProfilePage({
       : []),
   ];
 
+  // Fantasy guru overall grade — average accuracy_score across all resolved takes
+  const resolvedFantasyTakes = (fantasyTakes ?? []).filter(
+    (ft) => ft.outcome_status === "resolved" && ft.accuracy_score != null
+  );
+  const overallFantasyAvg =
+    resolvedFantasyTakes.length > 0
+      ? resolvedFantasyTakes.reduce((sum, ft) => sum + (ft.accuracy_score ?? 0), 0) / resolvedFantasyTakes.length
+      : null;
+  const overallFantasyGrade = overallFantasyAvg != null ? scoreToGrade(overallFantasyAvg, gradeConfig) : null;
+  const overallFantasyColor = overallFantasyGrade ? gradeColor(overallFantasyGrade) : "#9ca3af";
+
   // Fantasy guru position grades — average accuracy_score by player_position
   const POSITIONS = ["QB", "RB", "WR", "TE", "FLEX", "K/DST"] as const;
   const positionGrades = POSITIONS.map((pos) => {
@@ -229,8 +240,8 @@ export default async function ExpertProfilePage({
               {expert.is_fantasy_guru ? (
                 <div className="flex items-baseline gap-2 mt-3">
                   <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: "#15803d" }}>Overall Fantasy Take Score</span>
-                  <span className="font-black text-2xl leading-none" style={{ color: "#15803d" }}>
-                    {expert.fantasy_overall_rating > 0 ? scoreToGrade(expert.fantasy_overall_rating, gradeConfig) : "—"}
+                  <span className="font-black text-2xl leading-none" style={{ color: overallFantasyGrade ? overallFantasyColor : "#9ca3af" }}>
+                    {overallFantasyGrade ?? "—"}
                   </span>
                 </div>
               ) : (
@@ -279,11 +290,13 @@ export default async function ExpertProfilePage({
             {expert.is_fantasy_guru ? (
               <>
                 <p className="font-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: "#15803d" }}>Overall Fantasy Take Score</p>
-                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: "#15803d" }}>
-                  {expert.fantasy_overall_rating > 0 ? scoreToGrade(expert.fantasy_overall_rating, gradeConfig) : "—"}
+                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(4rem, 6vw, 6.5rem)", color: overallFantasyGrade ? overallFantasyColor : "#9ca3af" }}>
+                  {overallFantasyGrade ?? "—"}
                 </p>
-                {expert.fantasy_overall_rating > 0 && (
-                  <p className="italic text-gray-500 mt-2 text-sm">fantasy guru rating.</p>
+                {overallFantasyGrade && (
+                  <p className="italic text-gray-500 mt-2 text-sm">
+                    {resolvedFantasyTakes.length} graded take{resolvedFantasyTakes.length !== 1 ? "s" : ""}.
+                  </p>
                 )}
               </>
             ) : (

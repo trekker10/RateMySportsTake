@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { signOut } from "@/app/auth/actions";
 
 const NAV_LINKS = [
-  { label: "Analysts", href: "/experts" },
-  { label: "Fantasy",  href: "/fantasy" },
+  { label: "Analysts", href: "/experts", color: "#e2241a" },
+  { label: "Fantasy",  href: "/fantasy", color: "#15803d" },
 ];
 
 export default function ProfileDropdown({
@@ -48,7 +48,8 @@ export default function ProfileDropdown({
                 key={link.href + link.label}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-3 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
+                className="block px-4 py-3 font-mono text-[11px] tracking-widest uppercase font-black hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
+                style={{ color: link.color }}
               >
                 {link.label}
               </a>

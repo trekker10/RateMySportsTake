@@ -3,10 +3,17 @@
 import { analyzeFantasyTweet } from "@/lib/ai/analyze-fantasy-take";
 import { suggestBoldness } from "@/lib/fantasy-takescore";
 import { getFantasyConfig } from "@/app/actions/fantasy-takescore";
+import { getAdp2025 } from "@/data/adp-2025";
 
 // ─── ADP Lookup ───────────────────────────────────────────────────────────────
 
-async function lookupPlayerADP(playerName: string): Promise<number | null> {
+async function lookupPlayerADP(playerName: string, sportSeason?: string): Promise<number | null> {
+  // For 2025 takes use the bundled static CSV — instant and accurate
+  const year = sportSeason?.match(/\d{4}/)?.[0];
+  if (year === "2025") {
+    return getAdp2025(playerName);
+  }
+
   if (!playerName) return null;
 
   const nameLower = playerName.toLowerCase().trim();
@@ -144,6 +151,7 @@ export interface FantasyAutoFillResult {
   resolution_date: string;
   summary: string;
   reasoning: string;
+  grading_criteria: string;
   adp_source: "fantasypros" | "estimated" | "none";
 }
 
@@ -160,7 +168,7 @@ export async function analyzeFantasyTakeAction(
     let adpSource: FantasyAutoFillResult["adp_source"] = "none";
 
     if (analysis.player_name) {
-      adp = await lookupPlayerADP(analysis.player_name);
+      adp = await lookupPlayerADP(analysis.player_name, analysis.sport_season);
       adpSource = adp !== null ? "fantasypros" : "none";
     }
 
@@ -187,9 +195,10 @@ export async function analyzeFantasyTakeAction(
         boldness_score:  boldness,
         sport_season:    analysis.sport_season,
         resolution_date: resolutionDate,
-        summary:         analysis.summary,
-        reasoning:       analysis.reasoning,
-        adp_source:      adpSource,
+        summary:          analysis.summary,
+        reasoning:        analysis.reasoning,
+        grading_criteria: analysis.grading_criteria,
+        adp_source:       adpSource,
       },
     };
   } catch (err) {

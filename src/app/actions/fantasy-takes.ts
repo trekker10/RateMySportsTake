@@ -143,6 +143,7 @@ export async function saveFantasyTakeEdits(
     outcome_status?: string;
     accuracy_score?: number | null;
     grader_note?: string | null;
+    grading_criteria?: string | null;
   },
 ): Promise<{ success: boolean; error?: string }> {
   const isAdmin = await checkIsAdmin();

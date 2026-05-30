@@ -36,7 +36,10 @@ interface Props {
 function TakeRow({ take, index }: { take: ProfileTake; index: number }) {
   const v = verdictTag(take.outcome_status);
   const impact = gradeArrows(take.grade);
-  const displayText = (take.summary ?? take.raw_text).replace(/^The analyst/i, "Analyst");
+  // Prefer verbatim raw_text; fall back to summary and flag it as a paraphrase
+  const hasVerbatim = !!take.raw_text?.trim();
+  const displayText = take.raw_text?.trim() || take.summary?.trim() || "";
+  const isParaphrase = !hasVerbatim && !!take.summary;
   const analysis = take.outcome_notes ?? take.grade_notes;
 
   return (
@@ -52,7 +55,10 @@ function TakeRow({ take, index }: { take: ProfileTake; index: number }) {
       {/* Take + analysis + buttons */}
       <div className="flex-1 min-w-0">
         <div className="px-4 py-3.5" style={{ backgroundColor: "#f5f1e9" }}>
-          <p className="italic text-base leading-snug text-gray-800">
+          {isParaphrase && (
+            <p className="font-mono text-[9px] tracking-widest text-gray-400 uppercase mb-1.5">[Paraphrase]</p>
+          )}
+          <p className="italic text-base leading-snug text-gray-800 whitespace-pre-wrap">
             &ldquo;{displayText}&rdquo;
           </p>
         </div>

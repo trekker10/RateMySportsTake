@@ -12,6 +12,7 @@ export interface FantasyTakeAnalysis {
   sport_season: string;                  // e.g. "2026 NFL"
   summary: string;
   reasoning: string;
+  grading_criteria: string;             // "Take is TRUE if X. Take is FALSE if Y."
 }
 
 export async function analyzeFantasyTweet(
@@ -66,7 +67,8 @@ Return JSON with exactly these fields:
   "is_weekly": true if this is a single-week prediction (start/sit this week, stream this week), false if season-long,
   "sport_season": the NFL season year as a string e.g. "2026 NFL" — infer from context or use the year closest to the date made,
   "summary": one neutral sentence describing exactly what is being predicted,
-  "reasoning": one sentence explaining your category/timing/format choices
+  "reasoning": one sentence explaining your category/timing/format choices,
+  "grading_criteria": "Take is TRUE if [specific measurable condition — player stats, finish position, rank relative to ADP, etc.]. Take is FALSE if [the opposite condition]."
 }`,
       },
     ],
@@ -84,15 +86,16 @@ Return JSON with exactly these fields:
       format:          parsed.format          ?? "both",
       is_weekly:       parsed.is_weekly       ?? false,
       sport_season:    parsed.sport_season    ?? "2026 NFL",
-      summary:         parsed.summary         ?? "",
-      reasoning:       parsed.reasoning       ?? "",
+      summary:          parsed.summary          ?? "",
+      reasoning:        parsed.reasoning        ?? "",
+      grading_criteria: parsed.grading_criteria ?? "",
     };
   } catch {
     return {
       player_name: null, player_position: null,
       category: "breakout_call", timing_window: "early_season",
       format: "both", is_weekly: false, sport_season: "2026 NFL",
-      summary: "", reasoning: "",
+      summary: "", reasoning: "", grading_criteria: "",
     };
   }
 }

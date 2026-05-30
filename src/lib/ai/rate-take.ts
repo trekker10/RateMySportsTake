@@ -53,7 +53,7 @@ Return JSON with exactly these fields:
   "confidence_claimed": integer 1-10 (1=heavily hedged, 10=stated as an absolute guarantee),
   "time_horizon": one of "immediate" | "this_season" | "this_year" | "multi_year" | "career" | "unresolvable",
   "time_horizon_date": estimated YYYY-MM-DD when the outcome will be known, or null if unresolvable,
-  "summary": one neutral sentence restating exactly what is being claimed,
+  "summary": one sentence restating the claim in first person as if the analyst said it themselves (e.g. "I think Romeo Doubs will be transformative for the Patriots." — NOT "The analyst predicts..."),
   "grading_criteria": specific measurable definition of what would make this take TRUE (used for grading later),
   "flags": array of zero or more from ["bold_call", "guaranteed", "flip_risk", "vague", "unfalsifiable", "recency_bias", "hot_take", "contrarian"]
 }`,

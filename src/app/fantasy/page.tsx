@@ -1,11 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
+
+export const dynamic = "force-dynamic";
 
 const GREEN = "#15803d";
 
@@ -33,10 +35,13 @@ export default async function FantasyPage({
     .toISOString()
     .split("T")[0];
 
-  // ── Gurus query ───────────────────────────────────────────────────────────
-  let expertsQuery = supabase
+  const adminSupabase = createAdminClient();
+
+  // ── Gurus query — use admin client so RLS never blocks ────────────────────
+  // fantasy_takes(count) uses the FK relationship to embed take counts in one query
+  let expertsQuery = adminSupabase
     .from("experts")
-    .select("*")
+    .select("*, fantasy_takes(count)")
     .eq("is_fantasy_guru", true)
     .order("fantasy_overall_rating", { ascending: false });
 
@@ -75,7 +80,6 @@ export default async function FantasyPage({
   }> = [];
 
   if (activeView === "takes" && expertIds.length > 0) {
-    const adminSupabase = createAdminClient();
     let ftQuery = adminSupabase
       .from("fantasy_takes")
       .select("fantasy_take_id, expert_id, category, raw_text, player_name, player_position, timing_window, boldness_score, accuracy_score, outcome_status, date_made, sport_season, experts(name, expert_id)")
@@ -236,7 +240,10 @@ export default async function FantasyPage({
                   <p className="font-mono text-xs tracking-wider text-gray-700 uppercase truncate">{e.outlet ?? "—"}</p>
                   {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
                 </div>
-                <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
+                <div className="font-black text-xl text-gray-900">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(e as any).fantasy_takes?.[0]?.count ?? 0}
+                </div>
                 <div className="font-black text-2xl" style={{ color: (e.fantasy_overall_rating ?? 0) > 0 ? gradeColor(scoreToGrade(e.fantasy_overall_rating ?? 0, gradeConfig)) : "#9ca3af" }}>
                   {(e.fantasy_overall_rating ?? 0) > 0 ? scoreToGrade(e.fantasy_overall_rating ?? 0, gradeConfig) : "—"}
                 </div>

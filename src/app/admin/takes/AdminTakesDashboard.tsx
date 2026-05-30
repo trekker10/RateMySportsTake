@@ -191,6 +191,8 @@ export default function AdminTakesDashboard() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<"date_made" | "time_horizon_date" | "expert_name" | "grade">("date_made");
   const [sortAsc, setSortAsc] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulking, setBulking] = useState(false);
 
   useEffect(() => {
     startLoad(async () => {
@@ -272,6 +274,46 @@ export default function AdminTakesDashboard() {
       }
     }
     setGradingAll(false);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function deselectAll() { setSelectedIds(new Set()); }
+
+  async function bulkDelete() {
+    if (!confirm(`Permanently delete ${selectedIds.size} takes? This cannot be undone.`)) return;
+    setBulking(true);
+    for (const id of selectedIds) {
+      const result = await deleteTake(id);
+      if (result.success) setTakes(prev => prev!.filter(t => t.take_id !== id));
+    }
+    setSelectedIds(new Set());
+    setBulking(false);
+  }
+
+  async function bulkRate() {
+    setBulking(true);
+    for (const id of [...selectedIds]) {
+      setTakes(prev => prev!.map(t => t.take_id === id ? { ...t, rateStatus: "rating" } : t));
+      const result = await rateSingleTake(id);
+      if (result.success) refreshTake(id);
+      else setTakes(prev => prev!.map(t => t.take_id === id ? { ...t, rateStatus: "error" } : t));
+    }
+    setSelectedIds(new Set());
+    setBulking(false);
+  }
+
+  async function bulkGrade() {
+    setBulking(true);
+    for (const id of [...selectedIds]) {
+      setTakeGradeStatus(id, "grading");
+      const result = await gradeSingleTake(id);
+      if (result.success) refreshTake(id);
+      else setTakeGradeStatus(id, "error", result.error);
+    }
+    setSelectedIds(new Set());
+    setBulking(false);
   }
 
   const allTakes = takes ?? [];
@@ -401,8 +443,8 @@ export default function AdminTakesDashboard() {
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Filter tabs + select-all */}
+      <div className="flex items-center gap-2 flex-wrap">
         {(["all", "pending", "graded", "unrated"] as Filter[]).map((f) => (
           <button
             key={f}
@@ -416,7 +458,53 @@ export default function AdminTakesDashboard() {
             {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-60">({counts[f]})</span>
           </button>
         ))}
+        {filtered.length > 0 && (
+          <label className="ml-2 flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-400 accent-gray-900"
+              checked={filtered.length > 0 && filtered.every(t => selectedIds.has(t.take_id))}
+              onChange={() => {
+                filtered.every(t => selectedIds.has(t.take_id))
+                  ? deselectAll()
+                  : setSelectedIds(new Set(filtered.map(t => t.take_id)));
+              }}
+            />
+            Select all
+          </label>
+        )}
       </div>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-lg bg-gray-900 text-white px-4 py-2.5 flex-wrap">
+          <span className="font-mono text-xs font-semibold">{selectedIds.size} selected</span>
+          <button onClick={deselectAll} className="text-[11px] text-gray-400 hover:text-white underline">Deselect all</button>
+          <div className="flex-1" />
+          {bulking && <span className="text-xs text-gray-400 animate-pulse">Working…</span>}
+          <button
+            onClick={bulkRate}
+            disabled={bulking}
+            className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-xs font-semibold disabled:opacity-40 transition-colors"
+          >
+            Rate Selected
+          </button>
+          <button
+            onClick={bulkGrade}
+            disabled={bulking}
+            className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold disabled:opacity-40 transition-colors"
+          >
+            Grade Selected
+          </button>
+          <button
+            onClick={bulkDelete}
+            disabled={bulking}
+            className="px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 text-xs font-semibold disabled:opacity-40 transition-colors"
+          >
+            Delete Selected
+          </button>
+        </div>
+      )}
 
       {isLoading && takes === null && (
         <div className="rounded-xl border border-gray-300 p-8 text-center text-gray-400" style={{ backgroundColor: "#f5f0e6" }}>
@@ -440,7 +528,14 @@ export default function AdminTakesDashboard() {
             return (
               <div key={take.take_id} className="px-5 py-4">
                 {/* Row header */}
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-gray-400 accent-gray-900 shrink-0 cursor-pointer"
+                    checked={selectedIds.has(take.take_id)}
+                    onChange={() => toggleSelect(take.take_id)}
+                  />
+                <div className="flex-1 flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link
@@ -545,19 +640,20 @@ export default function AdminTakesDashboard() {
                     </div>
                   </div>
                 </div>
-
-                {take.gradeStatus === "error" && take.errorMsg && (
-                  <p className="text-xs text-red-400 mt-1">{take.errorMsg}</p>
-                )}
-
-                {/* Inline edit panel */}
-                {isExpanded && (
-                  <TakeEditPanel
-                    take={take}
-                    onSaved={(updated) => updateTake(take.take_id, updated)}
-                  />
-                )}
               </div>
+
+              {take.gradeStatus === "error" && take.errorMsg && (
+                <p className="text-xs text-red-400 mt-1 pl-7">{take.errorMsg}</p>
+              )}
+
+              {/* Inline edit panel */}
+              {isExpanded && (
+                <TakeEditPanel
+                  take={take}
+                  onSaved={(updated) => updateTake(take.take_id, updated)}
+                />
+              )}
+            </div>
             );
           })}
         </div>
@@ -567,7 +663,7 @@ export default function AdminTakesDashboard() {
         ← Back to Admin
       </Link>
 
-      </> /* end takeTypeTab === "analyst" */ }
+      </> }
 
       {takeTypeTab === "fantasy" && (
         <Link href="/admin" className="inline-block text-sm text-gray-500 hover:text-gray-800 transition-colors">
@@ -624,8 +720,9 @@ function FantasyEditPanel({
   const [sportSeason,   setSportSeason]   = useState(take.sport_season ?? "");
   const [outcome,       setOutcome]       = useState(take.outcome_status ?? "pending");
   const [accuracy,      setAccuracy]      = useState(take.accuracy_score != null ? String(take.accuracy_score) : "");
-  const [graderNote,    setGraderNote]    = useState((take as FantasyTakeRow & { grader_note?: string }).grader_note ?? "");
-  const [saved,         setSaved]         = useState(false);
+  const [graderNote,      setGraderNote]      = useState((take as FantasyTakeRow & { grader_note?: string }).grader_note ?? "");
+  const [gradingCriteria, setGradingCriteria] = useState((take as FantasyTakeRow & { grading_criteria?: string }).grading_criteria ?? "");
+  const [saved,           setSaved]           = useState(false);
   const [isPending,     startTransition]  = useTransition();
 
   function handleSave() {
@@ -642,8 +739,9 @@ function FantasyEditPanel({
         resolution_date: resDate || null,
         sport_season:    sportSeason.trim() || null,
         outcome_status:  outcome,
-        accuracy_score:  accuracy !== "" ? Number(accuracy) : null,
-        grader_note:     graderNote.trim() || null,
+        accuracy_score:   accuracy !== "" ? Number(accuracy) : null,
+        grader_note:      graderNote.trim() || null,
+        grading_criteria: gradingCriteria.trim() || null,
       };
       const result = await saveFantasyTakeEdits(take.fantasy_take_id, edits);
       if (result.success) {
@@ -664,6 +762,18 @@ function FantasyEditPanel({
           onChange={e => setRawText(e.target.value)}
           rows={3}
           className={`${inputClass} resize-none`}
+        />
+      </div>
+
+      {/* Grading criteria */}
+      <div>
+        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Grading Criteria</label>
+        <textarea
+          value={gradingCriteria}
+          onChange={e => setGradingCriteria(e.target.value)}
+          rows={2}
+          className={`${inputClass} resize-none`}
+          placeholder="Take is TRUE if… Take is FALSE if…"
         />
       </div>
 
@@ -778,6 +888,8 @@ function FantasyTakesPanel() {
   const [editExpandedId, setEditExpandedId] = useState<string | null>(null);
   const [aiGradingId, setAiGradingId] = useState<string | null>(null);
   const [aiGradeError, setAiGradeError] = useState<Record<string, string>>({});
+  const [selectedFIds, setSelectedFIds] = useState<Set<string>>(new Set());
+  const [fBulking, setFBulking] = useState(false);
 
   useEffect(() => {
     startLoad(async () => {
@@ -830,6 +942,39 @@ function FantasyTakesPanel() {
     if (result.success) setTakes(prev => prev!.filter(t => t.fantasy_take_id !== takeId));
   }
 
+  function toggleFSelect(id: string) {
+    setSelectedFIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function deselectFAll() { setSelectedFIds(new Set()); }
+
+  async function bulkFDelete() {
+    if (!confirm(`Permanently delete ${selectedFIds.size} fantasy takes?`)) return;
+    setFBulking(true);
+    for (const id of [...selectedFIds]) {
+      const result = await deleteFantasyTake(id);
+      if (result.success) setTakes(prev => prev!.filter(t => t.fantasy_take_id !== id));
+    }
+    setSelectedFIds(new Set());
+    setFBulking(false);
+  }
+
+  async function bulkFAiGrade() {
+    setFBulking(true);
+    for (const id of [...selectedFIds]) {
+      setAiGradingId(id);
+      const result = await gradeFantasyTakeSingle(id);
+      if (result.success && result.accuracy_score != null) {
+        setTakes(prev => prev!.map(t => t.fantasy_take_id === id
+          ? { ...t, outcome_status: "resolved", accuracy_score: result.accuracy_score! } : t));
+      } else {
+        setAiGradeError(prev => ({ ...prev, [id]: result.error ?? "Failed" }));
+      }
+    }
+    setAiGradingId(null);
+    setSelectedFIds(new Set());
+    setFBulking(false);
+  }
+
   const allTakes = takes ?? [];
 
   const filtered = allTakes
@@ -865,8 +1010,8 @@ function FantasyTakesPanel() {
         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
       />
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Filter tabs + select-all */}
+      <div className="flex items-center gap-2 flex-wrap">
         {(["all", "pending", "resolved"] as const).map(f => (
           <button
             key={f}
@@ -881,7 +1026,46 @@ function FantasyTakesPanel() {
             {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-70">({counts[f]})</span>
           </button>
         ))}
+        {filtered.length > 0 && (
+          <label className="ml-2 flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-400 accent-emerald-700"
+              checked={filtered.length > 0 && filtered.every(t => selectedFIds.has(t.fantasy_take_id))}
+              onChange={() => {
+                filtered.every(t => selectedFIds.has(t.fantasy_take_id))
+                  ? deselectFAll()
+                  : setSelectedFIds(new Set(filtered.map(t => t.fantasy_take_id)));
+              }}
+            />
+            Select all
+          </label>
+        )}
       </div>
+
+      {/* Fantasy bulk action bar */}
+      {selectedFIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-lg text-white px-4 py-2.5 flex-wrap" style={{ backgroundColor: "#15803d" }}>
+          <span className="font-mono text-xs font-semibold">{selectedFIds.size} selected</span>
+          <button onClick={deselectFAll} className="text-[11px] text-green-200 hover:text-white underline">Deselect all</button>
+          <div className="flex-1" />
+          {fBulking && <span className="text-xs text-green-200 animate-pulse">Working…</span>}
+          <button
+            onClick={bulkFAiGrade}
+            disabled={fBulking}
+            className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-xs font-semibold disabled:opacity-40 transition-colors"
+          >
+            AI Grade Selected
+          </button>
+          <button
+            onClick={bulkFDelete}
+            disabled={fBulking}
+            className="px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 text-xs font-semibold disabled:opacity-40 transition-colors"
+          >
+            Delete Selected
+          </button>
+        </div>
+      )}
 
       {isLoading && takes === null && (
         <div className="rounded-xl border border-gray-300 p-8 text-center text-gray-400" style={{ backgroundColor: "#f0fdf4" }}>
@@ -904,7 +1088,14 @@ function FantasyTakesPanel() {
 
             return (
               <div key={take.fantasy_take_id} className="px-5 py-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-gray-400 accent-emerald-700 shrink-0 cursor-pointer"
+                  checked={selectedFIds.has(take.fantasy_take_id)}
+                  onChange={() => toggleFSelect(take.fantasy_take_id)}
+                />
+                <div className="flex-1 flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Link href={`/experts/${take.expert_id}`} className="font-semibold text-gray-900 hover:text-black text-sm">
@@ -1047,6 +1238,7 @@ function FantasyTakesPanel() {
                     onClose={() => setEditExpandedId(null)}
                   />
                 )}
+                </div>
               </div>
             );
           })}

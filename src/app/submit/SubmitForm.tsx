@@ -62,6 +62,7 @@ export default function SubmitForm() {
   const [boldnessScore, setBoldnessScore]     = useState("");
   const [sportSeason, setSportSeason]         = useState("2026 NFL");
   const [resolutionDate, setResolutionDate]   = useState("");
+  const [gradingCriteria, setGradingCriteria] = useState("");
 
   function handleTakeTypeChange(next: TakeType) {
     setTakeType(next);
@@ -106,6 +107,7 @@ export default function SubmitForm() {
       setSportSeason(d.sport_season);
       setResolutionDate(d.resolution_date);
       setLeagueFormat(d.format);
+      setGradingCriteria(d.grading_criteria ?? "");
     });
   }
 
@@ -398,6 +400,22 @@ export default function SubmitForm() {
                 className={inputClass}
               />
               <p className="mt-1 text-xs text-zinc-500">When this take should be graded</p>
+            </div>
+
+            {/* Grading criteria */}
+            <div>
+              <label htmlFor="grading_criteria" className="block text-sm font-medium text-zinc-700 mb-1">
+                Grading Criteria
+                {autoFill && gradingCriteria && <span className="ml-1 text-[10px] font-mono text-green-600">✓ AI generated</span>}
+              </label>
+              <textarea
+                id="grading_criteria" name="grading_criteria"
+                rows={3}
+                placeholder="Take is TRUE if… Take is FALSE if…"
+                value={gradingCriteria} onChange={(e) => setGradingCriteria(e.target.value)}
+                className={`${inputClass} resize-none`}
+              />
+              <p className="mt-1 text-xs text-zinc-500">The specific, measurable conditions that determine if this take is right or wrong</p>
             </div>
 
           </section>

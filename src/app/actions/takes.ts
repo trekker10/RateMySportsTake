@@ -186,7 +186,8 @@ export async function submitFantasyTake(formData: FormData) {
   const boldnessScore = boldnessRaw ? parseInt(boldnessRaw, 10) : null;
   const resolutionDate = (formData.get("resolution_date") as string)?.trim() || null;
   const sportSeason  = (formData.get("sport_season") as string)?.trim() || null;
-  const format       = (formData.get("fantasy_format") as string)?.trim() || "both";
+  const format          = (formData.get("fantasy_format") as string)?.trim() || "both";
+  const gradingCriteria = (formData.get("grading_criteria") as string)?.trim() || null;
 
   // Find or create expert
   const { data: existingExpert } = await supabase
@@ -241,8 +242,9 @@ export async function submitFantasyTake(formData: FormData) {
     boldness_score:  boldnessScore,
     date_made:       dateMade,
     resolution_date: resolutionDate,
-    sport_season:    sportSeason,
-    outcome_status:  "pending",
+    sport_season:      sportSeason,
+    grading_criteria:  gradingCriteria,
+    outcome_status:    "pending",
   }).select("fantasy_take_id").single();
 
   if (takeError) throw new Error(`Failed to insert fantasy take: ${takeError.message}`);

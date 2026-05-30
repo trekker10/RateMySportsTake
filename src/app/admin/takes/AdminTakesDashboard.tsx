@@ -74,6 +74,21 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
 
   return (
     <div className="mt-3 rounded-lg border border-gray-300 bg-white p-4 space-y-4">
+      {take.source_url && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded bg-gray-50 border border-gray-200">
+          <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase shrink-0">
+            {take.source_type === "tweet" ? "Tweet" : take.source_type ?? "Source"}
+          </span>
+          <a
+            href={take.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate"
+          >
+            {take.source_url}
+          </a>
+        </div>
+      )}
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">AI Summary</label>

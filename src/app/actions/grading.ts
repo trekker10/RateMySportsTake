@@ -126,13 +126,15 @@ export interface AdminTake {
   rating_status: string;
   expert_name: string;
   expert_id: string;
+  source_url: string | null;
+  source_type: string | null;
 }
 
 export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
     .eq("expert_id", expertId)
     .order("date_made", { ascending: false });
 
@@ -150,6 +152,8 @@ export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> 
     grade_notes: t.grade_notes,
     rating_status: t.rating_status,
     expert_id: t.expert_id,
+    source_url: t.source_url ?? null,
+    source_type: t.source_type ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expert_name: (t.experts as any)?.name ?? "Unknown",
   }));
@@ -160,7 +164,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
 
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
     .order("date_made", { ascending: false });
 
   return (data ?? []).map((t) => ({
@@ -177,6 +181,8 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
     grade_notes: t.grade_notes,
     rating_status: t.rating_status,
     expert_id: t.expert_id,
+    source_url: t.source_url ?? null,
+    source_type: t.source_type ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expert_name: (t.experts as any)?.name ?? "Unknown",
   }));

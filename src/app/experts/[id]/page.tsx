@@ -161,6 +161,25 @@ export default async function ExpertProfilePage({
       : []),
   ];
 
+  // Fantasy guru position grades — average accuracy_score by player_position
+  const POSITIONS = ["QB", "RB", "WR", "TE", "FLEX", "K/DST"] as const;
+  const positionGrades = POSITIONS.map((pos) => {
+    const positionTakes = (fantasyTakes ?? []).filter(
+      (ft) => ft.player_position === pos && ft.outcome_status === "resolved" && ft.accuracy_score != null
+    );
+    const avg =
+      positionTakes.length > 0
+        ? positionTakes.reduce((sum, ft) => sum + (ft.accuracy_score ?? 0), 0) / positionTakes.length
+        : null;
+    const grade = avg != null ? scoreToGrade(avg, gradeConfig) : null;
+    return {
+      pos,
+      grade,
+      color: grade ? gradeColor(grade) : "#9ca3af",
+      count: positionTakes.length,
+    };
+  });
+
   return (
     <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-10">
 
@@ -282,15 +301,32 @@ export default async function ExpertProfilePage({
 
       {/* ── Sub-metric bar ── */}
       <div className="bg-white border-b-2 border-gray-900">
-        <div className={`max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 ${subMetrics.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5"} divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900`}>
-          {subMetrics.map((m) => (
-            <div key={m.label} className="px-4 py-4">
-              <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
-              <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)", color: m.color }}>{m.value}</p>
-              <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
-            </div>
-          ))}
-        </div>
+        {expert.is_fantasy_guru ? (
+          /* Fantasy guru: position report card */
+          <div className="max-w-5xl mx-auto grid grid-cols-3 md:grid-cols-6 divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900">
+            {positionGrades.map(({ pos, grade, color, count }) => (
+              <div key={pos} className="px-4 py-4">
+                <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">Position</p>
+                <p className="font-black italic leading-none mt-1" style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", color }}>
+                  {grade ?? "—"}
+                </p>
+                <p className="font-mono text-[11px] tracking-wider text-gray-500 mt-1 uppercase">{pos}</p>
+                <p className="italic text-xs text-gray-400">{count > 0 ? `${count} graded` : "no data"}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Analyst: regular stats bar */
+          <div className={`max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 ${subMetrics.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5"} divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900`}>
+            {subMetrics.map((m) => (
+              <div key={m.label} className="px-4 py-4">
+                <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
+                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)", color: m.color }}>{m.value}</p>
+                <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Body ── */}

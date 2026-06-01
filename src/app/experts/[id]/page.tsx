@@ -150,11 +150,18 @@ export default async function ExpertProfilePage({
   const boldness = boldnessTier(expert.boldness_avg);
   const accountability = accountabilityTier(expert.accountability_score);
 
-  const subMetrics = [
-    { label: "ACCURACY",      value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed",    color: "#111827" },
-    { label: "BOLDNESS",      value: boldness.label,        sub: "",               color: boldness.color },
-    { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes",          color: "#111827" },
-    { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops",     color: "#111827" },
+  const flipCount = expert.flip_count ?? 0;
+  const subMetrics: Array<{ label: string; value: string | number; sub: string; color: string; href?: string }> = [
+    { label: "ACCURACY",  value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed", color: "#111827" },
+    { label: "BOLDNESS",  value: boldness.label,       sub: "",               color: boldness.color },
+    { label: "VOLUME",    value: expert.graded_takes,  sub: "graded takes",   color: "#111827" },
+    {
+      label: "RECEIPTS",
+      value: flipCount,
+      sub: "public flip-flops",
+      color: flipCount > 0 ? "#e2241a" : "#111827",
+      href: `/experts/${id}/flip-flops`,
+    },
     ...(expert.is_fantasy_guru && expert.fantasy_overall_rating > 0
       ? [{ label: "FANTASY SCORE", value: scoreToGrade(expert.fantasy_overall_rating, gradeConfig), sub: "fantasy guru rating", color: "#15803d" }]
       : []),
@@ -329,13 +336,23 @@ export default async function ExpertProfilePage({
         ) : (
           /* Analyst: regular stats bar */
           <div className={`max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 ${subMetrics.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5"} divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900`}>
-            {subMetrics.map((m) => (
-              <div key={m.label} className="px-4 py-4">
-                <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
-                <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)", color: m.color }}>{m.value}</p>
-                <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
-              </div>
-            ))}
+            {subMetrics.map((m) => {
+              const inner = (
+                <>
+                  <p className="font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase">{m.label}</p>
+                  <p className="font-black leading-none mt-1" style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.6rem)", color: m.color }}>{m.value}</p>
+                  <p className="italic text-sm text-gray-400 mt-1">{m.sub}</p>
+                </>
+              );
+              if (m.href) {
+                return (
+                  <Link key={m.label} href={m.href} className="px-4 py-4 hover:bg-gray-50 transition-colors block group">
+                    {inner}
+                  </Link>
+                );
+              }
+              return <div key={m.label} className="px-4 py-4">{inner}</div>;
+            })}
           </div>
         )}
       </div>

@@ -25,15 +25,16 @@ function gradeColor(grade: string) {
   return "#e2241a"; // F
 }
 
-// Trim analysis text to ~2 sentences, max 200 chars
+// Trim analysis text to ~2 sentences, max 300 chars
 function trimAnalysis(text: string): string {
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
   let result = "";
   for (const s of sentences) {
-    if ((result + s).length > 200) break;
+    if ((result + s).length > 300) break;
     result += s;
+    if (result.split(/[.!?]/).filter(Boolean).length >= 2) break;
   }
-  return result.trim() || text.slice(0, 200).trim();
+  return result.trim() || text.slice(0, 300).trim();
 }
 
 // Simple barcode lines
@@ -111,9 +112,9 @@ export async function GET(
     null;
   const analysisText = rawAnalysis ? trimAnalysis(rawAnalysis) : null;
 
-  // Scale take font based on text length
+  // Scale take font based on text length — large enough to be readable on a phone share
   const textLen = displayText.length;
-  const takeFontSize = textLen < 80 ? 34 : textLen < 140 ? 28 : textLen < 220 ? 24 : 20;
+  const takeFontSize = textLen < 60 ? 72 : textLen < 120 ? 58 : textLen < 200 ? 46 : textLen < 320 ? 38 : 30;
 
   const handle = expert?.twitter_handle
     ? (expert.twitter_handle.startsWith("@") ? expert.twitter_handle : `@${expert.twitter_handle}`)
@@ -158,11 +159,11 @@ export async function GET(
 
         {/* ANALYST */}
         <Divider label="ANALYST" />
-        <p style={{ fontSize: 62, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em", fontFamily: "Inter, sans-serif", margin: "14px 0 0", textAlign: "center", textTransform: "uppercase" }}>
+        <p style={{ fontSize: 72, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em", fontFamily: "Inter, sans-serif", margin: "14px 0 0", textAlign: "center", textTransform: "uppercase" }}>
           {expert?.name ?? "Unknown Analyst"}
         </p>
         {handle && (
-          <p style={{ fontSize: 14, color: "#6b7280", fontFamily: "monospace", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <p style={{ fontSize: 22, color: "#6b7280", fontFamily: "monospace", margin: "4px 0 0", letterSpacing: "0.05em" }}>
             {handle}
           </p>
         )}
@@ -182,7 +183,7 @@ export async function GET(
         }}>
           &ldquo;{displayText}&rdquo;
         </p>
-        <p style={{ fontSize: 12, letterSpacing: "0.18em", color: "#6b7280", fontFamily: "monospace", margin: "0 0 24px" }}>
+        <p style={{ fontSize: 18, letterSpacing: "0.18em", color: "#6b7280", fontFamily: "monospace", margin: "0 0 24px" }}>
           POSTED · {dateMade}
         </p>
 
@@ -193,7 +194,7 @@ export async function GET(
               <Divider label="THE ANALYSIS" />
             </div>
             <p style={{
-              fontSize: 20,
+              fontSize: 32,
               color: "#374151",
               textAlign: "center",
               lineHeight: 1.55,

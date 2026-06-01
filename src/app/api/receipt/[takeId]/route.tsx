@@ -56,7 +56,7 @@ async function generatePendingTeaser(
       body: JSON.stringify({
         model: "claude-haiku-4-5",
         max_tokens: 120,
-        system: "You write short, punchy sports commentary for a take accountability site. Given a sports take and what it will be judged on, write exactly 1-2 casual sentences (max 160 chars total) previewing what to watch for — conversational, fan-voice, no spoilers, no mention of grades or formulas. No quotes around your response.",
+        system: "You write short, neutral sports commentary for a take accountability site. Given a sports take and what it will be judged on, write exactly 1-2 casual sentences (max 160 chars total) previewing what to watch for. Be completely neutral — don't lean toward the take being right or wrong, don't suggest it will fail, don't editorialize. Just describe what situation to keep an eye on. Conversational fan-voice, no grades or formulas mentioned. No quotes around your response.",
         messages: [{
           role: "user",
           content: `Analyst: ${expertName}\nTake: "${takeText}"\nWill be judged on: ${gradingCriteria}`,

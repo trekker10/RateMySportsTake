@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body className="min-h-screen text-gray-900 antialiased overflow-x-hidden" style={{ backgroundColor: "#ebedf0" }}>
-        <header className="border-b-2 border-gray-900 px-6 py-3" style={{ backgroundColor: "#f5f1e8" }}>
+        <header className="border-b-2 border-gray-900 px-6 py-3 max-sm:py-4" style={{ backgroundColor: "#f5f1e8" }}>
           <div className="mx-auto flex max-w-5xl items-center justify-between">
             {/* Wordmark + tagline */}
             <a href="/" className="flex items-baseline gap-3">

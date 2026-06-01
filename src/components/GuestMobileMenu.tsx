@@ -25,7 +25,7 @@ export default function GuestMobileMenu() {
     <div ref={ref} className="relative sm:hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="font-mono text-xs tracking-widest uppercase px-4 py-1.5 border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
+        className="font-mono text-xs tracking-widest uppercase px-4 py-1.5 min-h-[44px] flex items-center border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
       >
         MENU
       </button>

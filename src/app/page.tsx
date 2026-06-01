@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import HeroSection from "@/components/HeroSection";
 import Avatar from "@/components/Avatar";
+import LeaderboardRibbon from "@/components/LeaderboardRibbon";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
 
@@ -43,8 +44,8 @@ export default async function HomePage() {
 
       {/* ── Hero ── */}
       <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#f5f1e8" }}>
-        <div className="max-w-5xl mx-auto px-6 py-14">
-          <p className="font-mono text-xs tracking-[0.2em] uppercase" style={{ color: "#e2241a" }}>
+        <div className="max-w-5xl mx-auto px-6 py-14 max-sm:pb-16">
+          <p className="font-mono text-xs tracking-[0.2em] uppercase max-sm:mb-6" style={{ color: "#e2241a" }}>
             ━━ THE SPORTS ACCOUNTABILITY INDEX
           </p>
 
@@ -52,9 +53,12 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* ── Leaderboard Ribbon ── */}
+      <LeaderboardRibbon experts={rankedExperts ?? []} gradeConfig={gradeConfig} />
+
       {/* ── How It Works ── */}
       <div className="border-b-2 border-gray-900" style={{ backgroundColor: "#1a1a1a" }}>
-        <div className="max-w-7xl mx-auto px-6 pt-12 pb-0">
+        <div className="max-w-7xl mx-auto px-6 pt-12 pb-0 max-sm:pt-16 max-sm:pb-16">
           {/* Section header */}
           <h2 className="font-black italic leading-none tracking-tighter text-white pb-6 border-b border-dashed border-gray-600"
             style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}>
@@ -163,7 +167,7 @@ export default async function HomePage() {
       <div className="bg-white border-b-2 border-gray-900 grid grid-cols-1 md:grid-cols-3 divide-y-2 md:divide-y-0 md:divide-x-2 divide-gray-900">
 
         {/* Left: Top Analysts */}
-        <div className="px-7 py-9">
+        <div className="px-7 py-9 max-sm:px-6 max-sm:py-16">
           <p className="font-black text-2xl tracking-tight" style={{ color: "#0a7a3b" }}>↑ TOP ANALYSTS</p>
           <p className="font-mono text-[10px] tracking-[0.14em] text-gray-400 uppercase mt-1">WEEK ON WEEK · TOP 5</p>
           <div className="mt-5">
@@ -195,7 +199,7 @@ export default async function HomePage() {
         </div>
 
         {/* Center: Take of the Night */}
-        <div className="px-10 py-9">
+        <div className="px-10 py-9 max-sm:px-6 max-sm:py-16">
           <p className="font-mono text-[11px] tracking-[0.24em] uppercase" style={{ color: "#e2241a" }}>
             TAKE OF THE NIGHT
           </p>
@@ -264,7 +268,7 @@ export default async function HomePage() {
         </div>
 
         {/* Right: Bottom 10 */}
-        <div className="px-7 py-9">
+        <div className="px-7 py-9 max-sm:px-6 max-sm:py-16">
           <p className="font-black text-2xl tracking-tight" style={{ color: "#e2241a" }}>↓ BOTTOM 10</p>
           <p className="font-mono text-[10px] tracking-[0.14em] text-gray-400 uppercase mt-1">WEEK ON WEEK · BOTTOM 5</p>
           <div className="mt-5">

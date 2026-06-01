@@ -37,6 +37,40 @@ function trimAnalysis(text: string): string {
   return result.trim() || text.slice(0, 300).trim();
 }
 
+// Generate a casual 1-2 sentence teaser for pending takes
+async function generatePendingTeaser(
+  expertName: string,
+  takeText: string,
+  gradingCriteria: string,
+): Promise<string | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 120,
+        system: "You write short, punchy sports commentary for a take accountability site. Given a sports take and what it will be judged on, write exactly 1-2 casual sentences (max 160 chars total) previewing what to watch for — conversational, fan-voice, no spoilers, no mention of grades or formulas. No quotes around your response.",
+        messages: [{
+          role: "user",
+          content: `Analyst: ${expertName}\nTake: "${takeText}"\nWill be judged on: ${gradingCriteria}`,
+        }],
+      }),
+    });
+    const json = await res.json() as { content?: Array<{ text?: string }> };
+    const text = json?.content?.[0]?.text?.trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
 // Simple barcode lines
 function Barcode() {
   const bars = [3,1,2,1,3,2,1,2,3,1,2,3,1,2,1,3,2,1,3,1,2,1,2,3,1,2,1];
@@ -107,13 +141,18 @@ export async function GET(
 
   const isPending = take.outcome_status === "pending";
 
-  // Graded takes → show outcome analysis; pending takes → show what we're watching for
-  const rawAnalysis =
-    take.outcome_notes?.trim() ||
-    take.grade_notes?.trim() ||
-    (isPending ? take.grading_criteria?.trim() : null) ||
-    null;
-  const analysisText = rawAnalysis ? trimAnalysis(rawAnalysis) : null;
+  // Graded takes → outcome notes; pending takes → AI-generated conversational teaser
+  let analysisText: string | null = null;
+  if (!isPending) {
+    const raw = take.outcome_notes?.trim() || take.grade_notes?.trim() || null;
+    analysisText = raw ? trimAnalysis(raw) : null;
+  } else if (take.grading_criteria?.trim()) {
+    analysisText = await generatePendingTeaser(
+      expert?.name ?? "the analyst",
+      displayText,
+      take.grading_criteria.trim(),
+    );
+  }
   const analysisLabel = isPending ? "WHAT WE'RE WATCHING" : "THE ANALYSIS";
 
   // Scale take font based on text length — large enough to be readable on a phone share

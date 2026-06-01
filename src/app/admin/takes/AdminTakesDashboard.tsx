@@ -633,6 +633,9 @@ export default function AdminTakesDashboard() {
                       {take.rateStatus === "done" && take.rating_status !== "rated" && (
                         <span className="text-xs text-blue-400">✓ Rated</span>
                       )}
+                      {take.rateStatus === "error" && (
+                        <span className="text-xs text-red-400" title={take.errorMsg}>✗ Failed — {take.errorMsg ?? "unknown error"}</span>
+                      )}
 
                       {/* Grade button — show if rated OR grading criteria has been set manually */}
                       {take.gradeStatus === "idle" && (take.rating_status === "rated" || !!take.grading_criteria) && (

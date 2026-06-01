@@ -54,14 +54,18 @@ export async function rateSingleTake(takeId: string): Promise<{ success: true } 
   const supabase = createAdminClient();
   const { data: take } = await supabase
     .from("takes")
-    .select("raw_text, sport, source_type, date_made")
+    .select("raw_text, summary, sport, source_type, date_made")
     .eq("take_id", takeId)
     .single();
 
   if (!take) return { success: false, error: "Take not found" };
 
+  // Use verbatim text if available, fall back to summary
+  const textToRate = take.raw_text?.trim() || take.summary?.trim();
+  if (!textToRate) return { success: false, error: "No text to rate — add raw_text or summary first" };
+
   try {
-    const rating = await rateTake(take.raw_text, take.sport ?? "", take.source_type, take.date_made);
+    const rating = await rateTake(textToRate, take.sport ?? "", take.source_type, take.date_made);
     await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", takeId);
     return { success: true };
   } catch (err) {

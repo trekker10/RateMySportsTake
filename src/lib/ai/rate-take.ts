@@ -61,9 +61,17 @@ Return JSON with exactly these fields:
     ],
   });
 
-  const text =
+  const raw =
     response.content[0].type === "text" ? response.content[0].text : "";
-  const parsed = JSON.parse(text);
+  // Strip markdown code fences if the model wrapped the JSON
+  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error(`AI returned invalid JSON: ${text.slice(0, 200)}`);
+  }
 
   return {
     take_type: parsed.take_type,

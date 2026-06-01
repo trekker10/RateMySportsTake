@@ -98,17 +98,18 @@ export async function GET(
   const verdict = verdictLabel(take.outcome_status);
   const letterGrade = take.grade != null ? scoreToGrade(take.grade, gradeConfig) : null;
 
-  // Prefer verbatim raw_text, fall back to summary
-  const displayText = take.raw_text?.trim() || take.summary?.trim() || "";
+  // Prefer verbatim raw_text, fall back to summary — strip trailing t.co URLs
+  const rawDisplay = take.raw_text?.trim() || take.summary?.trim() || "";
+  const displayText = rawDisplay.replace(/\s*https?:\/\/t\.co\/\S+/g, "").trim();
 
   const d = new Date(take.date_made);
   const dateMade = `${d.toLocaleDateString("en-US", { month: "short" }).toUpperCase()} '${String(d.getFullYear()).slice(2)}`;
 
-  // Analysis blurb: outcome notes for graded takes, grading criteria for pending
+  // Analysis blurb: only show for graded takes (outcome_notes / grade_notes)
+  // Do NOT show grading_criteria — it reads like internal scoring instructions
   const rawAnalysis =
     take.outcome_notes?.trim() ||
     take.grade_notes?.trim() ||
-    take.grading_criteria?.trim() ||
     null;
   const analysisText = rawAnalysis ? trimAnalysis(rawAnalysis) : null;
 
@@ -180,6 +181,9 @@ export async function GET(
           lineHeight: 1.45,
           margin: "20px 0 8px",
           fontFamily: "serif",
+          maxWidth: "100%",
+          wordBreak: "break-word",
+          overflowWrap: "break-word",
         }}>
           &ldquo;{displayText}&rdquo;
         </p>
@@ -201,6 +205,9 @@ export async function GET(
               margin: "18px 0 24px",
               fontFamily: "serif",
               fontStyle: "italic",
+              maxWidth: "100%",
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
             }}>
               {analysisText}
             </p>

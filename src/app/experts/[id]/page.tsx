@@ -153,7 +153,6 @@ export default async function ExpertProfilePage({
   const subMetrics = [
     { label: "ACCURACY",      value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed",    color: "#111827" },
     { label: "BOLDNESS",      value: boldness.label,        sub: "",               color: boldness.color },
-    { label: "ACCOUNTABILITY",value: accountability.label,  sub: "",               color: accountability.color },
     { label: "VOLUME",        value: expert.graded_takes,                                                      sub: "graded takes",          color: "#111827" },
     { label: "RECEIPTS",      value: expert.flip_count ?? 0,                                                  sub: "public flip-flops",     color: "#111827" },
     ...(expert.is_fantasy_guru && expert.fantasy_overall_rating > 0

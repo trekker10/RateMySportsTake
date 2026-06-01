@@ -90,7 +90,7 @@ export default async function FlipFlopsPage({
               <p className="font-black italic text-3xl text-gray-200">NO FLIP-FLOPS YET.</p>
               <p className="mt-3 italic text-gray-400 max-w-sm mx-auto">
                 {isAdmin
-                  ? "Click "RUN DETECTION" above to scan this analyst's takes for contradictions."
+                  ? "Click \u201cRUN DETECTION\u201d above to scan this analyst\u2019s takes for contradictions."
                   : "No contradictions have been detected for this analyst."}
               </p>
             </div>

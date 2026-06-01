@@ -157,7 +157,14 @@ export async function GET(
 
   // Scale take font based on text length — large enough to be readable on a phone share
   const textLen = displayText.length;
-  const takeFontSize = textLen < 60 ? 72 : textLen < 120 ? 58 : textLen < 200 ? 46 : textLen < 320 ? 38 : 30;
+  const takeFontSize =
+    textLen < 60  ? 72 :
+    textLen < 100 ? 60 :
+    textLen < 160 ? 50 :
+    textLen < 240 ? 40 :
+    textLen < 340 ? 32 :
+    textLen < 460 ? 26 :
+    22;
 
   const handle = expert?.twitter_handle
     ? (expert.twitter_handle.startsWith("@") ? expert.twitter_handle : `@${expert.twitter_handle}`)

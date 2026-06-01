@@ -170,33 +170,29 @@ export async function GET(
         )}
 
         {/* THE TAKE */}
-        <div style={{ marginTop: 24, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ marginTop: 24, width: 920, display: "flex", flexDirection: "column", alignItems: "center" }}>
           <Divider label="THE TAKE" />
+          <p style={{
+            fontSize: takeFontSize,
+            fontStyle: "italic",
+            color: "#1a1a1a",
+            textAlign: "center",
+            lineHeight: 1.45,
+            margin: "20px 0 8px",
+            fontFamily: "serif",
+            width: 920,
+          }}>
+            &ldquo;{displayText}&rdquo;
+          </p>
+          <p style={{ fontSize: 18, letterSpacing: "0.18em", color: "#6b7280", fontFamily: "monospace", margin: "0 0 24px" }}>
+            POSTED · {dateMade}
+          </p>
         </div>
-        <p style={{
-          fontSize: takeFontSize,
-          fontStyle: "italic",
-          color: "#1a1a1a",
-          textAlign: "center",
-          lineHeight: 1.45,
-          margin: "20px 0 8px",
-          fontFamily: "serif",
-          maxWidth: "100%",
-          wordBreak: "break-word",
-          overflowWrap: "break-word",
-        }}>
-          &ldquo;{displayText}&rdquo;
-        </p>
-        <p style={{ fontSize: 18, letterSpacing: "0.18em", color: "#6b7280", fontFamily: "monospace", margin: "0 0 24px" }}>
-          POSTED · {dateMade}
-        </p>
 
         {/* THE ANALYSIS */}
         {analysisText && (
-          <>
-            <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <Divider label="THE ANALYSIS" />
-            </div>
+          <div style={{ width: 920, display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Divider label="THE ANALYSIS" />
             <p style={{
               fontSize: 32,
               color: "#374151",
@@ -205,13 +201,11 @@ export async function GET(
               margin: "18px 0 24px",
               fontFamily: "serif",
               fontStyle: "italic",
-              maxWidth: "100%",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
+              width: 920,
             }}>
               {analysisText}
             </p>
-          </>
+          </div>
         )}
 
         {/* FINAL GRADE */}

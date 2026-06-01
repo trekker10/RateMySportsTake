@@ -105,13 +105,16 @@ export async function GET(
   const d = new Date(take.date_made);
   const dateMade = `${d.toLocaleDateString("en-US", { month: "short" }).toUpperCase()} '${String(d.getFullYear()).slice(2)}`;
 
-  // Analysis blurb: only show for graded takes (outcome_notes / grade_notes)
-  // Do NOT show grading_criteria — it reads like internal scoring instructions
+  const isPending = take.outcome_status === "pending";
+
+  // Graded takes → show outcome analysis; pending takes → show what we're watching for
   const rawAnalysis =
     take.outcome_notes?.trim() ||
     take.grade_notes?.trim() ||
+    (isPending ? take.grading_criteria?.trim() : null) ||
     null;
   const analysisText = rawAnalysis ? trimAnalysis(rawAnalysis) : null;
+  const analysisLabel = isPending ? "WHAT WE'RE WATCHING" : "THE ANALYSIS";
 
   // Scale take font based on text length — large enough to be readable on a phone share
   const textLen = displayText.length;
@@ -192,7 +195,7 @@ export async function GET(
         {/* THE ANALYSIS */}
         {analysisText && (
           <div style={{ width: 920, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Divider label="THE ANALYSIS" />
+            <Divider label={analysisLabel} />
             <p style={{
               fontSize: 32,
               color: "#374151",

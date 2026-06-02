@@ -49,8 +49,13 @@ export default function ScoringConfig({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
-  function set(key: keyof TakeScoreConfig, value: number) {
+  function set(key: keyof Omit<TakeScoreConfig, "aggregation_method">, value: number) {
     setCfg(prev => ({ ...prev, [key]: value }));
+    setSaved(false);
+  }
+
+  function setMethod(method: "mean" | "median") {
+    setCfg(prev => ({ ...prev, aggregation_method: method }));
     setSaved(false);
   }
 
@@ -91,6 +96,41 @@ export default function ScoringConfig({
             className="px-4 py-2 rounded-lg bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50"
           >
             {isPending ? "Saving…" : saved ? "✓ Saved" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Aggregation method toggle ── */}
+      <div className="rounded-xl border border-zinc-700 bg-zinc-900 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-zinc-100">Aggregation Method</p>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            How per-take impact scores are combined into each analyst&apos;s overall TakeScore.
+            Switching this recalculates every analyst&apos;s score — takes and grades are untouched.
+          </p>
+        </div>
+        <div className="flex items-stretch border border-zinc-600 rounded-lg overflow-hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => setMethod("mean")}
+            className="px-5 py-2.5 text-sm font-semibold transition-colors"
+            style={{
+              backgroundColor: cfg.aggregation_method !== "median" ? "#fff" : "transparent",
+              color:           cfg.aggregation_method !== "median" ? "#000" : "#71717a",
+            }}
+          >
+            Mean
+          </button>
+          <button
+            type="button"
+            onClick={() => setMethod("median")}
+            className="px-5 py-2.5 text-sm font-semibold transition-colors border-l border-zinc-600"
+            style={{
+              backgroundColor: cfg.aggregation_method === "median" ? "#fff" : "transparent",
+              color:           cfg.aggregation_method === "median" ? "#000" : "#71717a",
+            }}
+          >
+            Median
           </button>
         </div>
       </div>

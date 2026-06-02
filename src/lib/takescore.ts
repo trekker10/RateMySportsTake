@@ -42,6 +42,8 @@ export interface TakeScoreConfig {
   grade_c_min: number;
   grade_cminus_min: number;
   grade_d_min: number;
+  // Aggregation method for combining per-take impact scores into overall_rating
+  aggregation_method: "mean" | "median";
 }
 
 export const DEFAULT_CONFIG: TakeScoreConfig = {
@@ -87,6 +89,7 @@ export const DEFAULT_CONFIG: TakeScoreConfig = {
   grade_c_min: 30,
   grade_cminus_min: 20,
   grade_d_min: 10,
+  aggregation_method: "mean" as "mean" | "median",
 };
 
 export function scoreToGrade(score: number, cfg?: Partial<TakeScoreConfig>): string {
@@ -170,6 +173,15 @@ export interface TakeScoreResult {
   perTake: Array<{ take_id: string; impact: number; BC: number; R: number }>;
 }
 
+function medianOf(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
 export function computeTakeScore(
   allTakes: ScoredTake[],
   cfg: TakeScoreConfig,
@@ -220,10 +232,16 @@ export function computeTakeScore(
     perTake.push({ take_id: take.take_id, impact, BC, R });
   });
 
-  const rawAvg = impactSum / window.length;
+  // Aggregate per-take impacts using configured method (mean or median)
+  const impacts = perTake.map(t => t.impact);
+  const rawAggregate =
+    cfg.aggregation_method === "median"
+      ? medianOf(impacts)
+      : impactSum / window.length; // mean (default)
+
   const V = getVolumeMultiplier(allTakes.length, avgBoldness, cfg);
   const D = getDecayMultiplier(daysSinceLast, cfg);
-  const takeScore = Math.min(100, Math.max(0, (rawAvg / cfg.normalization_divisor) * V * D));
+  const takeScore = Math.min(100, Math.max(0, (rawAggregate / cfg.normalization_divisor) * V * D));
 
   return {
     takeScore: Math.round(takeScore * 10) / 10,

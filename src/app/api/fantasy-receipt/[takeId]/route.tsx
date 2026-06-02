@@ -45,6 +45,19 @@ function fantasyVerdict(
   return                     { label: "WHIFFED",              outcome: "bad"  };
 }
 
+// ── Text sanitiser — strip newlines, emojis, and extra whitespace ─────────────
+function sanitize(raw: string): string {
+  return raw
+    // collapse all line-break variants to a single space
+    .replace(/\r?\n|\r/g, " ")
+    // strip emoji / pictograph ranges that loaded fonts can't render
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[\u{2600}-\u{27BF}]/gu, "")
+    // collapse runs of whitespace
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 // ── Static text-size thresholds — scaled for 920px usable width ─────────────
 function callFontSize(chars: number): number {
   if (chars <= 80)  return 30;
@@ -218,15 +231,15 @@ export async function GET(
       ? scoreToGrade(take.accuracy_score, gradeConfig)
       : null;
 
-  // Call text
-  const rawCall = take.raw_text?.trim() ?? "";
+  // Call text — sanitise newlines/emojis before sizing
+  const rawCall = sanitize(take.raw_text ?? "");
   const displayCall = callText(rawCall);
   const callSize    = callFontSize(rawCall.length);
 
   // Analysis text (grader note → trimmed; pending → blank)
-  const rawAnalysis   = take.grader_note?.trim() ?? "";
+  const rawAnalysis   = sanitize(take.grader_note ?? "");
   const displayAnalysis = rawAnalysis ? analysisText(rawAnalysis) : null;
-  const analysisSize    = displayAnalysis ? analysisFontSize(rawAnalysis.length) : 15;
+  const analysisSize    = displayAnalysis ? analysisFontSize(rawAnalysis.length) : 20;
 
   // Analyst name sizing
   const analystSize = analystFontSize(expertName);

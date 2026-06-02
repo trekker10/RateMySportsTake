@@ -325,22 +325,29 @@ export async function GET(
             }}
           >
             <SectionLabel text="ANALYST" monoFont={MONO} />
-            <p
+            <div
               style={{
-                fontFamily: ARCHIVO,
-                fontSize: analystSize,
-                fontWeight: 900,
-                fontStyle: "italic",
-                color: INK,
-                textAlign: "center",
-                textTransform: "uppercase",
-                letterSpacing: "-0.02em",
+                display: "flex",
+                justifyContent: "center",
+                width: "100%",
                 margin: "14px 0 18px",
-                width: 920,
               }}
             >
-              {expertName}
-            </p>
+              <span
+                style={{
+                  fontFamily: ARCHIVO,
+                  fontSize: analystSize,
+                  fontWeight: 900,
+                  fontStyle: "italic",
+                  color: INK,
+                  textTransform: "uppercase",
+                  letterSpacing: "-0.02em",
+                  textAlign: "center",
+                }}
+              >
+                {expertName}
+              </span>
+            </div>
           </div>
 
           {/* ── THE CALL ─────────────────────────────────────────────────── */}

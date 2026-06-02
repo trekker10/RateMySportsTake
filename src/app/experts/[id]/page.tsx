@@ -469,7 +469,16 @@ export default async function ExpertProfilePage({
                                 <span>{ft.date_made}</span>
                                 {ft.timing_window && <span>· {ft.timing_window.replace(/_/g, " ")}</span>}
                                 {ft.boldness_score != null && <span>· Boldness {ft.boldness_score}</span>}
-                                {ft.resolution_date && <span className="ml-auto">Resolves {ft.resolution_date}</span>}
+                                {ft.resolution_date && <span>· Resolves {ft.resolution_date}</span>}
+                                <a
+                                  href={`/api/fantasy-receipt/${ft.fantasy_take_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-auto tracking-widest uppercase hover:text-gray-700 transition-colors"
+                                  style={{ color: "#15803d" }}
+                                >
+                                  RECEIPT →
+                                </a>
                               </div>
                             </div>
                           </div>

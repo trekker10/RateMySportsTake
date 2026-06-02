@@ -1,7 +1,14 @@
 import { ImageResponse } from "@vercel/og";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTakeScoreConfig } from "@/app/actions/takescore";
-import { scoreToGrade } from "@/lib/takescore";
+import { scoreToGrade, DEFAULT_CONFIG, type TakeScoreConfig } from "@/lib/takescore";
+
+async function fetchGradeConfig(supabase: ReturnType<typeof createAdminClient>): Promise<TakeScoreConfig> {
+  const { data } = await supabase.from("take_score_config").select("*").eq("id", "default").single();
+  const dbValues = Object.fromEntries(
+    Object.entries(data ?? {}).filter(([, v]) => v != null),
+  );
+  return { ...DEFAULT_CONFIG, ...dbValues } as TakeScoreConfig;
+}
 
 export const runtime = "edge";
 
@@ -189,17 +196,18 @@ export async function GET(
     fetchFont("JetBrains+Mono"),
   ]);
 
-  const { data: take } = await supabase
-    .from("fantasy_takes")
-    .select(
-      "fantasy_take_id, raw_text, outcome_status, accuracy_score, grader_note, player_name, player_position, expert_id, experts(name)",
-    )
-    .eq("fantasy_take_id", takeId)
-    .single();
+  const [{ data: take }, gradeConfig] = await Promise.all([
+    supabase
+      .from("fantasy_takes")
+      .select(
+        "fantasy_take_id, raw_text, outcome_status, accuracy_score, grader_note, player_name, player_position, expert_id, experts(name)",
+      )
+      .eq("fantasy_take_id", takeId)
+      .single(),
+    fetchGradeConfig(supabase),
+  ]);
 
   if (!take) return new Response("Not found", { status: 404 });
-
-  const gradeConfig = await getTakeScoreConfig();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const expertName: string = (take as any).experts?.name ?? "Unknown";

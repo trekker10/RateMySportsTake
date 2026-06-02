@@ -58,12 +58,13 @@ function sanitize(raw: string): string {
     .trim();
 }
 
-// ── Static text-size thresholds — scaled for 920px usable width ─────────────
+// ── Text-size thresholds — large, canvas-filling sizes for 920px width ───────
 function callFontSize(chars: number): number {
-  if (chars <= 80)  return 30;
-  if (chars <= 120) return 26;
-  if (chars <= 155) return 22;
-  return 19;
+  if (chars <= 60)  return 52;
+  if (chars <= 100) return 44;
+  if (chars <= 140) return 36;
+  if (chars <= 180) return 29;
+  return 24;
 }
 
 function callText(raw: string): string {
@@ -72,10 +73,10 @@ function callText(raw: string): string {
 }
 
 function analysisFontSize(chars: number): number {
-  if (chars <= 175) return 20;
-  if (chars <= 230) return 18;
-  if (chars <= 290) return 16;
-  return 14;
+  if (chars <= 175) return 24;
+  if (chars <= 250) return 21;
+  if (chars <= 340) return 18;
+  return 15;
 }
 
 function analysisText(raw: string): string {
@@ -84,15 +85,16 @@ function analysisText(raw: string): string {
 }
 
 function analystFontSize(name: string): number {
-  if (name.length <= 22) return 46;
-  if (name.length <= 34) return 36;
-  return 28;
+  if (name.length <= 14) return 84;
+  if (name.length <= 22) return 68;
+  if (name.length <= 34) return 54;
+  return 42;
 }
 
 function verdictFontSize(label: string): number {
-  if (label.length <= 16) return 38;
-  if (label.length <= 22) return 29;
-  return 22;
+  if (label.length <= 16) return 52;
+  if (label.length <= 22) return 42;
+  return 32;
 }
 
 // ── Font fetcher (TTF — Satori does not support WOFF2) ───────────────────────
@@ -294,7 +296,7 @@ export async function GET(
                 <span
                   style={{
                     fontFamily: ARCHIVO,
-                    fontSize: 36,
+                    fontSize: 42,
                     fontWeight: 900,
                     color: INK,
                     letterSpacing: "-0.03em",
@@ -303,7 +305,7 @@ export async function GET(
                   {word}
                 </span>
                 {i < 3 && (
-                  <span style={{ fontFamily: ARCHIVO, fontSize: 36, fontWeight: 900, color: GOOD }}>
+                  <span style={{ fontFamily: ARCHIVO, fontSize: 42, fontWeight: 900, color: GOOD }}>
                     /
                   </span>
                 )}
@@ -408,19 +410,19 @@ export async function GET(
           >
             {grade ? (
               <span
-                style={{ fontFamily: ARCHIVO, fontSize: 130, fontWeight: 900, color: outcomeCol, lineHeight: 1 }}
+                style={{ fontFamily: ARCHIVO, fontSize: 160, fontWeight: 900, color: outcomeCol, lineHeight: 1 }}
               >
                 {grade}
               </span>
             ) : (
               <span
-                style={{ fontFamily: ARCHIVO, fontSize: 90, fontWeight: 900, color: INK_FAINT, lineHeight: 1 }}
+                style={{ fontFamily: ARCHIVO, fontSize: 110, fontWeight: 900, color: INK_FAINT, lineHeight: 1 }}
               >
                 —
               </span>
             )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: "0.2em", color: INK_FAINT }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={{ fontFamily: MONO, fontSize: 15, letterSpacing: "0.2em", color: INK_FAINT }}>
                 VERDICT
               </span>
               <span

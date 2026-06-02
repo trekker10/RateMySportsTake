@@ -257,8 +257,6 @@ export async function GET(
           width: W,
           height: H,
           backgroundColor: STAGE,
-          backgroundImage:
-            "repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 12px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -271,7 +269,6 @@ export async function GET(
             width: 600,
             display: "flex",
             flexDirection: "column",
-            boxShadow: "0 16px 64px rgba(0,0,0,0.7)",
           }}
         >
           {/* Top perforations */}
@@ -365,7 +362,7 @@ export async function GET(
                   fontFamily: SPACE,
                   fontSize: callSize,
                   fontStyle: "italic",
-                  fontWeight: 500,
+                  fontWeight: 400,
                   color: INK,
                   textAlign: "center",
                   lineHeight: 1.5,

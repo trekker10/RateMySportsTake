@@ -7,6 +7,7 @@ import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
 import TakeLogSection from "./TakeLogSection";
+import ShareReceiptButton from "@/components/ShareReceiptButton";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
@@ -470,15 +471,15 @@ export default async function ExpertProfilePage({
                                 {ft.timing_window && <span>· {ft.timing_window.replace(/_/g, " ")}</span>}
                                 {ft.boldness_score != null && <span>· Boldness {ft.boldness_score}</span>}
                                 {ft.resolution_date && <span>· Resolves {ft.resolution_date}</span>}
-                                <a
-                                  href={`/api/fantasy-receipt/${ft.fantasy_take_id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-auto tracking-widest uppercase hover:text-gray-700 transition-colors"
-                                  style={{ color: "#15803d" }}
+                              </div>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                <ShareReceiptButton
+                                  takeId={ft.fantasy_take_id}
+                                  imageUrl={`/api/fantasy-receipt/${ft.fantasy_take_id}`}
+                                  className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
                                 >
-                                  RECEIPT →
-                                </a>
+                                  Share Receipt
+                                </ShareReceiptButton>
                               </div>
                             </div>
                           </div>

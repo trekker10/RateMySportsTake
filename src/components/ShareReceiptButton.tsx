@@ -4,14 +4,16 @@ import { useState, useCallback } from "react";
 
 interface ShareReceiptButtonProps {
   takeId: string;
+  /** Override the default /api/receipt/[takeId] URL */
+  imageUrl?: string;
   className?: string;
   children?: React.ReactNode;
 }
 
-export default function ShareReceiptButton({ takeId, className, children }: ShareReceiptButtonProps) {
+export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, className, children }: ShareReceiptButtonProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const imageUrl = `/api/receipt/${takeId}`;
+  const imageUrl = imageUrlProp ?? `/api/receipt/${takeId}`;
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => { setOpen(false); setCopied(false); };

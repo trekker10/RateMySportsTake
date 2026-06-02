@@ -45,12 +45,12 @@ function fantasyVerdict(
   return                     { label: "WHIFFED",              outcome: "bad"  };
 }
 
-// ── Static text-size thresholds (brief §4 fallback) ─────────────────────────
+// ── Static text-size thresholds — scaled for 920px usable width ─────────────
 function callFontSize(chars: number): number {
-  if (chars <= 80)  return 22;
-  if (chars <= 120) return 20;
-  if (chars <= 155) return 18;
-  return 16;
+  if (chars <= 80)  return 30;
+  if (chars <= 120) return 26;
+  if (chars <= 155) return 22;
+  return 19;
 }
 
 function callText(raw: string): string {
@@ -59,10 +59,10 @@ function callText(raw: string): string {
 }
 
 function analysisFontSize(chars: number): number {
-  if (chars <= 175) return 15;
-  if (chars <= 230) return 14;
-  if (chars <= 290) return 13;
-  return 12;
+  if (chars <= 175) return 20;
+  if (chars <= 230) return 18;
+  if (chars <= 290) return 16;
+  return 14;
 }
 
 function analysisText(raw: string): string {
@@ -71,15 +71,15 @@ function analysisText(raw: string): string {
 }
 
 function analystFontSize(name: string): number {
-  if (name.length <= 22) return 33;
-  if (name.length <= 34) return 27;
-  return 22;
+  if (name.length <= 22) return 46;
+  if (name.length <= 34) return 36;
+  return 28;
 }
 
 function verdictFontSize(label: string): number {
-  if (label.length <= 16) return 29;
-  if (label.length <= 22) return 22;
-  return 18;
+  if (label.length <= 16) return 38;
+  if (label.length <= 22) return 29;
+  return 22;
 }
 
 // ── Font fetcher (TTF — Satori does not support WOFF2) ───────────────────────
@@ -145,35 +145,30 @@ function Barcode() {
 }
 
 // ── Perforated edge strip ─────────────────────────────────────────────────────
-// alignItems "flex-end" → shows BOTTOM halves (top edge of receipt)
-// alignItems "flex-start" → shows TOP halves (bottom edge of receipt)
-function PerfStrip({
-  edge,
-  stageColor,
-}: {
-  edge: "top" | "bottom";
-  stageColor: string;
-}) {
+// Sits between a dark band and the cream body.
+// "top"    → cream circles flush to bottom of dark band (bottom halves visible)
+// "bottom" → cream circles flush to top of dark band (top halves visible)
+function PerfStrip({ edge }: { edge: "top" | "bottom" }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: edge === "top" ? "flex-end" : "flex-start",
-        height: 9,
+        height: 10,
         overflow: "hidden",
-        width: 600,
-        backgroundColor: PAPER,
+        width: 1080,
+        backgroundColor: STAGE,
         flexShrink: 0,
       }}
     >
-      {Array.from({ length: 34 }).map((_, i) => (
+      {Array.from({ length: 64 }).map((_, i) => (
         <div
           key={i}
           style={{
             width: 18,
             height: 18,
             borderRadius: 9,
-            backgroundColor: stageColor,
+            backgroundColor: PAPER,
             flexShrink: 0,
           }}
         />
@@ -252,102 +247,117 @@ export async function GET(
 
   return new ImageResponse(
     (
-      // ── Stage ────────────────────────────────────────────────────────────────
+      // ── Full-bleed receipt — no side margins ─────────────────────────────────
       <div
         style={{
           width: W,
           height: H,
-          backgroundColor: STAGE,
+          backgroundColor: PAPER,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 30,
+          flexDirection: "column",
         }}
       >
-        {/* ── Receipt ──────────────────────────────────────────────────────── */}
+        {/* ── Dark top band ───────────────────────────────────────────────── */}
+        <div style={{ width: W, height: 32, backgroundColor: STAGE, flexShrink: 0 }} />
+        {/* Top perf strip — cream circles eating into dark band */}
+        <PerfStrip edge="top" />
+
+        {/* ── Paper body ──────────────────────────────────────────────────── */}
         <div
           style={{
-            width: 600,
+            flex: 1,
+            backgroundColor: PAPER,
+            padding: "32px 80px 24px",
             display: "flex",
             flexDirection: "column",
+            alignItems: "center",
+            gap: 0,
           }}
         >
-          {/* Top perforations */}
-          <PerfStrip edge="top" stageColor={STAGE} />
+          {/* ── Wordmark ─────────────────────────────────────────────────── */}
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+            {(["RATE", "MY", "FANTASY", "TAKE"] as const).map((word, i) => (
+              <div key={word} style={{ display: "flex", alignItems: "center" }}>
+                <span
+                  style={{
+                    fontFamily: ARCHIVO,
+                    fontSize: 36,
+                    fontWeight: 900,
+                    color: INK,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  {word}
+                </span>
+                {i < 3 && (
+                  <span style={{ fontFamily: ARCHIVO, fontSize: 36, fontWeight: 900, color: GOOD }}>
+                    /
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
 
-          {/* Paper content */}
+          {/* ── ANALYST ──────────────────────────────────────────────────── */}
           <div
             style={{
-              backgroundColor: PAPER,
-              padding: "36px 44px 28px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              width: "100%",
+              marginTop: 20,
               gap: 0,
             }}
           >
-            {/* ── Wordmark ─────────────────────────────────────────────────── */}
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              {(["RATE", "MY", "FANTASY", "TAKE"] as const).map((word, i) => (
-                <div key={word} style={{ display: "flex", alignItems: "center" }}>
-                  <span
-                    style={{
-                      fontFamily: ARCHIVO,
-                      fontSize: 28,
-                      fontWeight: 900,
-                      color: INK,
-                      letterSpacing: "-0.03em",
-                    }}
-                  >
-                    {word}
-                  </span>
-                  {i < 3 && (
-                    <span
-                      style={{
-                        fontFamily: ARCHIVO,
-                        fontSize: 28,
-                        fontWeight: 900,
-                        color: GOOD,
-                      }}
-                    >
-                      /
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* ── ANALYST ──────────────────────────────────────────────────── */}
-            <div
+            <SectionLabel text="ANALYST" monoFont={MONO} />
+            <p
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                width: "100%",
-                marginTop: 20,
-                gap: 0,
+                fontFamily: ARCHIVO,
+                fontSize: analystSize,
+                fontWeight: 900,
+                fontStyle: "italic",
+                color: INK,
+                textAlign: "center",
+                textTransform: "uppercase",
+                letterSpacing: "-0.02em",
+                margin: "14px 0 18px",
+                width: 920,
               }}
             >
-              <SectionLabel text="ANALYST" monoFont={MONO} />
-              <p
-                style={{
-                  fontFamily: ARCHIVO,
-                  fontSize: analystSize,
-                  fontWeight: 900,
-                  fontStyle: "italic",
-                  color: INK,
-                  textAlign: "center",
-                  textTransform: "uppercase",
-                  letterSpacing: "-0.02em",
-                  margin: "14px 0 18px",
-                  width: 512,
-                }}
-              >
-                {expertName}
-              </p>
-            </div>
+              {expertName}
+            </p>
+          </div>
 
-            {/* ── THE CALL ─────────────────────────────────────────────────── */}
+          {/* ── THE CALL ─────────────────────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+              gap: 0,
+            }}
+          >
+            <SectionLabel text="THE CALL" monoFont={MONO} />
+            <p
+              style={{
+                fontFamily: SPACE,
+                fontSize: callSize,
+                fontStyle: "italic",
+                fontWeight: 400,
+                color: INK,
+                textAlign: "center",
+                lineHeight: 1.5,
+                margin: "14px 0 18px",
+                width: 920,
+              }}
+            >
+              &ldquo;{displayCall}&rdquo;
+            </p>
+          </div>
+
+          {/* ── THE ANALYSIS ─────────────────────────────────────────────── */}
+          {displayAnalysis && (
             <div
               style={{
                 display: "flex",
@@ -357,161 +367,96 @@ export async function GET(
                 gap: 0,
               }}
             >
-              <SectionLabel text="THE CALL" monoFont={MONO} />
+              <SectionLabel text="THE ANALYSIS" monoFont={MONO} />
               <p
                 style={{
                   fontFamily: SPACE,
-                  fontSize: callSize,
-                  fontStyle: "italic",
-                  fontWeight: 400,
-                  color: INK,
+                  fontSize: analysisSize,
+                  color: INK_SOFT,
                   textAlign: "center",
-                  lineHeight: 1.5,
+                  lineHeight: 1.65,
                   margin: "14px 0 18px",
-                  width: 512,
+                  width: 920,
                 }}
               >
-                &ldquo;{displayCall}&rdquo;
+                {displayAnalysis}
               </p>
             </div>
+          )}
 
-            {/* ── THE ANALYSIS (only if resolved + has grader note) ────────── */}
-            {displayAnalysis && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  width: "100%",
-                  gap: 0,
-                }}
+          {/* ── FINAL GRADE ──────────────────────────────────────────────── */}
+          <div
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 0 }}
+          >
+            <SectionLabel text="FINAL GRADE" monoFont={MONO} />
+          </div>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 36, margin: "18px 0 20px" }}
+          >
+            {grade ? (
+              <span
+                style={{ fontFamily: ARCHIVO, fontSize: 130, fontWeight: 900, color: outcomeCol, lineHeight: 1 }}
               >
-                <SectionLabel text="THE ANALYSIS" monoFont={MONO} />
-                <p
-                  style={{
-                    fontFamily: SPACE,
-                    fontSize: analysisSize,
-                    color: INK_SOFT,
-                    textAlign: "center",
-                    lineHeight: 1.65,
-                    margin: "14px 0 18px",
-                    width: 512,
-                  }}
-                >
-                  {displayAnalysis}
-                </p>
-              </div>
+                {grade}
+              </span>
+            ) : (
+              <span
+                style={{ fontFamily: ARCHIVO, fontSize: 90, fontWeight: 900, color: INK_FAINT, lineHeight: 1 }}
+              >
+                —
+              </span>
             )}
-
-            {/* ── FINAL GRADE ──────────────────────────────────────────────── */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                width: "100%",
-                gap: 0,
-              }}
-            >
-              <SectionLabel text="FINAL GRADE" monoFont={MONO} />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 28,
-                margin: "18px 0 20px",
-              }}
-            >
-              {grade ? (
-                <span
-                  style={{
-                    fontFamily: ARCHIVO,
-                    fontSize: 104,
-                    fontWeight: 900,
-                    color: outcomeCol,
-                    lineHeight: 1,
-                  }}
-                >
-                  {grade}
-                </span>
-              ) : (
-                <span
-                  style={{
-                    fontFamily: ARCHIVO,
-                    fontSize: 72,
-                    fontWeight: 900,
-                    color: INK_FAINT,
-                    lineHeight: 1,
-                  }}
-                >
-                  —
-                </span>
-              )}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 6,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 11,
-                    letterSpacing: "0.2em",
-                    color: INK_FAINT,
-                  }}
-                >
-                  VERDICT
-                </span>
-                <span
-                  style={{
-                    fontFamily: ARCHIVO,
-                    fontSize: vSize,
-                    fontWeight: 900,
-                    color: outcomeCol,
-                    letterSpacing: "0.01em",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {verdictLabel}
-                </span>
-              </div>
-            </div>
-
-            {/* ── Barcode ──────────────────────────────────────────────────── */}
-            <Barcode />
-
-            {/* ── Footer ───────────────────────────────────────────────────── */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                marginTop: 18,
-                gap: 8,
-              }}
-            >
-              <div style={{ flex: 1, height: 1, backgroundColor: INK_FAINT }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <span style={{ fontFamily: MONO, fontSize: 13, letterSpacing: "0.2em", color: INK_FAINT }}>
+                VERDICT
+              </span>
               <span
                 style={{
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  color: INK_FAINT,
+                  fontFamily: ARCHIVO,
+                  fontSize: vSize,
+                  fontWeight: 900,
+                  color: outcomeCol,
+                  letterSpacing: "0.01em",
                   whiteSpace: "nowrap",
                 }}
               >
-                See more takes at RateMySportsTake.com
+                {verdictLabel}
               </span>
-              <div style={{ flex: 1, height: 1, backgroundColor: INK_FAINT }} />
             </div>
           </div>
 
-          {/* Bottom perforations */}
-          <PerfStrip edge="bottom" stageColor={STAGE} />
+          {/* ── Barcode ──────────────────────────────────────────────────── */}
+          <Barcode />
+
+          {/* ── Footer ───────────────────────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              marginTop: 18,
+              gap: 8,
+            }}
+          >
+            <div style={{ flex: 1, height: 1, backgroundColor: INK_FAINT }} />
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 13,
+                letterSpacing: "0.14em",
+                color: INK_FAINT,
+                whiteSpace: "nowrap",
+              }}
+            >
+              RateMySportsTake.com
+            </span>
+            <div style={{ flex: 1, height: 1, backgroundColor: INK_FAINT }} />
+          </div>
         </div>
+
+        {/* Bottom perf strip then dark band */}
+        <PerfStrip edge="bottom" />
+        <div style={{ width: W, height: 32, backgroundColor: STAGE, flexShrink: 0 }} />
       </div>
     ),
     {

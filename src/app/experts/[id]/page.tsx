@@ -368,6 +368,8 @@ export default async function ExpertProfilePage({
                 breakout_call: "Breakout Call", bust_call: "Bust Call",
                 sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
               };
+              const formatCategory = (cat: string) =>
+                CATEGORY_LABELS[cat] ?? cat.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
               // Map accuracy_score → verdict badge (mirrors analyst RIGHT/WRONG/PENDING)
               function fvTag(take: { outcome_status: string; accuracy_score: number | null }) {
@@ -427,7 +429,7 @@ export default async function ExpertProfilePage({
                             <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-gray-200">
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: "#15803d" }}>
-                                  {CATEGORY_LABELS[ft.category] ?? ft.category}
+                                  {formatCategory(ft.category)}
                                 </span>
                                 <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase truncate">
                                   Filed {filed}{ft.sport_season ? ` · ${ft.sport_season}` : ""}

@@ -15,6 +15,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   breakout_call: "Breakout Call", bust_call: "Bust Call",
   sleeper_pick: "Sleeper Pick", start_sit: "Start/Sit", waiver_add: "Waiver Add",
 };
+const formatCategory = (cat: string) =>
+  CATEGORY_LABELS[cat] ?? cat.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 const OUTCOME_COLORS: Record<string, string> = {
   resolved: "#15803d", pending: "#d97706",
@@ -302,7 +304,7 @@ export default async function FantasyPage({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: GREEN }}>
-                          {CATEGORY_LABELS[ft.category] ?? ft.category}
+                          {formatCategory(ft.category)}
                         </span>
                         <span className="font-mono text-[10px] font-black" style={{ color: OUTCOME_COLORS[ft.outcome_status] ?? "#9ca3af" }}>
                           {ft.outcome_status === "resolved"

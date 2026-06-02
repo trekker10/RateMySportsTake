@@ -82,20 +82,21 @@ function verdictFontSize(label: string): number {
   return 18;
 }
 
-// ── Font fetcher ─────────────────────────────────────────────────────────────
+// ── Font fetcher (TTF — Satori does not support WOFF2) ───────────────────────
 async function fetchFont(family: string): Promise<ArrayBuffer | null> {
   try {
+    // Use an old IE UA so Google Fonts returns TTF (format('truetype'))
+    // instead of WOFF2, which Satori / fontkit cannot parse.
     const css = await fetch(
       `https://fonts.googleapis.com/css2?family=${family}&display=swap`,
       {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "User-Agent": "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)",
         },
       },
     ).then((r) => r.text());
 
-    const matches = [...css.matchAll(/src: url\((.+?)\) format\('woff2'\)/g)];
+    const matches = [...css.matchAll(/src: url\((.+?)\) format\('truetype'\)/g)];
     const url = matches[matches.length - 1]?.[1];
     if (!url) return null;
     return await fetch(url).then((r) => r.arrayBuffer());

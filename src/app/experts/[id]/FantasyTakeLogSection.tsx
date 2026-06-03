@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
 
 const INITIAL_COUNT = 4;
@@ -127,6 +128,12 @@ export default function FantasyTakeLogSection({ takes }: Props) {
                   {ft.resolution_date && <span>· Resolves {ft.resolution_date}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
+                  <Link
+                    href={`/fantasy-takes/${ft.fantasy_take_id}`}
+                    className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+                  >
+                    See Full Context
+                  </Link>
                   <ShareReceiptButton
                     takeId={ft.fantasy_take_id}
                     imageUrl={`/api/fantasy-receipt/${ft.fantasy_take_id}`}

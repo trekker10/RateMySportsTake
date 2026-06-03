@@ -330,13 +330,9 @@ export async function rateSingleFantasyTake(
     if (result.player_adp != null && take.player_adp == null) {
       update.player_adp = result.player_adp;
     }
-    // Always update resolution_date if the AI returned a future date,
-    // or if the current date is missing / in the past
+    // Always update resolution_date if the AI returned a valid future date
     if (result.resolution_date && result.resolution_date > today) {
-      const currentDate = take.resolution_date;
-      if (!currentDate || currentDate <= today) {
-        update.resolution_date = result.resolution_date;
-      }
+      update.resolution_date = result.resolution_date;
     }
 
     await supabase.from("fantasy_takes").update(update).eq("fantasy_take_id", fantasyTakeId);

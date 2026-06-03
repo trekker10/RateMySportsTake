@@ -104,13 +104,19 @@ Return ONLY this JSON:
     throw new Error(`AI returned invalid JSON: ${text.slice(0, 200)}`);
   }
 
-  // Validate resolution_date — reject anything in the past
+  // If the AI returns a past date, roll it forward year-by-year until it's in the future.
+  // e.g. 2026-01-15 → 2027-01-15 when today is 2026-06-03.
   let resolutionDate: string | null = null;
   if (parsed.resolution_date && typeof parsed.resolution_date === "string") {
-    const proposed = parsed.resolution_date;
-    if (proposed > today) {
-      resolutionDate = proposed;
+    let proposed = parsed.resolution_date;
+    let safetyLimit = 0;
+    while (proposed <= today && safetyLimit < 5) {
+      const d = new Date(proposed + "T00:00:00");
+      d.setFullYear(d.getFullYear() + 1);
+      proposed = d.toISOString().split("T")[0];
+      safetyLimit++;
     }
+    resolutionDate = proposed > today ? proposed : null;
   }
 
   return {

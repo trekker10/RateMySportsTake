@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getFantasyConfig, recalculateFantasyScore } from "@/app/actions/fantasy-takescore";
 import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
 import { gradeFantasyTake as aiGradeFantasyTake } from "@/lib/ai/grade-fantasy-take";
+import { rateFantasyTake as aiRateFantasyTake } from "@/lib/ai/rate-fantasy-take";
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 
@@ -290,6 +291,56 @@ export async function gradeFantasyTake(
   revalidatePath("/fantasy");
 
   return { success: true };
+}
+
+export async function rateSingleFantasyTake(
+  fantasyTakeId: string,
+): Promise<{ success: boolean; boldness_score?: number; grading_criteria?: string; error?: string }> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  const supabase = createAdminClient();
+
+  const { data: take } = await supabase
+    .from("fantasy_takes")
+    .select("*, experts(name)")
+    .eq("fantasy_take_id", fantasyTakeId)
+    .single();
+
+  if (!take) return { success: false, error: "Take not found" };
+
+  try {
+    const result = await aiRateFantasyTake({
+      rawText:        take.raw_text,
+      playerName:     take.player_name,
+      playerPosition: take.player_position,
+      playerAdp:      take.player_adp,
+      category:       take.category,
+      timingWindow:   take.timing_window,
+      sportSeason:    take.sport_season,
+      dateMade:       take.date_made,
+    });
+
+    const update: Record<string, unknown> = {
+      boldness_score:   result.boldness_score,
+      grading_criteria: result.grading_criteria || null,
+    };
+    // Only set ADP from AI if not already provided
+    if (result.player_adp != null && take.player_adp == null) {
+      update.player_adp = result.player_adp;
+    }
+
+    await supabase.from("fantasy_takes").update(update).eq("fantasy_take_id", fantasyTakeId);
+    await recalculateFantasyScore(take.expert_id);
+
+    revalidatePath("/admin/takes");
+    revalidatePath(`/experts/${take.expert_id}`);
+    revalidatePath("/fantasy");
+
+    return { success: true, boldness_score: result.boldness_score, grading_criteria: result.grading_criteria };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "AI rating failed" };
+  }
 }
 
 export async function deleteFantasyTake(

@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
-import { getAllFantasyTakesAdmin, gradeFantasyTake, gradeFantasyTakeSingle, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
+import { getAllFantasyTakesAdmin, gradeFantasyTake, gradeFantasyTakeSingle, rateSingleFantasyTake, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
 import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
 import Link from "next/link";
 
@@ -932,10 +932,14 @@ function FantasyTakesPanel() {
   const [editExpandedId, setEditExpandedId] = useState<string | null>(null);
   const [aiGradingId, setAiGradingId] = useState<string | null>(null);
   const [aiGradeError, setAiGradeError] = useState<Record<string, string>>({});
+  const [aiRatingId, setAiRatingId] = useState<string | null>(null);
+  const [aiRateError, setAiRateError] = useState<Record<string, string>>({});
   const [selectedFIds, setSelectedFIds] = useState<Set<string>>(new Set());
   const [fBulking, setFBulking] = useState(false);
   const [gradingAllFantasy, setGradingAllFantasy] = useState(false);
   const [gradingAllProgress, setGradingAllProgress] = useState<{ done: number; total: number } | null>(null);
+  const [ratingAllFantasy, setRatingAllFantasy] = useState(false);
+  const [ratingAllProgress, setRatingAllProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     startLoad(async () => {
@@ -980,6 +984,48 @@ function FantasyTakesPanel() {
       setAiGradeError(prev => ({ ...prev, [takeId]: result.error ?? "AI grading failed" }));
     }
     setAiGradingId(null);
+  }
+
+  async function handleAiRate(takeId: string) {
+    setAiRatingId(takeId);
+    setAiRateError(prev => { const n = { ...prev }; delete n[takeId]; return n; });
+    const result = await rateSingleFantasyTake(takeId);
+    if (result.success && result.boldness_score != null) {
+      setTakes(prev =>
+        prev!.map(t => t.fantasy_take_id === takeId
+          ? { ...t, boldness_score: result.boldness_score!, } as FantasyTakeRow
+          : t
+        )
+      );
+    } else {
+      setAiRateError(prev => ({ ...prev, [takeId]: result.error ?? "AI rating failed" }));
+    }
+    setAiRatingId(null);
+  }
+
+  async function rateAllUnratedFantasy() {
+    if (!takes) return;
+    const unrated = takes.filter(t => t.boldness_score == null);
+    if (unrated.length === 0) return;
+    setRatingAllFantasy(true);
+    setRatingAllProgress({ done: 0, total: unrated.length });
+    for (let i = 0; i < unrated.length; i++) {
+      const take = unrated[i];
+      setAiRatingId(take.fantasy_take_id);
+      const result = await rateSingleFantasyTake(take.fantasy_take_id);
+      if (result.success && result.boldness_score != null) {
+        setTakes(prev =>
+          prev!.map(t => t.fantasy_take_id === take.fantasy_take_id
+            ? { ...t, boldness_score: result.boldness_score!, } as FantasyTakeRow
+            : t
+          )
+        );
+      }
+      setRatingAllProgress({ done: i + 1, total: unrated.length });
+    }
+    setAiRatingId(null);
+    setRatingAllFantasy(false);
+    setRatingAllProgress(null);
   }
 
   async function handleDelete(takeId: string) {
@@ -1079,10 +1125,25 @@ function FantasyTakesPanel() {
           placeholder="Search by guru, player, or take text…"
           className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
         />
+        {(() => {
+          const unratedCount = (takes ?? []).filter(t => t.boldness_score == null).length;
+          return unratedCount > 0 ? (
+            <button
+              onClick={rateAllUnratedFantasy}
+              disabled={ratingAllFantasy || gradingAllFantasy || fBulking || aiGradingId !== null || aiRatingId !== null}
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
+              style={{ backgroundColor: "#2563eb", color: "#fff" }}
+            >
+              {ratingAllFantasy && ratingAllProgress
+                ? `Rating… ${ratingAllProgress.done}/${ratingAllProgress.total}`
+                : `Rate all unrated (${unratedCount})`}
+            </button>
+          ) : null;
+        })()}
         {counts.pending > 0 && (
           <button
             onClick={gradeAllPendingFantasy}
-            disabled={gradingAllFantasy || fBulking || aiGradingId !== null}
+            disabled={gradingAllFantasy || ratingAllFantasy || fBulking || aiGradingId !== null || aiRatingId !== null}
             className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50"
             style={{ backgroundColor: "#15803d" }}
           >
@@ -1227,11 +1288,30 @@ function FantasyTakesPanel() {
                     </span>
 
                     <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {/* Rate it button — sets boldness + grading criteria */}
+                      {aiRatingId !== take.fantasy_take_id && (
+                        <button
+                          onClick={() => handleAiRate(take.fantasy_take_id)}
+                          disabled={aiRatingId !== null || aiGradingId !== null}
+                          className="rounded-lg border px-3 py-1 text-xs transition-colors disabled:opacity-40"
+                          style={{ borderColor: "#93c5fd", color: "#2563eb" }}
+                          title={take.boldness_score != null ? "Re-rate (boldness + criteria)" : "Rate this take"}
+                        >
+                          {take.boldness_score != null ? "Re-rate ✦" : "Rate it ✦"}
+                        </button>
+                      )}
+                      {aiRatingId === take.fantasy_take_id && (
+                        <span className="text-xs animate-pulse" style={{ color: "#2563eb" }}>Rating…</span>
+                      )}
+                      {aiRateError[take.fantasy_take_id] && (
+                        <span className="text-xs text-red-500">{aiRateError[take.fantasy_take_id]}</span>
+                      )}
+
                       {/* AI Grade it button — only for unresolved */}
                       {!isResolved && aiGradingId !== take.fantasy_take_id && (
                         <button
                           onClick={() => handleAiGrade(take.fantasy_take_id)}
-                          disabled={aiGradingId !== null}
+                          disabled={aiGradingId !== null || aiRatingId !== null}
                           className="rounded-lg border border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-800 hover:bg-blue-50 px-3 py-1 text-xs transition-colors disabled:opacity-40"
                         >
                           Grade it ✦

@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 const client = new Anthropic();
 
 export interface FantasyGradingResult {
-  accuracy_score: 100 | 75 | 60 | 50 | 25 | 0;
+  accuracy_score: number;     // 0–100, any integer
   grader_note: string;        // 2-3 sentences on what actually happened
   outcome_status: "resolved";
 }
@@ -84,19 +84,20 @@ ${categoryCriteria}
 Search the web for actual stats and fantasy results for ${playerName ?? "the relevant player(s)"} for the ${sportSeason ?? "relevant season/week"}. Then return ONLY this JSON:
 
 {
-  "accuracy_score": <one of: 100, 75, 60, 50, 25, 0>,
+  "accuracy_score": <integer 0–100>,
   "grader_note": "<2-3 sentences: what actually happened and how it compares to the prediction>"
 }
 
-Accuracy scale:
-- 100 = Nailed It — prediction was completely correct, player/outcome matched perfectly
-- 75  = Mostly Right — core prediction held, minor details off
-- 60  = Directionally Right — headed the right direction but didn't fully land
-- 50  = Half Right — mixed, about as right as wrong
-- 25  = Mostly Wrong — prediction mostly didn't pan out
-- 0   = Wrong — prediction was clearly incorrect
+Accuracy scale (use any integer 0–100 — be precise, not just round numbers):
+- 90–100 = Nailed it — prediction correct in every meaningful way
+- 75–89  = Mostly right — core call landed, small details off
+- 60–74  = Directionally right — right trend, didn't fully materialise
+- 40–59  = Mixed — roughly as right as wrong
+- 20–39  = Mostly wrong — prediction largely didn't pan out
+- 0–19   = Wrong — clearly incorrect
 
-If the outcome cannot be determined yet (season/week hasn't finished, stats unavailable), set accuracy_score to null and explain in grader_note. But only use null if truly unresolvable — otherwise pick the closest tier.`,
+Use the full range. A prediction that was 80% right should score ~80, not 75 or 100.
+If the outcome truly cannot be determined yet (season/week hasn't finished, stats unavailable), set accuracy_score to null and explain in grader_note.`,
       },
     ],
   });
@@ -110,15 +111,12 @@ If the outcome cannot be determined yet (season/week hasn't finished, stats unav
 
   const parsed = JSON.parse(match[0]);
 
-  // Snap to the nearest valid tier
-  const VALID_SCORES = [100, 75, 60, 50, 25, 0] as const;
+  // Clamp to 0–100 and round to nearest integer
   const raw = Number(parsed.accuracy_score);
-  const snapped = VALID_SCORES.reduce((prev, curr) =>
-    Math.abs(curr - raw) < Math.abs(prev - raw) ? curr : prev
-  );
+  const clamped = Math.round(Math.min(100, Math.max(0, raw)));
 
   return {
-    accuracy_score: snapped,
+    accuracy_score: clamped,
     grader_note: parsed.grader_note ?? "",
     outcome_status: "resolved",
   };

@@ -68,11 +68,12 @@ For ADP-based boldness: predicting someone 30+ spots above their ADP is very bol
 predicting someone to perform at their ADP is obvious. Weight in the category —
 a breakout call on a top-5 pick is less bold than one on a pick outside the top-60.
 
-Resolution date rules:
-- Season-long NFL predictions (breakout/bust/sleeper): end of that NFL regular season, typically Jan 6 of the FOLLOWING year (e.g. "2026 NFL season" resolves 2027-01-06)
-- Weekly start/sit or waiver: end of that specific week
-- If the prediction is about "this season" and the NFL season in question hasn't started yet (current date is before September), use the upcoming season's end date
-- Never set a resolution date in the past — if the natural date would be before today (${today}), add one year`,
+Resolution date rules — be precise, past dates are OK (they show as "Overdue"):
+- Season-long NFL predictions (breakout/bust/sleeper/season_projection): end of THAT season's regular season week 18, typically Jan 6 of the year AFTER the season starts (e.g. "2026 NFL" → 2027-01-06; "2025 NFL" → 2026-01-05)
+- Weekly start/sit or waiver: the Tuesday after that NFL week (Monday night game ends, outcome clear)
+- Draft strategy or preseason calls: end of that NFL regular season
+- If the take says "this year" and was made before September ${today.slice(0, 4)}, it means the ${today.slice(0, 4)} NFL season ending January ${Number(today.slice(0, 4)) + 1}
+- If the outcome has clearly already happened based on the take text and date, use the actual past date`,
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -104,20 +105,11 @@ Return ONLY this JSON:
     throw new Error(`AI returned invalid JSON: ${text.slice(0, 200)}`);
   }
 
-  // If the AI returns a past date, roll it forward year-by-year until it's in the future.
-  // e.g. 2026-01-15 → 2027-01-15 when today is 2026-06-03.
-  let resolutionDate: string | null = null;
-  if (parsed.resolution_date && typeof parsed.resolution_date === "string") {
-    let proposed = parsed.resolution_date;
-    let safetyLimit = 0;
-    while (proposed <= today && safetyLimit < 5) {
-      const d = new Date(proposed + "T00:00:00");
-      d.setFullYear(d.getFullYear() + 1);
-      proposed = d.toISOString().split("T")[0];
-      safetyLimit++;
-    }
-    resolutionDate = proposed > today ? proposed : null;
-  }
+  // Accept any valid date — past dates are fine (they show as "Overdue", which is correct)
+  const resolutionDate: string | null =
+    parsed.resolution_date && typeof parsed.resolution_date === "string"
+      ? parsed.resolution_date
+      : null;
 
   return {
     boldness_score:   Math.round(Math.min(100, Math.max(0, Number(parsed.boldness_score ?? 50)))),

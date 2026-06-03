@@ -237,6 +237,7 @@ export async function gradeFantasyTakeSingle(
         accuracy_score: result.accuracy_score,
         grader_note: result.grader_note,
         outcome_status: "resolved",
+        ...(result.resolution_date ? { resolution_date: result.resolution_date } : {}),
       })
       .eq("fantasy_take_id", fantasyTakeId);
 
@@ -330,8 +331,8 @@ export async function rateSingleFantasyTake(
     if (result.player_adp != null && take.player_adp == null) {
       update.player_adp = result.player_adp;
     }
-    // Always update resolution_date if the AI returned a valid future date
-    if (result.resolution_date && result.resolution_date > today) {
+    // Always update resolution_date when AI returns one (past dates = overdue, that's correct)
+    if (result.resolution_date) {
       update.resolution_date = result.resolution_date;
     }
 

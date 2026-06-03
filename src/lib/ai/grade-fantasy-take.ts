@@ -6,6 +6,7 @@ export interface FantasyGradingResult {
   accuracy_score: number;     // 0–100, any integer
   grader_note: string;        // 2-3 sentences on what actually happened
   outcome_status: "resolved";
+  resolution_date: string | null; // YYYY-MM-DD when the outcome was/is determined
 }
 
 const CATEGORY_CRITERIA: Record<string, string> = {
@@ -85,7 +86,8 @@ Search the web for actual stats and fantasy results for ${playerName ?? "the rel
 
 {
   "accuracy_score": <integer 0–100>,
-  "grader_note": "<2-3 sentences: what actually happened and how it compares to the prediction>"
+  "grader_note": "<2-3 sentences: what actually happened and how it compares to the prediction>",
+  "resolution_date": "<YYYY-MM-DD when the outcome was or will be definitively known>"
 }
 
 Accuracy scale (use any integer 0–100 — be precise, not just round numbers):
@@ -97,7 +99,12 @@ Accuracy scale (use any integer 0–100 — be precise, not just round numbers):
 - 0–19   = Wrong — clearly incorrect
 
 Use the full range. A prediction that was 80% right should score ~80, not 75 or 100.
-If the outcome truly cannot be determined yet (season/week hasn't finished, stats unavailable), set accuracy_score to null and explain in grader_note.`,
+If the outcome truly cannot be determined yet (season/week hasn't finished, stats unavailable), set accuracy_score to null and explain in grader_note.
+
+Resolution date: the specific date the outcome was or will be known.
+- Season-long call → end of that NFL regular season (e.g. 2025 NFL season → 2026-01-05; 2026 NFL → 2027-01-06)
+- Weekly call → the Tuesday after that game week
+- Already resolved → the actual date the result became clear`,
       },
     ],
   });
@@ -119,5 +126,8 @@ If the outcome truly cannot be determined yet (season/week hasn't finished, stat
     accuracy_score: clamped,
     grader_note: parsed.grader_note ?? "",
     outcome_status: "resolved",
+    resolution_date: parsed.resolution_date && typeof parsed.resolution_date === "string"
+      ? parsed.resolution_date
+      : null,
   };
 }

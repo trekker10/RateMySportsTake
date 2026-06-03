@@ -321,6 +321,7 @@ export async function rateSingleFantasyTake(
       dateMade:       take.date_made,
     });
 
+    const today = new Date().toISOString().split("T")[0];
     const update: Record<string, unknown> = {
       boldness_score:   result.boldness_score,
       grading_criteria: result.grading_criteria || null,
@@ -328,6 +329,14 @@ export async function rateSingleFantasyTake(
     // Only set ADP from AI if not already provided
     if (result.player_adp != null && take.player_adp == null) {
       update.player_adp = result.player_adp;
+    }
+    // Always update resolution_date if the AI returned a future date,
+    // or if the current date is missing / in the past
+    if (result.resolution_date && result.resolution_date > today) {
+      const currentDate = take.resolution_date;
+      if (!currentDate || currentDate <= today) {
+        update.resolution_date = result.resolution_date;
+      }
     }
 
     await supabase.from("fantasy_takes").update(update).eq("fantasy_take_id", fantasyTakeId);

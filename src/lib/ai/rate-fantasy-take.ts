@@ -6,6 +6,7 @@ export interface FantasyRatingResult {
   boldness_score: number;       // 0–100
   grading_criteria: string;     // "Take is TRUE if… Take is FALSE if…"
   player_adp: number | null;    // estimated ADP if mentioned / inferable
+  resolution_date: string | null; // YYYY-MM-DD when outcome can be verified
 }
 
 const CATEGORY_CONTEXT: Record<string, string> = {
@@ -44,6 +45,8 @@ export async function rateFantasyTake(params: {
     `Date made: ${dateMade}`,
   ].filter(Boolean).join("\n");
 
+  const today = new Date().toISOString().split("T")[0];
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 512,
@@ -51,7 +54,7 @@ export async function rateFantasyTake(params: {
       {
         type: "text",
         text: `You are a fantasy football take analyst for an accountability platform.
-Rate how bold/contrarian a fantasy prediction is and write precise grading criteria.
+Rate how bold/contrarian a fantasy prediction is, write precise grading criteria, and determine when the outcome can be verified.
 Respond with valid JSON only — no markdown, no explanation.
 
 Boldness scale (0–100):
@@ -63,7 +66,13 @@ Boldness scale (0–100):
 
 For ADP-based boldness: predicting someone 30+ spots above their ADP is very bold;
 predicting someone to perform at their ADP is obvious. Weight in the category —
-a breakout call on a top-5 pick is less bold than one on a pick outside the top-60.`,
+a breakout call on a top-5 pick is less bold than one on a pick outside the top-60.
+
+Resolution date rules:
+- Season-long NFL predictions (breakout/bust/sleeper): end of that NFL regular season, typically Jan 6 of the FOLLOWING year (e.g. "2026 NFL season" resolves 2027-01-06)
+- Weekly start/sit or waiver: end of that specific week
+- If the prediction is about "this season" and the NFL season in question hasn't started yet (current date is before September), use the upcoming season's end date
+- Never set a resolution date in the past — if the natural date would be before today (${today}), add one year`,
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -78,7 +87,8 @@ Return ONLY this JSON:
 {
   "boldness_score": <integer 0–100>,
   "grading_criteria": "<Take is TRUE if [specific measurable condition — player stats, finish position, rank vs ADP, etc.]. Take is FALSE if [opposite]>",
-  "player_adp": <estimated ADP as a number, or null if not applicable / already known>
+  "player_adp": <estimated ADP as a number, or null if not applicable / already known>,
+  "resolution_date": "<YYYY-MM-DD when the outcome can be definitively verified, never in the past>"
 }`,
       },
     ],
@@ -94,9 +104,19 @@ Return ONLY this JSON:
     throw new Error(`AI returned invalid JSON: ${text.slice(0, 200)}`);
   }
 
+  // Validate resolution_date — reject anything in the past
+  let resolutionDate: string | null = null;
+  if (parsed.resolution_date && typeof parsed.resolution_date === "string") {
+    const proposed = parsed.resolution_date;
+    if (proposed > today) {
+      resolutionDate = proposed;
+    }
+  }
+
   return {
     boldness_score:   Math.round(Math.min(100, Math.max(0, Number(parsed.boldness_score ?? 50)))),
     grading_criteria: String(parsed.grading_criteria ?? ""),
     player_adp:       parsed.player_adp != null ? Number(parsed.player_adp) : null,
+    resolution_date:  resolutionDate,
   };
 }

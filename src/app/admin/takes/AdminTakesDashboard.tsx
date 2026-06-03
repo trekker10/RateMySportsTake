@@ -1191,6 +1191,10 @@ function FantasyTakesPanel() {
       {selectedFIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-lg text-white px-4 py-2.5 flex-wrap" style={{ backgroundColor: "#15803d" }}>
           <span className="font-mono text-xs font-semibold">{selectedFIds.size} selected</span>
+          <button
+            onClick={() => setSelectedFIds(new Set(filtered.map(t => t.fantasy_take_id)))}
+            className="text-[11px] text-green-200 hover:text-white underline"
+          >Select all</button>
           <button onClick={deselectFAll} className="text-[11px] text-green-200 hover:text-white underline">Deselect all</button>
           <div className="flex-1" />
           {fBulking && <span className="text-xs text-green-200 animate-pulse">Working…</span>}
@@ -1274,13 +1278,15 @@ function FantasyTakesPanel() {
                     </p>
 
                     <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-gray-400 font-mono">
-                      {take.resolution_date && <span>Resolves {take.resolution_date}</span>}
-                      {take.sport_season && <span>· {take.sport_season}</span>}
+                      {take.sport_season && <span>{take.sport_season}</span>}
                       {take.boldness_score != null && <span>· Boldness {take.boldness_score}</span>}
                     </div>
                   </div>
 
                   <div className="shrink-0 flex flex-col items-end gap-2">
+                    {take.resolution_date && !isResolved && (
+                      <ResolveBadge date={take.resolution_date} />
+                    )}
                     <span className="font-mono text-xs font-black" style={{ color: isResolved ? "#15803d" : "#d97706" }}>
                       {isResolved
                         ? take.accuracy_score != null ? `${take.accuracy_score}% ACC` : "RESOLVED"

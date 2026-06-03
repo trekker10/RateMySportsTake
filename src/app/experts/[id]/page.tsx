@@ -37,6 +37,19 @@ export default async function ExpertProfilePage({
   // Load config first so we can use grade thresholds in the query
   const gradeConfig = await getTakeScoreConfig();
 
+  // Resolve slug OR UUID — UUIDs are 36 chars with dashes; anything else is a slug
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const { data: expert } = await supabase
+    .from("experts")
+    .select("*")
+    .eq(isUUID ? "expert_id" : "slug", id)
+    .single();
+
+  if (!expert) notFound();
+
+  // Use the canonical UUID for all sub-queries regardless of how the page was reached
+  const expertId = expert.expert_id;
+
   // 5-category grade system: B groups B+/B/B−, C groups C+/C/C−
   const GRADE_CATS = ["A", "B", "C", "D", "F"] as const;
   type GradeCat = typeof GRADE_CATS[number];
@@ -73,14 +86,14 @@ export default async function ExpertProfilePage({
   let takesQuery = supabase
     .from("takes")
     .select("take_id, date_made, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
-    .eq("expert_id", id)
+    .eq("expert_id", expertId)
     .order("date_made", { ascending: false })
     .limit(4);
 
   let countQuery = supabase
     .from("takes")
     .select("take_id", { count: "exact", head: true })
-    .eq("expert_id", id);
+    .eq("expert_id", expertId);
 
   if (verdict === "right")   { takesQuery = takesQuery.eq("outcome_status", "confirmed_true");  countQuery = countQuery.eq("outcome_status", "confirmed_true"); }
   if (verdict === "wrong")   { takesQuery = takesQuery.in("outcome_status", ["confirmed_false", "partially_true"]); countQuery = countQuery.in("outcome_status", ["confirmed_false", "partially_true"]); }
@@ -91,7 +104,6 @@ export default async function ExpertProfilePage({
   }
 
   const [
-    { data: expert },
     { data: takes },
     { count: filteredCount },
     { data: allExperts },
@@ -99,18 +111,15 @@ export default async function ExpertProfilePage({
     { data: allGradedTakes },
     { data: fantasyTakes },
   ] = await Promise.all([
-    supabase.from("experts").select("*").eq("expert_id", id).single(),
     takesQuery,
     countQuery,
     supabase.from("experts").select("expert_id, overall_rating").gt("overall_rating", 0).order("overall_rating", { ascending: false }),
     user
-      ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", id).maybeSingle()
+      ? supabase.from("follows").select("user_id").eq("user_id", user.id).eq("expert_id", expertId).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from("takes").select("grade").eq("expert_id", id).not("grade", "is", null),
-    createAdminClient().from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, grader_note, date_made, resolution_date, sport_season").eq("expert_id", id).order("date_made", { ascending: false }),
+    supabase.from("takes").select("grade").eq("expert_id", expertId).not("grade", "is", null),
+    createAdminClient().from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, grader_note, date_made, resolution_date, sport_season").eq("expert_id", expertId).order("date_made", { ascending: false }),
   ]);
-
-  if (!expert) notFound();
 
   // Build 5-bucket distribution (B and C aggregate their sub-tiers)
   const distribution = GRADE_CATS.map(cat => ({
@@ -122,7 +131,7 @@ export default async function ExpertProfilePage({
   const maxDistCount = Math.max(...distribution.map(d => d.count), 1);
 
   // Rank
-  const rank = (allExperts ?? []).findIndex((e) => e.expert_id === id) + 1;
+  const rank = (allExperts ?? []).findIndex((e) => e.expert_id === expertId) + 1;
   const rankLabel = rank > 0 ? `#${rank}` : "—";
 
   // Name split for accent on last word
@@ -161,7 +170,7 @@ export default async function ExpertProfilePage({
       value: flipCount,
       sub: "public flip-flops",
       color: flipCount > 0 ? "#e2241a" : "#111827",
-      href: `/experts/${id}/flip-flops`,
+      href: `/experts/${id}/flip-flops`, // id is slug when available
     },
     ...(expert.is_fantasy_guru && expert.fantasy_overall_rating > 0
       ? [{ label: "FANTASY SCORE", value: scoreToGrade(expert.fantasy_overall_rating, gradeConfig), sub: "fantasy guru rating", color: "#15803d" }]

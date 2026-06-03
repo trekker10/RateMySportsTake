@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import TakeCard from "@/components/TakeCard";
 import TakesSearch from "@/components/TakesSearch";
 import Link from "next/link";
+import { expertUrl } from "@/lib/expert-url";
 
 function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -18,7 +19,7 @@ export default async function TakesPage({
 
   let query = supabase
     .from("takes")
-    .select("*, experts(name, expert_id, outlet)")
+    .select("*, experts(name, expert_id, slug, outlet)")
     .order("date_made", { ascending: false })
     .limit(50);
 
@@ -32,7 +33,7 @@ export default async function TakesPage({
     query,
     supabase
       .from("experts")
-      .select("expert_id, name, outlet, sport_focus, avatar_url, overall_rating, total_takes")
+      .select("expert_id, slug, name, outlet, sport_focus, avatar_url, overall_rating, total_takes")
       .gt("overall_rating", 0)
       .order("overall_rating", { ascending: false })
       .limit(5),
@@ -95,7 +96,7 @@ export default async function TakesPage({
             {(topExperts ?? []).map((e, i) => (
               <Link
                 key={e.expert_id}
-                href={`/experts/${e.expert_id}`}
+                href={expertUrl(e)}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                 style={{ borderTop: i > 0 ? "1px dashed #d1d5db" : undefined }}
               >

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Avatar from "@/components/Avatar";
 import { scoreToGrade, gradeColor, type TakeScoreConfig } from "@/lib/takescore";
+import { expertUrl } from "@/lib/expert-url";
 
 interface RibbonExpert {
   expert_id: string;
+  slug: string | null;
   name: string;
   overall_rating: number;
   avatar_url: string | null;
@@ -52,7 +54,7 @@ export default function LeaderboardRibbon({ experts, gradeConfig }: Props) {
       return (
         <Link
           key={ariaHidden ? `dup-${expert.expert_id}` : expert.expert_id}
-          href={`/experts/${expert.expert_id}`}
+          href={expertUrl(expert)}
           className="ribbon-card"
           aria-hidden={ariaHidden ? "true" : undefined}
           tabIndex={ariaHidden ? -1 : undefined}

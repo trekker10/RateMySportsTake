@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { expertUrl } from "@/lib/expert-url";
 import HeroSection from "@/components/HeroSection";
 import Avatar from "@/components/Avatar";
 import LeaderboardRibbon from "@/components/LeaderboardRibbon";
@@ -20,13 +21,13 @@ export default async function HomePage() {
   const [{ data: rankedExperts }, { data: featuredTakes }] = await Promise.all([
     supabase
       .from("experts")
-      .select("expert_id, name, outlet, sport_focus, avatar_url, overall_rating, total_takes")
+      .select("expert_id, slug, name, outlet, sport_focus, avatar_url, overall_rating, total_takes")
       .eq("verified", true)
       .gt("overall_rating", 0)
       .order("overall_rating", { ascending: false }),
     supabase
       .from("takes")
-      .select("take_id, raw_text, summary, grade, outcome_status, outcome_notes, date_made, expert_id, experts(name, outlet, expert_id)")
+      .select("take_id, raw_text, summary, grade, outcome_status, outcome_notes, date_made, expert_id, experts(name, outlet, expert_id, slug)")
       .not("grade", "is", null)
       .neq("outcome_status", "pending")
       .not("outcome_status", "is", null)
@@ -174,7 +175,7 @@ export default async function HomePage() {
             {topFive.length > 0 ? topFive.map((e, i) => (
               <Link
                 key={e.expert_id}
-                href={`/experts/${e.expert_id}`}
+                href={expertUrl(e)}
                 className="flex items-center gap-3 py-3.5 hover:bg-gray-50 -mx-2 px-2 transition-colors"
                 style={{ borderTop: i > 0 ? "1px dashed #d1d5db" : undefined }}
               >
@@ -243,7 +244,7 @@ export default async function HomePage() {
                 <div className="mt-7 flex gap-3">
                   {expert?.expert_id && (
                     <Link
-                      href={`/experts/${expert.expert_id}`}
+                      href={expertUrl(expert)}
                       className="px-4 py-2.5 font-mono text-[11px] tracking-wider text-white"
                       style={{ backgroundColor: "#e2241a" }}
                     >
@@ -275,7 +276,7 @@ export default async function HomePage() {
             {bottomFive.length > 0 ? bottomFive.map((e, i) => (
               <Link
                 key={e.expert_id}
-                href={`/experts/${e.expert_id}`}
+                href={expertUrl(e)}
                 className="flex items-center gap-3 py-3.5 hover:bg-gray-50 -mx-2 px-2 transition-colors"
                 style={{ borderTop: i > 0 ? "1px dashed #d1d5db" : undefined }}
               >

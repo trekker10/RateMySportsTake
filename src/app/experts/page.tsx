@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { expertUrl } from "@/lib/expert-url";
 import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
@@ -67,7 +68,7 @@ export default async function ExpertsPage({
   if (activeView === "takes" && expertIds.length > 0) {
     let takesQuery = supabase
       .from("takes")
-      .select("*, experts(name, expert_id, outlet)")
+      .select("*, experts(name, expert_id, slug, outlet)")
       .in("expert_id", expertIds)
       .order("date_made", { ascending: false })
       .limit(50);
@@ -206,7 +207,7 @@ export default async function ExpertsPage({
           </div>
 
           {rows.length > 0 ? rows.map((e, i) => (
-            <Link key={e.expert_id} href={`/experts/${e.expert_id}`} className="block">
+            <Link key={e.expert_id} href={expertUrl(e)} className="block">
               {/* Desktop row */}
               <div
                 className="hidden md:grid items-center px-4 py-3.5 hover:bg-gray-50 transition-colors"

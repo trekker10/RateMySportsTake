@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Take, Expert } from "@/types/database";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
+import { expertUrl } from "@/lib/expert-url";
 
 type TakeWithExpert = Take & {
-  experts?: Pick<Expert, "name" | "expert_id" | "outlet"> | null;
+  experts?: Pick<Expert, "name" | "expert_id" | "slug" | "outlet"> | null;
 };
 
 interface TakeCardProps {
@@ -51,7 +52,7 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
                 {initials(expert.name)}
               </div>
               <div className="min-w-0">
-                <Link href={`/experts/${expert.expert_id}`} className="font-black text-sm uppercase tracking-tight hover:underline">
+                <Link href={expertUrl(expert)} className="font-black text-sm uppercase tracking-tight hover:underline">
                   {expert.name}
                 </Link>
                 <p className="font-mono text-[9px] tracking-wider text-gray-400 uppercase">
@@ -119,7 +120,7 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
           </ShareReceiptButton>
           {expert && (
             <Link
-              href={`/experts/${expert.expert_id}`}
+              href={expertUrl(expert)}
               className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
             >
               {expert.name.split(" ")[0]}&apos;s Card →

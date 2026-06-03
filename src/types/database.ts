@@ -19,6 +19,7 @@ export type AgingVerdict = "aged_well" | "aged_poorly" | "neutral" | "too_soon";
 
 export interface Expert {
   expert_id: string;
+  slug: string | null;
   date_added: string;
 
   name: string;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Expert } from "@/types/database";
 import type { Accolade } from "@/lib/accolades";
+import { expertUrl } from "@/lib/expert-url";
 import Avatar from "@/components/Avatar";
 
 export default function ExpertCard({ expert, accolades = [] }: { expert: Expert; accolades?: Accolade[] }) {
@@ -12,7 +13,7 @@ export default function ExpertCard({ expert, accolades = [] }: { expert: Expert;
     .toUpperCase();
 
   return (
-    <Link href={`/experts/${expert.expert_id}`}>
+    <Link href={expertUrl(expert)}>
       <div className="rounded-2xl border border-gray-200 bg-white p-6 hover:border-gray-300 hover:shadow-md transition-all space-y-5">
 
         {/* Top: headshot + name/bio */}

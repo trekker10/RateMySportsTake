@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { expertUrl } from "@/lib/expert-url";
 import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
@@ -209,7 +210,7 @@ export default async function FantasyPage({
           </div>
 
           {rows.length > 0 ? rows.map((e, i) => (
-            <Link key={e.expert_id} href={`/experts/${e.expert_id}`} className="block">
+            <Link key={e.expert_id} href={expertUrl(e)} className="block">
               {/* Desktop row */}
               <div
                 className="hidden md:grid items-center px-4 py-3.5 hover:bg-green-50 transition-colors"
@@ -295,7 +296,7 @@ export default async function FantasyPage({
                     <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center gap-2 min-w-0">
                         {guru && (
-                          <Link href={`/experts/${guru.expert_id}`} className="font-black text-sm uppercase tracking-tight hover:underline truncate">
+                          <Link href={expertUrl(guru)} className="font-black text-sm uppercase tracking-tight hover:underline truncate">
                             {guru.name}
                           </Link>
                         )}
@@ -336,7 +337,7 @@ export default async function FantasyPage({
                         </span>
                       )}
                       {guru && (
-                        <Link href={`/experts/${guru.expert_id}`} className="ml-auto hover:underline" style={{ color: GREEN }}>
+                        <Link href={expertUrl(guru)} className="ml-auto hover:underline" style={{ color: GREEN }}>
                           {guru.name.split(" ")[0]}&apos;s Card →
                         </Link>
                       )}

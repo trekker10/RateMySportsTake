@@ -180,7 +180,7 @@ export default async function ExpertProfilePage({
   const overallFantasyColor = overallFantasyGrade ? gradeColor(overallFantasyGrade) : "#9ca3af";
 
   // Fantasy guru position grades — average accuracy_score by player_position
-  const POSITIONS = ["QB", "RB", "WR", "TE", "FLEX", "K/DST"] as const;
+  const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
   const positionGrades = POSITIONS.map((pos) => {
     const positionTakes = (fantasyTakes ?? []).filter(
       (ft) => ft.player_position === pos && ft.outcome_status === "resolved" && ft.accuracy_score != null
@@ -323,7 +323,7 @@ export default async function ExpertProfilePage({
       <div className="bg-white border-b-2 border-gray-900">
         {expert.is_fantasy_guru ? (
           /* Fantasy guru: position report card */
-          <div className="max-w-5xl mx-auto grid grid-cols-3 md:grid-cols-6 divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x-0 md:divide-x-2 divide-gray-200 md:divide-gray-900">
             {positionGrades.map(({ pos, grade, color, count }) => (
               <div key={pos} className="px-4 py-4">
                 <p className="font-mono text-[11px] tracking-wider text-gray-500 uppercase">{pos}</p>

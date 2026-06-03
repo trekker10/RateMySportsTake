@@ -908,6 +908,8 @@ function FantasyTakesPanel() {
   const [aiGradeError, setAiGradeError] = useState<Record<string, string>>({});
   const [selectedFIds, setSelectedFIds] = useState<Set<string>>(new Set());
   const [fBulking, setFBulking] = useState(false);
+  const [gradingAllFantasy, setGradingAllFantasy] = useState(false);
+  const [gradingAllProgress, setGradingAllProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     startLoad(async () => {
@@ -993,6 +995,29 @@ function FantasyTakesPanel() {
     setFBulking(false);
   }
 
+  async function gradeAllPendingFantasy() {
+    if (!takes) return;
+    const pending = takes.filter(t => t.outcome_status === "pending");
+    if (pending.length === 0) return;
+    setGradingAllFantasy(true);
+    setGradingAllProgress({ done: 0, total: pending.length });
+    for (let i = 0; i < pending.length; i++) {
+      const take = pending[i];
+      setAiGradingId(take.fantasy_take_id);
+      const result = await gradeFantasyTakeSingle(take.fantasy_take_id);
+      if (result.success && result.accuracy_score != null) {
+        setTakes(prev => prev!.map(t => t.fantasy_take_id === take.fantasy_take_id
+          ? { ...t, outcome_status: "resolved", accuracy_score: result.accuracy_score! } : t));
+      } else {
+        setAiGradeError(prev => ({ ...prev, [take.fantasy_take_id]: result.error ?? "Failed" }));
+      }
+      setGradingAllProgress({ done: i + 1, total: pending.length });
+    }
+    setAiGradingId(null);
+    setGradingAllFantasy(false);
+    setGradingAllProgress(null);
+  }
+
   const allTakes = takes ?? [];
 
   const filtered = allTakes
@@ -1019,14 +1044,28 @@ function FantasyTakesPanel() {
 
   return (
     <div className="space-y-5">
-      {/* Search */}
-      <input
-        type="text"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        placeholder="Search by guru, player, or take text…"
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
-      />
+      {/* Header row — search + grade-all button */}
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by guru, player, or take text…"
+          className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
+        />
+        {counts.pending > 0 && (
+          <button
+            onClick={gradeAllPendingFantasy}
+            disabled={gradingAllFantasy || fBulking || aiGradingId !== null}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+            style={{ backgroundColor: "#15803d" }}
+          >
+            {gradingAllFantasy && gradingAllProgress
+              ? `Grading… ${gradingAllProgress.done}/${gradingAllProgress.total}`
+              : `AI grade all pending (${counts.pending})`}
+          </button>
+        )}
+      </div>
 
       {/* Filter tabs + select-all */}
       <div className="flex items-center gap-2 flex-wrap">

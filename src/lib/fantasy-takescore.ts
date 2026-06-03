@@ -139,6 +139,7 @@ export interface FantasyScoredTake {
   recency_weight: number | null;
   boldness_credit: number | null;
   format: "dynasty" | "redraft" | "both" | null;
+  source_url: string | null;
 }
 
 // ─── Score computation ────────────────────────────────────────────────────────

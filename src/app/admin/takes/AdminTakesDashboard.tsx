@@ -740,6 +740,7 @@ function FantasyEditPanel({
   const [accuracy,      setAccuracy]      = useState(take.accuracy_score != null ? String(take.accuracy_score) : "");
   const [graderNote,      setGraderNote]      = useState((take as FantasyTakeRow & { grader_note?: string }).grader_note ?? "");
   const [gradingCriteria, setGradingCriteria] = useState((take as FantasyTakeRow & { grading_criteria?: string }).grading_criteria ?? "");
+  const [sourceUrl,       setSourceUrl]       = useState(take.source_url ?? "");
   const [saved,           setSaved]           = useState(false);
   const [isPending,     startTransition]  = useTransition();
 
@@ -760,6 +761,7 @@ function FantasyEditPanel({
         accuracy_score:   accuracy !== "" ? Number(accuracy) : null,
         grader_note:      graderNote.trim() || null,
         grading_criteria: gradingCriteria.trim() || null,
+        source_url:       sourceUrl.trim() || null,
       };
       const result = await saveFantasyTakeEdits(take.fantasy_take_id, edits);
       if (result.success) {
@@ -781,6 +783,30 @@ function FantasyEditPanel({
           rows={3}
           className={`${inputClass} resize-none`}
         />
+      </div>
+
+      {/* Source URL */}
+      <div>
+        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Source URL (Tweet / Post)</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="url"
+            value={sourceUrl}
+            onChange={e => setSourceUrl(e.target.value)}
+            className={`${inputClass} flex-1`}
+            placeholder="https://x.com/…"
+          />
+          {sourceUrl && (
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 text-xs text-blue-600 hover:underline"
+            >
+              Open ↗
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Grading criteria */}

@@ -740,7 +740,12 @@ function FantasyEditPanel({
   const [accuracy,      setAccuracy]      = useState(take.accuracy_score != null ? String(take.accuracy_score) : "");
   const [graderNote,      setGraderNote]      = useState((take as FantasyTakeRow & { grader_note?: string }).grader_note ?? "");
   const [gradingCriteria, setGradingCriteria] = useState((take as FantasyTakeRow & { grading_criteria?: string }).grading_criteria ?? "");
-  const [sourceUrl,       setSourceUrl]       = useState(take.source_url ?? "");
+  // Pre-populate source URL from t.co link in raw_text if not explicitly stored
+  const [sourceUrl, setSourceUrl] = useState(() => {
+    if (take.source_url) return take.source_url;
+    const match = (take.raw_text ?? "").match(/https?:\/\/t\.co\/\S+/);
+    return match ? match[0] : "";
+  });
   const [saved,           setSaved]           = useState(false);
   const [isPending,     startTransition]  = useTransition();
 

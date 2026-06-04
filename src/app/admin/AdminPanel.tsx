@@ -111,7 +111,7 @@ export default function AdminPanel({
   }
 
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="max-w-4xl space-y-10">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Admin Panel</h1>

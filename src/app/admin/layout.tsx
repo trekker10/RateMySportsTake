@@ -14,9 +14,10 @@ export default async function AdminLayout({
   const reviewCount = await fetchReviewCount();
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    // Break out of the root layout's max-w-5xl / px-6 / py-10 container
+    <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-10 flex min-h-[calc(100vh-57px)]" style={{ backgroundColor: "#f3f4f6" }}>
       <AdminSidebar reviewCount={reviewCount} />
-      <main className="flex-1 px-8 py-8 overflow-auto">
+      <main className="flex-1 min-w-0 px-8 py-8 overflow-auto">
         {children}
       </main>
     </div>

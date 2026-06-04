@@ -149,22 +149,9 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
   }
 
   return (
-    <aside className="w-56 shrink-0 border-r border-gray-200 bg-white min-h-screen flex flex-col">
-      {/* Site logo */}
-      <div className="px-4 py-5 border-b border-gray-200">
-        <a href="/" className="font-black tracking-tight text-sm">
-          <span className="text-gray-900">RATE</span>
-          <span className="text-red-600">/</span>
-          <span className="text-gray-900">MY</span>
-          <span className="text-red-600">/</span>
-          <span className="text-gray-900">SPORTS</span>
-          <span className="text-red-600">/</span>
-          <span className="text-gray-900">TAKE</span>
-        </a>
-      </div>
-
+    <aside className="w-52 shrink-0 border-r-2 border-gray-200 bg-white flex flex-col">
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-5 space-y-5 overflow-y-auto">
         {groups.map((group) => (
           <div key={group.heading}>
             <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">

@@ -1,13 +1,8 @@
-import { redirect } from "next/navigation";
-import { checkIsAdmin } from "@/lib/auth";
 import { getFeatureFlags } from "@/app/actions/flags";
 import { createAdminClient } from "@/lib/supabase/admin";
 import AdminPanel from "./AdminPanel";
 
 export default async function AdminPage() {
-  const isAdmin = await checkIsAdmin();
-  if (!isAdmin) redirect("/");
-
   const [flags, stats] = await Promise.all([
     getFeatureFlags(),
     fetchDashboardStats(),

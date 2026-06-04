@@ -774,66 +774,69 @@ function FantasyEditPanel({
 
   return (
     <div className="mt-3 rounded-lg border border-green-200 bg-white p-4 space-y-4">
-      {/* Raw text */}
+
+      {/* Source link — clickable banner if set, editable input always */}
+      {sourceUrl && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded bg-gray-50 border border-gray-200">
+          <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase shrink-0">Tweet</span>
+          <a href={sourceUrl} target="_blank" rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate">
+            {sourceUrl}
+          </a>
+        </div>
+      )}
       <div>
-        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Take Text</label>
-        <textarea
-          value={rawText}
-          onChange={e => setRawText(e.target.value)}
-          rows={3}
-          className={`${inputClass} resize-none`}
-        />
+        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">
+          Source URL (Tweet / Post)
+        </label>
+        <input type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
+          className={inputClass} placeholder="https://x.com/…" />
       </div>
 
-      {/* Source URL */}
-      <div>
-        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Source URL (Tweet / Post)</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="url"
-            value={sourceUrl}
-            onChange={e => setSourceUrl(e.target.value)}
-            className={`${inputClass} flex-1`}
-            placeholder="https://x.com/…"
-          />
-          {sourceUrl && (
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 text-xs text-blue-600 hover:underline"
-            >
-              Open ↗
-            </a>
-          )}
+      {/* Take text + boldness + resolution date — mirrors analyst layout */}
+      <div className="grid md:grid-cols-[1fr_auto] gap-3">
+        <div>
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Take Text</label>
+          <textarea value={rawText} onChange={e => setRawText(e.target.value)}
+            rows={3} className={`${inputClass} resize-none`} />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-3 md:w-48">
+          <div>
+            <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Boldness (0–100)</label>
+            <input type="number" min={0} max={100} value={boldness} onChange={e => setBoldness(e.target.value)}
+              className={inputClass} placeholder="e.g. 75" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Resolution Date</label>
+            <input type="date" value={resDate} onChange={e => setResDate(e.target.value)} className={inputClass} />
+          </div>
         </div>
       </div>
 
       {/* Grading criteria */}
       <div>
         <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Grading Criteria</label>
-        <textarea
-          value={gradingCriteria}
-          onChange={e => setGradingCriteria(e.target.value)}
-          rows={2}
-          className={`${inputClass} resize-none`}
-          placeholder="Take is TRUE if… Take is FALSE if…"
-        />
+        <textarea value={gradingCriteria} onChange={e => setGradingCriteria(e.target.value)}
+          rows={3} className={`${inputClass} resize-none`}
+          placeholder="Take is TRUE if… Take is FALSE if…" />
       </div>
 
-      {/* Player info + category */}
+      {/* Classification: player + category + timing + season + date */}
       <div className="grid md:grid-cols-4 gap-3">
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Player Name</label>
-          <input type="text" value={playerName} onChange={e => setPlayerName(e.target.value)} className={inputClass} placeholder="e.g. CeeDee Lamb" />
+          <input type="text" value={playerName} onChange={e => setPlayerName(e.target.value)}
+            className={inputClass} placeholder="e.g. CeeDee Lamb" />
         </div>
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Position</label>
-          <input type="text" value={playerPos} onChange={e => setPlayerPos(e.target.value)} className={inputClass} placeholder="WR / RB / QB…" />
+          <input type="text" value={playerPos} onChange={e => setPlayerPos(e.target.value)}
+            className={inputClass} placeholder="WR / RB / QB…" />
         </div>
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">ADP</label>
-          <input type="number" value={playerAdp} onChange={e => setPlayerAdp(e.target.value)} className={inputClass} placeholder="e.g. 24.5" />
+          <input type="number" value={playerAdp} onChange={e => setPlayerAdp(e.target.value)}
+            className={inputClass} placeholder="e.g. 24.5" />
         </div>
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Category</label>
@@ -842,9 +845,7 @@ function FantasyEditPanel({
           </select>
         </div>
       </div>
-
-      {/* Timing + boldness + season */}
-      <div className="grid md:grid-cols-4 gap-3">
+      <div className="grid md:grid-cols-3 gap-3">
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Timing Window</label>
           <select value={timingWindow} onChange={e => setTimingWindow(e.target.value)} className={inputClass}>
@@ -852,12 +853,9 @@ function FantasyEditPanel({
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Boldness (0–100)</label>
-          <input type="number" min={0} max={100} value={boldness} onChange={e => setBoldness(e.target.value)} className={inputClass} placeholder="e.g. 75" />
-        </div>
-        <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Sport / Season</label>
-          <input type="text" value={sportSeason} onChange={e => setSportSeason(e.target.value)} className={inputClass} placeholder="e.g. 2025 NFL" />
+          <input type="text" value={sportSeason} onChange={e => setSportSeason(e.target.value)}
+            className={inputClass} placeholder="e.g. 2026 NFL" />
         </div>
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Date Made</label>
@@ -865,8 +863,8 @@ function FantasyEditPanel({
         </div>
       </div>
 
-      {/* Outcome + accuracy + resolution + grader note */}
-      <div className="border-t border-gray-200 pt-4 grid md:grid-cols-4 gap-3">
+      {/* Outcome + accuracy + grader note — matches analyst bottom section */}
+      <div className="border-t border-gray-200 pt-4 grid md:grid-cols-3 gap-3">
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Outcome</label>
           <select value={outcome} onChange={e => setOutcome(e.target.value)} className={inputClass}>
@@ -874,12 +872,9 @@ function FantasyEditPanel({
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Accuracy Score</label>
-          <input type="number" min={0} max={100} value={accuracy} onChange={e => setAccuracy(e.target.value)} className={inputClass} placeholder="0–100" />
-        </div>
-        <div>
-          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Resolution Date</label>
-          <input type="date" value={resDate} onChange={e => setResDate(e.target.value)} className={inputClass} />
+          <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Accuracy Score (0–100)</label>
+          <input type="number" min={0} max={100} value={accuracy} onChange={e => setAccuracy(e.target.value)}
+            className={inputClass} placeholder="e.g. 75" />
         </div>
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Grader Note</label>

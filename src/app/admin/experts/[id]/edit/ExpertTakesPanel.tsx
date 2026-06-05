@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { getTakesForExpert, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
+import { checkDuplicateTakes, type DuplicateGroup } from "@/app/actions/duplicate-takes";
 
 type TakeState = AdminTake & {
   gradeStatus: "idle" | "grading" | "done" | "error";
@@ -143,6 +144,9 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
   const [filter, setFilter]     = useState<Filter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [, startLoad]           = useTransition();
+  const [dupeStatus, setDupeStatus] = useState<"idle" | "checking" | "done" | "error">("idle");
+  const [dupeGroups, setDupeGroups] = useState<DuplicateGroup[]>([]);
+  const [dupeError, setDupeError]   = useState<string>("");
 
   useEffect(() => {
     startLoad(async () => {
@@ -195,6 +199,40 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
     }
   }
 
+  async function runDupeCheck() {
+    setDupeStatus("checking");
+    setDupeGroups([]);
+    const result = await checkDuplicateTakes(expertId);
+    if (result.success) {
+      setDupeGroups(result.groups ?? []);
+      setDupeStatus("done");
+    } else {
+      setDupeError(result.error ?? "Unknown error");
+      setDupeStatus("error");
+    }
+  }
+
+  function dismissDupeGroup(index: number) {
+    setDupeGroups(prev => prev.filter((_, i) => i !== index));
+  }
+
+  async function deleteDupeTake(takeId: string, groupIndex: number) {
+    if (!confirm("Delete this take permanently?")) return;
+    const result = await deleteTake(takeId);
+    if (result.success) {
+      setTakes(prev => prev!.filter(t => t.take_id !== takeId));
+      setDupeGroups(prev => {
+        const updated = [...prev];
+        updated[groupIndex] = {
+          ...updated[groupIndex],
+          takes: updated[groupIndex].takes.filter(t => t.take_id !== takeId),
+        };
+        // Remove group if only 1 take left
+        return updated.filter(g => g.takes.length > 1);
+      });
+    }
+  }
+
   const allTakes = takes ?? [];
   const filtered = allTakes.filter(t => {
     if (filter === "pending") return t.outcome_status === "pending";
@@ -212,6 +250,66 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
 
   return (
     <div className="space-y-4">
+      {/* Check for duplicates */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={runDupeCheck}
+          disabled={dupeStatus === "checking" || takes === null}
+          className="rounded-lg border border-purple-300 text-purple-700 hover:border-purple-500 hover:bg-purple-50 px-4 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50"
+        >
+          {dupeStatus === "checking" ? "Checking…" : "🔍 Check for duplicates"}
+        </button>
+        {dupeStatus === "done" && dupeGroups.length === 0 && (
+          <span className="text-xs text-emerald-600">✓ No duplicates found</span>
+        )}
+        {dupeStatus === "error" && (
+          <span className="text-xs text-red-500">Error: {dupeError}</span>
+        )}
+      </div>
+
+      {/* Duplicate groups panel */}
+      {dupeGroups.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-mono text-purple-700 uppercase tracking-wider">
+            ⚠ {dupeGroups.length} duplicate group{dupeGroups.length > 1 ? "s" : ""} found — review and delete as needed
+          </p>
+          {dupeGroups.map((group, gi) => (
+            <div key={gi} className="rounded-xl border-2 border-purple-300 bg-purple-50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-purple-800">
+                  {group.reason === "same_url" ? "🔗 Same source URL" : "🤖 Semantically similar"}
+                  {group.reason === "same_url" && (
+                    <span className="ml-2 font-normal text-purple-600 break-all">{group.label.replace("Same source URL: ", "")}</span>
+                  )}
+                </span>
+                <button
+                  onClick={() => dismissDupeGroup(gi)}
+                  className="text-xs text-purple-500 hover:text-purple-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <div className="space-y-2">
+                {group.takes.map(t => (
+                  <div key={t.take_id} className="flex items-start gap-3 rounded-lg bg-white border border-purple-200 p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-400 font-mono mb-0.5">{t.date_made}{t.source_url && ` · ${t.source_url}`}</p>
+                      <p className="text-sm text-gray-700 leading-relaxed">"{t.raw_text.length > 200 ? t.raw_text.slice(0, 200) + "…" : t.raw_text}"</p>
+                    </div>
+                    <button
+                      onClick={() => deleteDupeTake(t.take_id, gi)}
+                      className="shrink-0 rounded border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
         {(["all", "pending", "graded", "unrated"] as Filter[]).map(f => (

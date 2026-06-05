@@ -370,7 +370,7 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
                       {take.boldness_score != null && (
                         <span className="text-gray-400 text-xs">· B={take.boldness_score}</span>
                       )}
-                      {take.rating_status !== "rated" && (
+                      {take.rating_status !== "rated" && take.outcome_status === "pending" && take.grade == null && (
                         <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-100 text-amber-700 border border-amber-300">
                           NOT RATED YET
                         </span>

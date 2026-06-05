@@ -204,7 +204,7 @@ export default function AdminTakesDashboard() {
   const [gradingAll, setGradingAll] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"date_made" | "time_horizon_date" | "expert_name" | "grade">("date_made");
+  const [sortKey, setSortKey] = useState<"date_submitted" | "date_made" | "time_horizon_date" | "expert_name" | "grade">("date_submitted");
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulking, setBulking] = useState(false);
@@ -353,6 +353,7 @@ export default function AdminTakesDashboard() {
     .sort((a, b) => {
       let av: string | number = "";
       let bv: string | number = "";
+      if (sortKey === "date_submitted")    { av = a.date_submitted ?? "";     bv = b.date_submitted ?? ""; }
       if (sortKey === "date_made")         { av = a.date_made ?? "";          bv = b.date_made ?? ""; }
       if (sortKey === "time_horizon_date") { av = a.time_horizon_date ?? "9999"; bv = b.time_horizon_date ?? "9999"; }
       if (sortKey === "expert_name")       { av = a.expert_name;              bv = b.expert_name; }
@@ -438,6 +439,7 @@ export default function AdminTakesDashboard() {
         <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
           <span className="mr-1">SORT:</span>
           {([
+            { key: "date_submitted",    label: "Date Added" },
             { key: "date_made",         label: "Date Made" },
             { key: "time_horizon_date", label: "Resolves" },
             { key: "expert_name",       label: "Analyst" },
@@ -940,6 +942,13 @@ function FantasyTakesPanel() {
   const [gradingAllProgress, setGradingAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [ratingAllFantasy, setRatingAllFantasy] = useState(false);
   const [ratingAllProgress, setRatingAllProgress] = useState<{ done: number; total: number } | null>(null);
+  const [fSortKey, setFSortKey] = useState<"created_at" | "date_made" | "resolution_date" | "expert_name">("created_at");
+  const [fSortAsc, setFSortAsc] = useState(false);
+
+  function toggleFSort(key: typeof fSortKey) {
+    if (fSortKey === key) setFSortAsc(p => !p);
+    else { setFSortKey(key); setFSortAsc(key === "resolution_date"); }
+  }
 
   useEffect(() => {
     startLoad(async () => {
@@ -1106,6 +1115,15 @@ function FantasyTakesPanel() {
         t.raw_text.toLowerCase().includes(q) ||
         (t.player_name ?? "").toLowerCase().includes(q)
       );
+    })
+    .sort((a, b) => {
+      let av = "";
+      let bv = "";
+      if (fSortKey === "created_at")       { av = a.created_at ?? "";          bv = b.created_at ?? ""; }
+      if (fSortKey === "date_made")        { av = a.date_made ?? "";            bv = b.date_made ?? ""; }
+      if (fSortKey === "resolution_date")  { av = a.resolution_date ?? "9999";  bv = b.resolution_date ?? "9999"; }
+      if (fSortKey === "expert_name")      { av = a.expert_name;                bv = b.expert_name; }
+      return fSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
     });
 
   const counts = {
@@ -1152,6 +1170,29 @@ function FantasyTakesPanel() {
               : `AI grade all pending (${counts.pending})`}
           </button>
         )}
+      </div>
+
+      {/* Sort bar */}
+      <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
+        <span className="mr-1">SORT:</span>
+        {([
+          { key: "created_at",      label: "Date Added" },
+          { key: "date_made",       label: "Date Made" },
+          { key: "resolution_date", label: "Resolves" },
+          { key: "expert_name",     label: "Guru" },
+        ] as const).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => toggleFSort(key)}
+            className={`px-2 py-1 rounded border transition-colors ${
+              fSortKey === key
+                ? "border-gray-700 bg-gray-900 text-white"
+                : "border-gray-300 text-gray-500 hover:border-gray-500"
+            }`}
+          >
+            {label}{fSortKey === key ? (fSortAsc ? " ↑" : " ↓") : ""}
+          </button>
+        ))}
       </div>
 
       {/* Filter tabs + select-all */}

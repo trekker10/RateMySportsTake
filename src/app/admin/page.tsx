@@ -13,7 +13,11 @@ export default async function AdminPage() {
 
 async function fetchDashboardStats() {
   const supabase = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
+  const todayDate = new Date();
+  const today = todayDate.toISOString().split("T")[0];
+  const tomorrowDate = new Date(todayDate);
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrow = tomorrowDate.toISOString().split("T")[0];
 
   const [
     { count: analystToday },
@@ -23,9 +27,9 @@ async function fetchDashboardStats() {
     { count: analystOverdue },
     { count: fantasyOverdue },
   ] = await Promise.all([
-    // Takes logged today
-    supabase.from("takes").select("take_id", { count: "exact", head: true }).eq("date_made", today),
-    supabase.from("fantasy_takes").select("fantasy_take_id", { count: "exact", head: true }).eq("date_made", today),
+    // Takes added to system today (not date the take was originally made)
+    supabase.from("takes").select("take_id", { count: "exact", head: true }).gte("date_submitted", today).lt("date_submitted", tomorrow),
+    supabase.from("fantasy_takes").select("fantasy_take_id", { count: "exact", head: true }).gte("created_at", today).lt("created_at", tomorrow),
     // Total ever graded/resolved
     supabase.from("takes").select("take_id", { count: "exact", head: true }).neq("outcome_status", "pending"),
     supabase.from("fantasy_takes").select("fantasy_take_id", { count: "exact", head: true }).eq("outcome_status", "resolved"),

@@ -117,6 +117,7 @@ export interface AdminTake {
   summary: string | null;
   grading_criteria: string | null;
   date_made: string;
+  date_submitted: string | null;
   time_horizon_date: string | null;
   boldness_score: number | null;
   outcome_status: string;
@@ -134,7 +135,7 @@ export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> 
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
     .eq("expert_id", expertId)
     .order("date_made", { ascending: false });
 
@@ -144,6 +145,7 @@ export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> 
     summary: t.summary,
     grading_criteria: t.grading_criteria,
     date_made: t.date_made,
+    date_submitted: (t as any).date_submitted ?? null,
     time_horizon_date: t.time_horizon_date,
     boldness_score: t.boldness_score,
     outcome_status: t.outcome_status,
@@ -164,7 +166,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
 
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
     .order("date_made", { ascending: false });
 
   return (data ?? []).map((t) => ({
@@ -173,6 +175,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
     summary: t.summary,
     grading_criteria: t.grading_criteria,
     date_made: t.date_made,
+    date_submitted: (t as any).date_submitted ?? null,
     time_horizon_date: t.time_horizon_date,
     boldness_score: t.boldness_score,
     outcome_status: t.outcome_status,

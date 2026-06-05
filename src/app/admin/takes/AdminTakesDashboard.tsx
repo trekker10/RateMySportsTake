@@ -1367,7 +1367,9 @@ function FantasyTakesPanel() {
                   </div>
                 </div>
 
-                {/* Grade panel */}
+                </div>{/* end flex items-start gap-3 */}
+
+                {/* Grade panel — stacks below the row */}
                 {isGradeExpanded && (
                   <div className="mt-3 rounded-lg border border-green-200 bg-white p-4 space-y-3">
                     <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Grade this take</p>
@@ -1399,7 +1401,7 @@ function FantasyTakesPanel() {
                   </div>
                 )}
 
-                {/* Edit panel */}
+                {/* Edit panel — stacks below the row */}
                 {isEditExpanded && (
                   <FantasyEditPanel
                     take={take}
@@ -1407,7 +1409,6 @@ function FantasyTakesPanel() {
                     onClose={() => setEditExpandedId(null)}
                   />
                 )}
-                </div>
               </div>
             );
           })}

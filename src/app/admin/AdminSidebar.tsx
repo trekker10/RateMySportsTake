@@ -75,6 +75,14 @@ function IconPerson() {
     </svg>
   );
 }
+function IconTv() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <rect x="2" y="5" width="20" height="14" rx="2"/>
+      <path d="M8 2l4 3 4-3"/>
+    </svg>
+  );
+}
 function IconPeople() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -116,8 +124,9 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
       items: [
         { label: "Browse Takes",  href: "/takes",        icon: <IconList /> },
         { label: "Review Takes",  href: "/admin/takes",  icon: <IconCheck />, badge: reviewCount > 0 ? reviewCount : undefined },
-        { label: "Import Takes",  href: "/import",       icon: <IconDownload /> },
-        { label: "Submit a Take", href: "/submit",       icon: <IconUpload /> },
+        { label: "Import Takes",   href: "/import",               icon: <IconDownload /> },
+        { label: "Submit a Take", href: "/submit",               icon: <IconUpload /> },
+        { label: "Show Accounts", href: "/admin/show-accounts",  icon: <IconTv /> },
       ],
     },
     {

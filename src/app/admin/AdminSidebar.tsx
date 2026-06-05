@@ -122,7 +122,6 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
     {
       heading: "Content",
       items: [
-        { label: "Browse Takes",  href: "/takes",        icon: <IconList /> },
         { label: "Review Takes",  href: "/admin/takes",  icon: <IconCheck />, badge: reviewCount > 0 ? reviewCount : undefined },
         { label: "Import Takes",   href: "/import",               icon: <IconDownload /> },
         { label: "Submit a Take", href: "/submit",               icon: <IconUpload /> },

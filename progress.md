@@ -58,17 +58,7 @@
 ## What's Left / Pending
 
 ### Immediate
-- [ ] **Run SQL migration for `show_accounts` table** — currently errors "table not found":
-  ```sql
-  create table if not exists show_accounts (
-    id uuid primary key default gen_random_uuid(),
-    handle text unique not null,
-    display_name text not null,
-    network text not null default '',
-    active boolean not null default true,
-    created_at timestamptz not null default now()
-  );
-  ```
+- ✅ `show_accounts` table created in Supabase (2026-06-05)
 - [ ] **Bulk re-rate all fantasy takes** to fix stale "2025 NFL" sport_season labels (hit "Rate all unrated" or select all → Re-rate)
 
 ### Previously run migrations (already done)

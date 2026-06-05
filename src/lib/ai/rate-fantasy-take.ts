@@ -6,8 +6,6 @@ export interface FantasyRatingResult {
   boldness_score: number;       // 0–100
   grading_criteria: string;     // "Take is TRUE if… Take is FALSE if…"
   player_adp: number | null;    // estimated ADP if mentioned / inferable
-  resolution_date: string | null; // YYYY-MM-DD when outcome can be verified
-  sport_season: string | null;  // corrected season label if the stored one was wrong
 }
 
 const CATEGORY_CONTEXT: Record<string, string> = {
@@ -46,8 +44,6 @@ export async function rateFantasyTake(params: {
     `Date made: ${dateMade}`,
   ].filter(Boolean).join("\n");
 
-  const today = new Date().toISOString().split("T")[0];
-
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 512,
@@ -69,18 +65,7 @@ For ADP-based boldness: predicting someone 30+ spots above their ADP is very bol
 predicting someone to perform at their ADP is obvious. Weight in the category —
 a breakout call on a top-5 pick is less bold than one on a pick outside the top-60.
 
-CRITICAL — Sport season and resolution date:
-The NFL season labeled "20XX NFL" runs September–January of 20XX/20XX+1 (e.g. "2026 NFL" = Sep 2026–Jan 2027).
-End-of-regular-season dates: "2025 NFL" → 2026-01-05; "2026 NFL" → 2027-01-06; "2027 NFL" → 2028-01-03.
-
-Step 1 — Detect stale sport_season: if date_made is AFTER the natural end of the stored sport_season, the analyst is talking about the NEXT season. E.g. date_made = 2026-06-03 with sport_season = "2025 NFL" (which ended 2026-01-05) → the take is actually about the "2026 NFL" season.
-
-Step 2 — Set resolution_date based on the CORRECT season:
-- Season-long predictions: end of the correct NFL regular season week 18
-- Weekly start/sit or waiver: the Tuesday after that game week
-- If outcome already happened: the actual past date it became clear
-
-Step 3 — Return the corrected sport_season label in your JSON if you had to fix it.`,
+The sport_season passed to you has already been corrected by the system — trust it.`,
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -95,9 +80,7 @@ Return ONLY this JSON:
 {
   "boldness_score": <integer 0–100>,
   "grading_criteria": "<Take is TRUE if [specific measurable condition]. Take is FALSE if [opposite]>",
-  "player_adp": <estimated ADP as a number, or null>,
-  "resolution_date": "<YYYY-MM-DD — end of the CORRECT season/week, can be past if outcome already happened>",
-  "sport_season": "<corrected season label e.g. '2026 NFL', or null if no correction needed>"
+  "player_adp": <estimated ADP as a number, or null>
 }`,
       },
     ],
@@ -113,17 +96,9 @@ Return ONLY this JSON:
     throw new Error(`AI returned invalid JSON: ${text.slice(0, 200)}`);
   }
 
-  // Accept any valid date — past dates are fine (they show as "Overdue", which is correct)
-  const resolutionDate: string | null =
-    parsed.resolution_date && typeof parsed.resolution_date === "string"
-      ? parsed.resolution_date
-      : null;
-
   return {
     boldness_score:   Math.round(Math.min(100, Math.max(0, Number(parsed.boldness_score ?? 50)))),
     grading_criteria: String(parsed.grading_criteria ?? ""),
     player_adp:       parsed.player_adp != null ? Number(parsed.player_adp) : null,
-    resolution_date:  resolutionDate,
-    sport_season:     parsed.sport_season && typeof parsed.sport_season === "string" ? parsed.sport_season : null,
   };
 }

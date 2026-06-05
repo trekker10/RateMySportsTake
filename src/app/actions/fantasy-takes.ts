@@ -294,6 +294,36 @@ export async function gradeFantasyTake(
   return { success: true };
 }
 
+/**
+ * Deterministically compute the correct NFL sport_season and resolution_date
+ * from the date a take was made — no AI needed.
+ *
+ * Rules:
+ *  Jan 1 – Feb 14  → still in the PREVIOUS year's playoffs/SB  → "{year-1} NFL", resolves {year}-01-13
+ *  Feb 15 – Aug 31 → prediction for the UPCOMING season         → "{year} NFL",   resolves {year+1}-01-06
+ *  Sep 1  – Dec 31 → prediction for the CURRENT year's season   → "{year} NFL",   resolves {year+1}-01-06
+ */
+function computeNflSeason(dateMade: string): { sportSeason: string; resolutionDate: string } {
+  const d = new Date(dateMade + "T00:00:00");
+  const year  = d.getFullYear();
+  const month = d.getMonth() + 1; // 1-based
+  const day   = d.getDate();
+
+  let seasonYear: number;
+  if (month === 1 || (month === 2 && day < 15)) {
+    // Jan 1 – Feb 14: previous season's playoffs are still live
+    seasonYear = year - 1;
+  } else {
+    // Feb 15 onwards: talking about the current calendar year's upcoming season
+    seasonYear = year;
+  }
+
+  return {
+    sportSeason:     `${seasonYear} NFL`,
+    resolutionDate:  `${seasonYear + 1}-01-06`,
+  };
+}
+
 export async function rateSingleFantasyTake(
   fantasyTakeId: string,
 ): Promise<{ success: boolean; boldness_score?: number; grading_criteria?: string; error?: string }> {
@@ -311,6 +341,10 @@ export async function rateSingleFantasyTake(
   if (!take) return { success: false, error: "Take not found" };
 
   try {
+    // Compute correct season/date deterministically — don't rely on AI for this
+    const { sportSeason: correctSeason, resolutionDate: correctDate } =
+      computeNflSeason(take.date_made);
+
     const result = await aiRateFantasyTake({
       rawText:        take.raw_text,
       playerName:     take.player_name,
@@ -318,26 +352,20 @@ export async function rateSingleFantasyTake(
       playerAdp:      take.player_adp,
       category:       take.category,
       timingWindow:   take.timing_window,
-      sportSeason:    take.sport_season,
+      sportSeason:    correctSeason, // pass the corrected season so AI context is accurate
       dateMade:       take.date_made,
     });
 
-    const today = new Date().toISOString().split("T")[0];
     const update: Record<string, unknown> = {
       boldness_score:   result.boldness_score,
       grading_criteria: result.grading_criteria || null,
+      // Always set season and date from code, not AI
+      sport_season:    correctSeason,
+      resolution_date: correctDate,
     };
     // Only set ADP from AI if not already provided
     if (result.player_adp != null && take.player_adp == null) {
       update.player_adp = result.player_adp;
-    }
-    // Always update resolution_date when AI returns one (past = Overdue, that's correct)
-    if (result.resolution_date) {
-      update.resolution_date = result.resolution_date;
-    }
-    // Update sport_season if AI detected a stale/wrong label
-    if (result.sport_season) {
-      update.sport_season = result.sport_season;
     }
 
     await supabase.from("fantasy_takes").update(update).eq("fantasy_take_id", fantasyTakeId);

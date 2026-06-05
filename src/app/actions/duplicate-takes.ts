@@ -5,10 +5,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const client = new Anthropic();
 
+export interface DuplicateTake {
+  take_id: string;
+  date_made: string;
+  raw_text: string;
+  source_url: string | null;
+  outcome_status: string;
+  grade: number | null;
+}
+
 export interface DuplicateGroup {
   reason: "same_url" | "semantic";
   label: string;
-  takes: { take_id: string; date_made: string; raw_text: string; source_url: string | null }[];
+  takes: DuplicateTake[];
 }
 
 export async function checkDuplicateTakes(expertId: string): Promise<{
@@ -20,7 +29,7 @@ export async function checkDuplicateTakes(expertId: string): Promise<{
     const supabase = createAdminClient();
     const { data: takes } = await supabase
       .from("takes")
-      .select("take_id, raw_text, source_url, date_made")
+      .select("take_id, raw_text, source_url, date_made, outcome_status, grade")
       .eq("expert_id", expertId)
       .order("date_made", { ascending: false });
 
@@ -46,6 +55,8 @@ export async function checkDuplicateTakes(expertId: string): Promise<{
             date_made: t.date_made,
             raw_text: t.raw_text,
             source_url: t.source_url,
+            outcome_status: t.outcome_status,
+            grade: t.grade ?? null,
           })),
         });
       }
@@ -103,6 +114,8 @@ Example output: [["id-a","id-b"],["id-c","id-d","id-e"]]`,
           date_made: t.date_made,
           raw_text: t.raw_text,
           source_url: t.source_url,
+          outcome_status: t.outcome_status,
+          grade: t.grade ?? null,
         })),
       });
     }

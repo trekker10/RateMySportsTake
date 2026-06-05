@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { getTakesForExpert, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
-import { checkDuplicateTakes, type DuplicateGroup } from "@/app/actions/duplicate-takes";
+import { checkDuplicateTakes, type DuplicateGroup, type DuplicateTake } from "@/app/actions/duplicate-takes";
 
 type TakeState = AdminTake & {
   gradeStatus: "idle" | "grading" | "done" | "error";
@@ -290,20 +290,36 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
                 </button>
               </div>
               <div className="space-y-2">
-                {group.takes.map(t => (
-                  <div key={t.take_id} className="flex items-start gap-3 rounded-lg bg-white border border-purple-200 p-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 font-mono mb-0.5">{t.date_made}{t.source_url && ` · ${t.source_url}`}</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">"{t.raw_text.length > 200 ? t.raw_text.slice(0, 200) + "…" : t.raw_text}"</p>
+                {group.takes.map(t => {
+                  const isGraded = t.outcome_status !== "pending";
+                  const isScored = t.grade != null;
+                  return (
+                    <div key={t.take_id} className="flex items-start gap-3 rounded-lg bg-white border border-purple-200 p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-400 font-mono mb-0.5">{t.date_made}{t.source_url && ` · ${t.source_url}`}</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">"{t.raw_text.length > 200 ? t.raw_text.slice(0, 200) + "…" : t.raw_text}"</p>
+                      </div>
+                      <div className="shrink-0 flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <label className="flex items-center gap-1 cursor-default select-none">
+                            <input type="checkbox" readOnly checked={isGraded} className="h-3 w-3 accent-emerald-600 pointer-events-none" />
+                            Graded
+                          </label>
+                          <label className="flex items-center gap-1 cursor-default select-none">
+                            <input type="checkbox" readOnly checked={isScored} className="h-3 w-3 accent-emerald-600 pointer-events-none" />
+                            Scored
+                          </label>
+                        </div>
+                        <button
+                          onClick={() => deleteDupeTake(t.take_id, gi)}
+                          className="rounded border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => deleteDupeTake(t.take_id, gi)}
-                      className="shrink-0 rounded border border-red-200 text-red-500 hover:border-red-400 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

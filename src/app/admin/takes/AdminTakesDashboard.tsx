@@ -233,7 +233,7 @@ export default function AdminTakesDashboard() {
     const result = await rateSingleTake(takeId);
     if (result.success) {
       refreshTake(takeId);
-      setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, rateStatus: "done" } : t));
+      setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, rateStatus: "done", rating_status: "rated" } : t));
     } else {
       setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, rateStatus: "error", errorMsg: result.error } : t));
     }
@@ -312,7 +312,7 @@ export default function AdminTakesDashboard() {
     for (const id of [...selectedIds]) {
       setTakes(prev => prev!.map(t => t.take_id === id ? { ...t, rateStatus: "rating" } : t));
       const result = await rateSingleTake(id);
-      if (result.success) refreshTake(id);
+      if (result.success) { refreshTake(id); setTakes(prev => prev!.map(t => t.take_id === id ? { ...t, rateStatus: "done", rating_status: "rated" } : t)); }
       else setTakes(prev => prev!.map(t => t.take_id === id ? { ...t, rateStatus: "error" } : t));
     }
     setSelectedIds(new Set());

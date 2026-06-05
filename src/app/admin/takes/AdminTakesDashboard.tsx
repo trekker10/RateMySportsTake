@@ -246,7 +246,14 @@ export default function AdminTakesDashboard() {
         prev!.map((t) => {
           const fresh = all.find((a) => a.take_id === t.take_id);
           if (!fresh) return t;
-          return { ...fresh, gradeStatus: t.take_id === takeId ? "done" : t.gradeStatus, rateStatus: t.rateStatus, errorMsg: t.errorMsg };
+          return {
+            ...fresh,
+            gradeStatus: t.take_id === takeId ? "done" : t.gradeStatus,
+            rateStatus: t.rateStatus,
+            // If we locally marked this as rated, keep that even if the server hasn't flushed yet
+            rating_status: t.rateStatus === "done" ? "rated" : fresh.rating_status,
+            errorMsg: t.errorMsg,
+          };
         })
       );
     });

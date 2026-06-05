@@ -68,28 +68,24 @@ export async function checkDuplicateTakes(expertId: string): Promise<{
 Takes (take_id TAB text):
 ${takeList}
 
-Output a JSON array of groups. Each group is an array of take_ids that are duplicates of each other. Only include groups with 2+ takes. If none, output [].
+Output ONLY a raw JSON array of groups, with no explanation or markdown. Each group is an array of take_ids that are duplicates of each other. Only include groups with 2+ takes. If none found, output exactly: []
 
 Example output: [["id-a","id-b"],["id-c","id-d","id-e"]]`,
-        },
-        // Prime the assistant to start with the JSON array
-        {
-          role: "assistant",
-          content: "[",
         },
       ],
     });
 
-    const raw = "[" + (response.content[0].type === "text" ? response.content[0].text.trim() : "]");
-    // Robustly extract the outermost JSON array
+    const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "[]";
+    // Strip markdown code fences if present
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     let semanticGroups: string[][] = [];
     try {
-      semanticGroups = JSON.parse(raw);
+      semanticGroups = JSON.parse(stripped);
     } catch {
-      // Try to salvage by extracting array content
-      const jsonMatch = raw.match(/(\[\s*(?:\[.*?\]\s*,?\s*)*\])/s);
+      // Try to extract just the array portion
+      const jsonMatch = stripped.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
-        try { semanticGroups = JSON.parse(jsonMatch[1]); } catch { /* no dupes found */ }
+        try { semanticGroups = JSON.parse(jsonMatch[0]); } catch { /* no dupes found */ }
       }
     }
 

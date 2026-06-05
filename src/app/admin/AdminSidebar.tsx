@@ -139,7 +139,6 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
     {
       heading: "People",
       items: [
-        { label: "Experts",          href: "/experts",        icon: <IconPerson /> },
         { label: "Manage Profiles",  href: "/admin/experts",  icon: <IconPeople /> },
       ],
     },

@@ -52,34 +52,46 @@ export async function checkDuplicateTakes(expertId: string): Promise<{
     }
 
     // ── 2. Semantic duplicates via AI ────────────────────────────────────
-    const takeList = takes.map((t, i) => `[${i}] (${t.take_id}) ${t.raw_text}`).join("\n");
+    // Limit to 60 takes to keep context manageable; most recent first (already ordered)
+    const takeSample = takes.slice(0, 60);
+    const takeList = takeSample.map(t => `${t.take_id}\t${t.raw_text.slice(0, 200)}`).join("\n");
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
+      system: "You output only valid JSON. No prose, no markdown, no code fences. Just the raw JSON value.",
       messages: [
         {
           role: "user",
-          content: `You are reviewing sports takes from the same analyst for semantic duplicates.
+          content: `Find semantically duplicate sports takes below. Two takes are duplicates if they make essentially the same prediction, even if worded differently. Different opinions about the same topic are NOT duplicates.
 
-Two takes are duplicates if they make essentially the same prediction or claim, even if worded differently. Minor differences in phrasing ("win in 6" vs "take care of business and win the series in 6") count as duplicates. Different predictions about the same topic do NOT count.
-
-Here are the takes (index and take_id in parentheses):
+Takes (take_id TAB text):
 ${takeList}
 
-Return ONLY a JSON array of duplicate groups. Each group is an array of take_ids that are semantically equivalent. Only include groups with 2+ takes. If none found, return [].
+Output a JSON array of groups. Each group is an array of take_ids that are duplicates of each other. Only include groups with 2+ takes. If none, output [].
 
-Example: [["uuid-a","uuid-b"],["uuid-c","uuid-d","uuid-e"]]
-
-JSON only, no explanation:`,
+Example output: [["id-a","id-b"],["id-c","id-d","id-e"]]`,
+        },
+        // Prime the assistant to start with the JSON array
+        {
+          role: "assistant",
+          content: "[",
         },
       ],
     });
 
-    const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "[]";
-    // Extract JSON array even if wrapped in markdown
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    const semanticGroups: string[][] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    const raw = "[" + (response.content[0].type === "text" ? response.content[0].text.trim() : "]");
+    // Robustly extract the outermost JSON array
+    let semanticGroups: string[][] = [];
+    try {
+      semanticGroups = JSON.parse(raw);
+    } catch {
+      // Try to salvage by extracting array content
+      const jsonMatch = raw.match(/(\[\s*(?:\[.*?\]\s*,?\s*)*\])/s);
+      if (jsonMatch) {
+        try { semanticGroups = JSON.parse(jsonMatch[1]); } catch { /* no dupes found */ }
+      }
+    }
 
     for (const ids of semanticGroups) {
       if (ids.length < 2) continue;

@@ -550,128 +550,83 @@ export default function AdminTakesDashboard() {
             const isExpanded = expandedId === take.take_id;
 
             return (
-              <div key={take.take_id} className="px-5 py-4">
-                {/* Row header */}
-                <div className="flex items-start gap-3">
+              <div key={take.take_id} className="px-4 py-3">
+                {/* Top row: checkbox + name + meta + resolve badge + verdict + buttons — all wrapping */}
+                <div className="flex items-start gap-2 flex-wrap">
                   <input
                     type="checkbox"
                     className="mt-1 h-4 w-4 rounded border-gray-400 accent-gray-900 shrink-0 cursor-pointer"
                     checked={selectedIds.has(take.take_id)}
                     onChange={() => toggleSelect(take.take_id)}
                   />
-                <div className="flex-1 flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link
-                        href={`/experts/${take.expert_id}`}
-                        className="font-semibold text-gray-900 hover:text-black text-sm"
-                      >
-                        {take.expert_name}
-                      </Link>
-                      <span className="text-gray-400 text-xs">·</span>
-                      <span className="text-gray-500 text-xs">{take.date_made}</span>
-                      {take.boldness_score != null && (
-                        <span className="text-gray-500 text-xs">· B={take.boldness_score}</span>
-                      )}
-                      {take.rating_status !== "rated" && (
-                        <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-900/40 text-amber-400 border border-amber-800">
-                          NOT RATED YET
-                        </span>
-                      )}
-                    </div>
 
-                    <p className="mt-1.5 text-sm text-gray-700 leading-relaxed line-clamp-2">
-                      "{take.summary ?? take.raw_text}"
-                    </p>
+                  {/* Name + meta */}
+                  <Link href={`/experts/${take.expert_id}`} className="font-semibold text-gray-900 hover:text-black text-sm">
+                    {take.expert_name}
+                  </Link>
+                  <span className="text-gray-500 text-xs mt-0.5">{take.date_made}</span>
+                  {take.boldness_score != null && (
+                    <span className="text-gray-500 text-xs mt-0.5">· B={take.boldness_score}</span>
+                  )}
+                  {take.rating_status !== "rated" && (
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-900/40 text-amber-400 border border-amber-800">
+                      NOT RATED YET
+                    </span>
+                  )}
+                  {take.time_horizon_date && <ResolveBadge date={take.time_horizon_date} />}
 
-                    {isGraded && take.outcome_notes && (
-                      <p className="mt-1 text-xs text-gray-500 italic">{take.outcome_notes}</p>
-                    )}
-                  </div>
+                  {/* Verdict + score */}
+                  <span className="font-mono text-xs font-bold mt-0.5" style={{ color: verdict.color }}>{verdict.label}</span>
+                  {take.grade != null && (
+                    <span className="font-black text-base leading-none mt-0.5" style={{ color: take.grade >= 60 ? "#0a7a3b" : "#e2241a" }}>
+                      {Math.round(take.grade)}
+                    </span>
+                  )}
 
-                  {/* Right side */}
-                  <div className="shrink-0 flex flex-col items-end gap-2">
-                    {take.time_horizon_date && (
-                      <ResolveBadge date={take.time_horizon_date} />
-                    )}
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs font-bold" style={{ color: verdict.color }}>
-                        {verdict.label}
-                      </span>
-                      {take.grade != null && (
-                        <span className="font-black text-lg leading-none" style={{ color: take.grade >= 60 ? "#0a7a3b" : "#e2241a" }}>
-                          {Math.round(take.grade)}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {/* Edit toggle */}
-                      <button
-                        onClick={() => setExpandedId(isExpanded ? null : take.take_id)}
-                        className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
-                          isExpanded
-                            ? "border-gray-600 text-gray-900 bg-gray-100"
-                            : "border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-800"
-                        }`}
-                      >
-                        {isExpanded ? "Close" : "Edit"}
+                  {/* Buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : take.take_id)}
+                      className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
+                        isExpanded ? "border-gray-600 text-gray-900 bg-gray-100" : "border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      {isExpanded ? "Close" : "Edit"}
+                    </button>
+                    <button
+                      onClick={() => deleteOne(take.take_id)}
+                      className="rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
+                      title="Delete take"
+                    >🗑</button>
+                    {take.rating_status !== "rated" && take.rateStatus === "idle" && (
+                      <button onClick={() => rateOne(take.take_id)} className="rounded-lg border border-blue-300 text-blue-600 hover:border-blue-500 px-3 py-1 text-xs transition-colors">
+                        Rate it
                       </button>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => deleteOne(take.take_id)}
-                        className="rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
-                        title="Delete take"
-                      >
-                        🗑
+                    )}
+                    {take.rateStatus === "rating" && <span className="text-xs text-blue-400 animate-pulse">Rating…</span>}
+                    {take.rateStatus === "done" && take.rating_status !== "rated" && <span className="text-xs text-blue-400">✓ Rated</span>}
+                    {take.rateStatus === "error" && <span className="text-xs text-red-400" title={take.errorMsg}>✗ Failed</span>}
+                    {take.gradeStatus === "idle" && (take.rating_status === "rated" || !!take.grading_criteria) && (
+                      <button onClick={() => gradeOne(take.take_id)} className="rounded-lg border border-gray-300 text-gray-500 hover:border-gray-500 px-3 py-1 text-xs transition-colors">
+                        {isGraded ? "Re-grade" : "Grade it"}
                       </button>
-
-                      {/* Rate it button — for unrated takes */}
-                      {take.rating_status !== "rated" && take.rateStatus === "idle" && (
-                        <button
-                          onClick={() => rateOne(take.take_id)}
-                          className="rounded-lg border border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-800 px-3 py-1 text-xs transition-colors"
-                        >
-                          Rate it
-                        </button>
-                      )}
-                      {take.rateStatus === "rating" && (
-                        <span className="text-xs text-blue-400 animate-pulse">Rating…</span>
-                      )}
-                      {take.rateStatus === "done" && take.rating_status !== "rated" && (
-                        <span className="text-xs text-blue-400">✓ Rated</span>
-                      )}
-                      {take.rateStatus === "error" && (
-                        <span className="text-xs text-red-400" title={take.errorMsg}>✗ Failed — {take.errorMsg ?? "unknown error"}</span>
-                      )}
-
-                      {/* Grade button — show if rated OR grading criteria has been set manually */}
-                      {take.gradeStatus === "idle" && (take.rating_status === "rated" || !!take.grading_criteria) && (
-                        <button
-                          onClick={() => gradeOne(take.take_id)}
-                          className="rounded-lg border border-gray-300 text-gray-500 hover:border-gray-500 hover:text-gray-800 px-3 py-1 text-xs transition-colors"
-                        >
-                          {isGraded ? "Re-grade" : "Grade it"}
-                        </button>
-                      )}
-                      {take.gradeStatus === "grading" && (
-                        <span className="text-xs text-gray-400 animate-pulse">Searching web…</span>
-                      )}
-                      {take.gradeStatus === "done" && (
-                        <span className="text-xs text-emerald-400">✓ Done</span>
-                      )}
-                      {take.gradeStatus === "error" && (
-                        <span className="text-xs text-red-400" title={take.errorMsg}>Failed</span>
-                      )}
-                    </div>
+                    )}
+                    {take.gradeStatus === "grading" && <span className="text-xs text-gray-400 animate-pulse">Searching web…</span>}
+                    {take.gradeStatus === "done" && <span className="text-xs text-emerald-400">✓ Done</span>}
+                    {take.gradeStatus === "error" && <span className="text-xs text-red-400">Failed</span>}
                   </div>
                 </div>
-              </div>
 
-              {take.gradeStatus === "error" && take.errorMsg && (
-                <p className="text-xs text-red-400 mt-1 pl-7">{take.errorMsg}</p>
-              )}
+                {/* Take text — full width below */}
+                <p className="mt-2 text-sm text-gray-700 leading-relaxed">
+                  "{take.summary ?? take.raw_text}"
+                </p>
+                {isGraded && take.outcome_notes && (
+                  <p className="mt-1 text-xs text-gray-500 italic">{take.outcome_notes}</p>
+                )}
+                {take.gradeStatus === "error" && take.errorMsg && (
+                  <p className="text-xs text-red-400 mt-1">{take.errorMsg}</p>
+                )}
 
               {/* Inline edit panel */}
               {isExpanded && (

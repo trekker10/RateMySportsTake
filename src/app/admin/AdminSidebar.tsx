@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 interface NavItem {
   label: string;
@@ -111,6 +112,7 @@ function IconFootball() {
 
 export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   const groups: NavGroup[] = [
     {
@@ -155,45 +157,92 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
     return pathname.startsWith(href);
   }
 
-  return (
-    <aside className="w-52 shrink-0 border-r-2 border-gray-200 bg-white flex flex-col">
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-5 space-y-5 overflow-y-auto">
-        {groups.map((group) => (
-          <div key={group.heading}>
-            <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-              {group.heading}
-            </p>
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <li key={item.href + item.label}>
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
-                        active
-                          ? "bg-green-50 text-green-700"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                      }`}
-                    >
-                      <span className={active ? "text-green-600" : "text-gray-400"}>
-                        {item.icon}
+  const navContent = (
+    <nav className="flex-1 px-3 py-5 space-y-5 overflow-y-auto">
+      {groups.map((group) => (
+        <div key={group.heading}>
+          <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+            {group.heading}
+          </p>
+          <ul className="space-y-0.5">
+            {group.items.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <li key={item.href + item.label}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-green-50 text-green-700"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    <span className={active ? "text-green-600" : "text-gray-400"}>
+                      {item.icon}
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge != null && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                        {item.badge}
                       </span>
-                      <span className="flex-1">{item.label}</span>
-                      {item.badge != null && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
-    </aside>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger button — fixed top-left */}
+      <button
+        onClick={() => setOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-50 rounded-lg bg-white border border-gray-200 shadow p-2 text-gray-600 hover:text-gray-900"
+        aria-label="Open menu"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      {/* Mobile overlay backdrop */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r-2 border-gray-200 flex flex-col transition-transform duration-200 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <span className="text-sm font-semibold text-gray-700">Admin Menu</span>
+          <button
+            onClick={() => setOpen(false)}
+            className="rounded p-1 text-gray-400 hover:text-gray-700"
+            aria-label="Close menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        {navContent}
+      </aside>
+
+      {/* Desktop sidebar — always visible */}
+      <aside className="hidden md:flex w-52 shrink-0 border-r-2 border-gray-200 bg-white flex-col">
+        {navContent}
+      </aside>
+    </>
   );
 }

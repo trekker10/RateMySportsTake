@@ -137,7 +137,7 @@ function PlayerDrawer({
       />
       {/* Drawer */}
       <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
           <h2 className="font-semibold text-gray-900 text-base">
             {isEdit ? `Edit — ${player!.canonical_name}` : "Add Player"}
           </h2>
@@ -151,7 +151,7 @@ function PlayerDrawer({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+        <div className="overflow-y-auto px-5 py-5 space-y-5">
           <div>
             <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1.5 uppercase">
               Canonical Name <span className="text-red-500">*</span>
@@ -224,22 +224,22 @@ function PlayerDrawer({
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
-        </div>
 
-        <div className="px-5 py-4 border-t border-gray-200 flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            disabled={isPending}
-            className="rounded-lg bg-gray-900 text-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-700 disabled:opacity-50 transition-colors"
-          >
-            {isPending ? "Saving…" : isEdit ? "Save changes" : "Add player"}
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm text-gray-500 hover:text-gray-900 hover:border-gray-500 transition-colors"
-          >
-            Cancel
-          </button>
+          <div className="flex items-center gap-3 pt-2 pb-2">
+            <button
+              onClick={handleSave}
+              disabled={isPending}
+              className="rounded-lg bg-gray-900 text-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
+              {isPending ? "Saving…" : isEdit ? "Save changes" : "Add player"}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm text-gray-500 hover:text-gray-900 hover:border-gray-500 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -894,7 +894,7 @@ function FantasyTakesPanel() {
   const [takes, setTakes] = useState<FantasyTakeRow[] | null>(null);
   const [isLoading, startLoad] = useTransition();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "pending" | "resolved">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "resolved" | "overdue">("all");
   const [gradingId, setGradingId] = useState<string | null>(null);
   const [gradeNote, setGradeNote] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1067,11 +1067,13 @@ function FantasyTakesPanel() {
   }
 
   const allTakes = takes ?? [];
+  const todayF = new Date().toISOString().split("T")[0];
 
   const filtered = allTakes
     .filter(t => {
       if (filter === "pending")  return t.outcome_status === "pending";
       if (filter === "resolved") return t.outcome_status === "resolved";
+      if (filter === "overdue")  return t.outcome_status === "pending" && !!t.resolution_date && t.resolution_date <= todayF;
       return true;
     })
     .filter(t => {
@@ -1094,9 +1096,10 @@ function FantasyTakesPanel() {
     });
 
   const counts = {
-    all: allTakes.length,
-    pending: allTakes.filter(t => t.outcome_status === "pending").length,
+    all:      allTakes.length,
+    pending:  allTakes.filter(t => t.outcome_status === "pending").length,
     resolved: allTakes.filter(t => t.outcome_status === "resolved").length,
+    overdue:  allTakes.filter(t => t.outcome_status === "pending" && !!t.resolution_date && t.resolution_date <= todayF).length,
   };
 
   return (
@@ -1164,16 +1167,18 @@ function FantasyTakesPanel() {
 
       {/* Filter tabs + select-all */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["all", "pending", "resolved"] as const).map(f => (
+        {(["all", "pending", "resolved", "overdue"] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filter === f
-                ? "text-white"
-                : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
+                ? f === "overdue" ? "bg-red-700 text-white" : "text-white"
+                : f === "overdue" && counts.overdue > 0
+                  ? "text-red-600 border border-red-300 hover:border-red-500 hover:text-red-700"
+                  : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
             }`}
-            style={filter === f ? { backgroundColor: "#15803d" } : {}}
+            style={filter === f && f !== "overdue" ? { backgroundColor: "#15803d" } : {}}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-70">({counts[f]})</span>
           </button>

@@ -155,6 +155,57 @@ export async function importPlayersFromTags(): Promise<{
   return { success: true, imported: toInsert.length };
 }
 
+export async function mergePlayers(
+  keepId: string,
+  mergeIds: string[]
+): Promise<{ success: boolean; error?: string }> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  const supabase = createAdminClient();
+
+  // Fetch the player to keep + all players being merged away
+  const { data: allPlayers } = await supabase
+    .from("players")
+    .select("player_id, canonical_name, aliases")
+    .in("player_id", [keepId, ...mergeIds]);
+
+  if (!allPlayers) return { success: false, error: "Players not found" };
+
+  const keeper = allPlayers.find((p) => p.player_id === keepId);
+  if (!keeper) return { success: false, error: "Keep player not found" };
+
+  const mergedPlayers = allPlayers.filter((p) => p.player_id !== keepId);
+
+  // Build new aliases: existing keeper aliases + canonical names of merged players + their aliases
+  const newAliasSet = new Set<string>(keeper.aliases ?? []);
+  for (const mp of mergedPlayers) {
+    newAliasSet.add(mp.canonical_name); // their canonical name becomes an alias
+    for (const a of mp.aliases ?? []) newAliasSet.add(a);
+  }
+  // Don't include the keeper's own canonical name as an alias
+  newAliasSet.delete(keeper.canonical_name);
+
+  // Update the keeper's aliases
+  const { error: updateError } = await supabase
+    .from("players")
+    .update({ aliases: [...newAliasSet] })
+    .eq("player_id", keepId);
+
+  if (updateError) return { success: false, error: updateError.message };
+
+  // Delete the merged-away players
+  const { error: deleteError } = await supabase
+    .from("players")
+    .delete()
+    .in("player_id", mergeIds);
+
+  if (deleteError) return { success: false, error: deleteError.message };
+
+  revalidatePath("/admin/players");
+  return { success: true };
+}
+
 export async function getPlayerTakeCounts(): Promise<Record<string, number>> {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) return {};

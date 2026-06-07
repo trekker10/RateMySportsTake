@@ -157,6 +157,7 @@ export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> 
     expert_id: t.expert_id,
     source_url: t.source_url ?? null,
     source_type: t.source_type ?? null,
+      player_tags: (t as any).player_tags ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expert_name: (t.experts as any)?.name ?? "Unknown",
   }));
@@ -187,6 +188,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
     expert_id: t.expert_id,
     source_url: t.source_url ?? null,
     source_type: t.source_type ?? null,
+      player_tags: (t as any).player_tags ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expert_name: (t.experts as any)?.name ?? "Unknown",
   }));

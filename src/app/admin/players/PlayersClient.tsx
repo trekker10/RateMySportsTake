@@ -107,14 +107,14 @@ function PlayerDrawer({
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <aside
         className="fixed z-50 w-full max-w-md bg-white shadow-2xl border border-gray-200 rounded-xl flex flex-col"
-        style={{
-          right: "1rem",
-          top: Math.min(
-            Math.max((anchorY ?? window.innerHeight / 2) - 40, 8),
-            window.innerHeight - 520
-          ),
-          maxHeight: "calc(100vh - 2rem)",
-        }}
+        style={(() => {
+          const vh = window.innerHeight;
+          const ay = anchorY ?? vh / 2;
+          const PANEL_HEIGHT = 560;
+          const top = Math.min(Math.max(ay - 24, 8), vh - PANEL_HEIGHT - 8);
+          const maxHeight = vh - top - 8;
+          return { right: "1rem", top, maxHeight };
+        })()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
           <h2 className="font-semibold text-gray-900 text-base">
@@ -126,7 +126,7 @@ function PlayerDrawer({
             </svg>
           </button>
         </div>
-        <div className="overflow-y-auto px-5 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           <div>
             <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1.5 uppercase">
               Canonical Name <span className="text-red-500">*</span>

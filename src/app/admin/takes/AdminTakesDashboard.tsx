@@ -43,6 +43,8 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
   const [notes, setNotes] = useState(take.outcome_notes ?? "");
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [playerTags, setPlayerTags] = React.useState<string[]>(take.player_tags ?? []);
+  const [tagInput, setTagInput] = React.useState("");
 
   function handleSave() {
     startTransition(async () => {
@@ -89,7 +91,29 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
           </a>
         </div>
       )}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="mb-3">
+      <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Player Tags</label>
+      <div className="flex flex-wrap gap-1 mb-2">
+        {playerTags.map((tag) => (
+          <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-xs text-blue-700">
+            {tag}
+            <button onClick={() => setPlayerTags(playerTags.filter(t => t !== tag))} className="hover:text-red-500">×</button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={tagInput}
+          onChange={e => setTagInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && tagInput.trim()) { setPlayerTags([...playerTags, tagInput.trim()]); setTagInput(""); }}}
+          placeholder="Add player name..."
+          className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
+        />
+        <button onClick={() => { if (tagInput.trim()) { setPlayerTags([...playerTags, tagInput.trim()]); setTagInput(""); }}} className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200">Add</button>
+      </div>
+    </div>
+    <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">AI Summary</label>
           <textarea

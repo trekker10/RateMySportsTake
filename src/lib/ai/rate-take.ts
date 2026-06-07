@@ -1,15 +1,50 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { readFileSync } from "fs";
-import { join } from "path";
 import type { TakeType, TimeHorizon } from "@/types/database";
 
 const client = new Anthropic();
 
-// Load resolution guidelines once at module init
-const ANALYST_GUIDELINES = readFileSync(
-  join(process.cwd(), "src/lib/ai/guidelines/analyst_take_resolution_guidelines.md"),
-  "utf-8"
-);
+const ANALYST_GUIDELINES = `# Take Resolution Guidelines — Sports Analyst Takes
+
+## Step 1 — Identify Time Horizon from Language
+
+| Language in Take | Time Horizon |
+|---|---|
+| "this week", "Sunday", "tonight", "in this game" | immediate |
+| "this season", "this year", "in 2026", "down the stretch" | this_season |
+| "next season", "going forward", "in the next few years" | multi_year |
+| "never", "ever", "GOAT", "greatest", "in his career" | career |
+| "by [future year]", "in the next X years" | multi_year |
+| "if [condition]", "when [event] happens" | event_based |
+
+## Step 2 — Resolution Dates by Sport & Horizon
+
+NFL: Immediate → end of that game week | This season → Feb 1 (year+1) | Offseason/roster/draft → Sep 1 | Multi-year → end of referenced year | Career → age-based
+NBA: Immediate → end of that game night | This season → Jun 30 | Multi-year → end of referenced year | Career → age-based
+MLB: Immediate → end of that game | This season → Nov 1 | Multi-year → end of referenced year | Career → age-based
+NHL: This season → Jul 1 (after Stanley Cup) | Career → age-based
+
+## Step 3 — Career Takes: Age-Based Estimation
+
+Age 20–25 → career end ~35–37 | Age 26–29 → ~34–36 | Age 30–32 → ~35–37 | Age 33+ → ~36–38
+
+NFL position adjustments: QB extend to ~38–40 | RB cap at ~31–32 | WR/TE through ~34–36 | Defensive through ~32–34
+NBA position adjustments: Guards/wings through ~36–38 | Bigs/centers through ~33–35
+
+## Step 4 — Edge Cases
+
+- Contradicted early (injury, trade, firing) → grade immediately
+- Conditional takes → resolve when condition triggers, or end of season
+- Vague with no time reference → default to this_season
+- Coach/GM/front office takes → end of current season or when decision is made
+
+## Quick Decision Tree
+
+Specific game or matchup? → immediate: end of that game week
+"This season" / specific current year? → this_season: end of league season (Feb 1 NFL, Jun 30 NBA, Nov 1 MLB, Jul 1 NHL)
+Offseason roster/draft/trade take? → Sep 1 NFL or start of referenced season
+Future year or "next season"? → multi_year: end of that future season
+"Never" / "career" / "GOAT" language? → career: age-based estimate
+None of the above? → default to this_season`;
 
 interface RatingResult {
   take_type: TakeType;
@@ -75,7 +110,6 @@ Return JSON with exactly these fields:
 
   const raw =
     response.content[0].type === "text" ? response.content[0].text : "";
-  // Strip markdown code fences if the model wrapped the JSON
   const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let parsed: any;

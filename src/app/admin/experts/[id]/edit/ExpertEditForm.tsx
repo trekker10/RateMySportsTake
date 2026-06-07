@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateExpert } from "@/app/actions/experts";
+import { useRouter } from "next/navigation";
+import { updateExpert, deleteExpert } from "@/app/actions/experts";
 
 const inputClass =
   "w-full rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none";
 
 export default function ExpertEditForm({ expert }: { expert: Record<string, unknown> }) {
+  const router = useRouter();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [isDeleting, startDelete] = useTransition();
 
   const id = expert.expert_id as string;
   const avatarUrl = expert.avatar_url as string | null;
@@ -144,6 +149,67 @@ export default function ExpertEditForm({ expert }: { expert: Record<string, unkn
           {isPending ? "Saving…" : "Save changes"}
         </button>
         {saved && <span className="text-sm text-emerald-400">✓ Saved</span>}
+      </div>
+
+      {/* Danger Zone */}
+      <div className="mt-8 rounded-lg border border-red-300 bg-red-50 p-5 space-y-3">
+        <p className="text-sm font-bold text-red-700 uppercase tracking-wide">Danger Zone</p>
+        {!deleteConfirm ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Delete this analyst</p>
+              <p className="text-xs text-gray-500 mt-0.5">Permanently removes the analyst and all their takes. This cannot be undone.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              className="ml-6 shrink-0 rounded-lg border border-red-400 text-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-100 transition-colors"
+            >
+              Delete analyst
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-700">
+              Type <span className="font-mono font-bold text-red-700">{expert.name as string}</span> to confirm deletion of this analyst and all their takes:
+            </p>
+            <input
+              type="text"
+              value={deleteInput}
+              onChange={e => setDeleteInput(e.target.value)}
+              placeholder={expert.name as string}
+              className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-red-500"
+            />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={deleteInput !== (expert.name as string) || isDeleting}
+                onClick={() => {
+                  startDelete(async () => {
+                    const result = await deleteExpert(id);
+                    if (result.success) {
+                      router.push("/admin/experts");
+                    } else {
+                      setError(result.error ?? "Delete failed.");
+                      setDeleteConfirm(false);
+                      setDeleteInput("");
+                    }
+                  });
+                }}
+                className="rounded-lg bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-40 transition-colors"
+              >
+                {isDeleting ? "Deleting…" : "Confirm delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDeleteConfirm(false); setDeleteInput(""); }}
+                className="text-sm text-gray-500 hover:text-gray-800 underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </form>
   );

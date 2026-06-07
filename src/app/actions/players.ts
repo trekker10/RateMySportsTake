@@ -186,6 +186,46 @@ export async function mergePlayers(
   // Don't include the keeper's own canonical name as an alias
   newAliasSet.delete(keeper.canonical_name);
 
+  // All names that should be rewritten to the keeper's canonical name
+  const namesToReplace = new Set<string>();
+  for (const mp of mergedPlayers) {
+    namesToReplace.add(mp.canonical_name);
+    for (const a of mp.aliases ?? []) namesToReplace.add(a);
+  }
+  const replaceList = [...namesToReplace];
+
+  // Rewrite player_tags in takes: replace any merged name with the keeper's canonical name
+  for (const oldName of replaceList) {
+    // Fetch takes that contain the old name in player_tags
+    const { data: affectedTakes } = await supabase
+      .from("takes")
+      .select("take_id, player_tags")
+      .contains("player_tags", [oldName]);
+
+    for (const take of affectedTakes ?? []) {
+      const newTags = (take.player_tags ?? []).map((tag: string) =>
+        tag.toLowerCase() === oldName.toLowerCase() ? keeper.canonical_name : tag
+      );
+      // Deduplicate
+      const deduped = [...new Set(newTags)];
+      await supabase.from("takes").update({ player_tags: deduped }).eq("take_id", take.take_id);
+    }
+
+    // Same for fantasy_takes
+    const { data: affectedFantasy } = await supabase
+      .from("fantasy_takes")
+      .select("fantasy_take_id, player_tags")
+      .contains("player_tags", [oldName]);
+
+    for (const take of affectedFantasy ?? []) {
+      const newTags = (take.player_tags ?? []).map((tag: string) =>
+        tag.toLowerCase() === oldName.toLowerCase() ? keeper.canonical_name : tag
+      );
+      const deduped = [...new Set(newTags)];
+      await supabase.from("fantasy_takes").update({ player_tags: deduped }).eq("fantasy_take_id", take.fantasy_take_id);
+    }
+  }
+
   // Update the keeper's aliases
   const { error: updateError } = await supabase
     .from("players")

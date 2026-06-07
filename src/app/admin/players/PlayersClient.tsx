@@ -177,7 +177,7 @@ function MergeModal({
 }: {
   selected: Player[];
   onClose: () => void;
-  onMerged: (keepId: string, mergeIds: string[]) => void;
+  onMerged: (keepId: string, mergeIds: string[], newAliases: string[]) => void;
 }) {
   const [keepId, setKeepId] = useState(selected[0]?.player_id ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +191,14 @@ function MergeModal({
     startTransition(async () => {
       const result = await mergePlayers(keepId, merging.map((p) => p.player_id));
       if (result.success) {
-        onMerged(keepId, merging.map((p) => p.player_id));
+        // Build the same alias set the server computed so local state matches
+        const newAliasSet = new Set<string>(keeper!.aliases ?? []);
+        for (const mp of merging) {
+          newAliasSet.add(mp.canonical_name);
+          for (const a of mp.aliases ?? []) newAliasSet.add(a);
+        }
+        newAliasSet.delete(keeper!.canonical_name);
+        onMerged(keepId, merging.map((p) => p.player_id), [...newAliasSet]);
       } else {
         setError(result.error ?? "Merge failed.");
       }
@@ -355,9 +362,12 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
     setDrawerPlayer(null);
   }
 
-  function handleMerged(keepId: string, mergeIds: string[]) {
-    // Remove merged-away players from list; the keeper will be refreshed via revalidation
-    setPlayers((prev) => prev.filter((p) => !mergeIds.includes(p.player_id)));
+  function handleMerged(keepId: string, mergeIds: string[], newAliases: string[]) {
+    setPlayers((prev) =>
+      prev
+        .filter((p) => !mergeIds.includes(p.player_id))
+        .map((p) => p.player_id === keepId ? { ...p, aliases: newAliases } : p)
+    );
     setSelectedIds(new Set());
     setShowMerge(false);
   }
@@ -578,7 +588,7 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
         <MergeModal
           selected={selectedPlayers}
           onClose={() => setShowMerge(false)}
-          onMerged={handleMerged}
+          onMerged={(keepId, mergeIds, newAliases) => handleMerged(keepId, mergeIds, newAliases)}
         />
       )}
     </div>

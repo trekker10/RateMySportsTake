@@ -136,7 +136,7 @@ export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> 
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name), player_tags")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, player_tags, experts(name)")
     .eq("expert_id", expertId)
     .order("date_made", { ascending: false });
 
@@ -157,7 +157,8 @@ export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> 
     expert_id: t.expert_id,
     source_url: t.source_url ?? null,
     source_type: t.source_type ?? null,
-      player_tags: (t as any).player_tags ?? null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    player_tags: (t as any).player_tags ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expert_name: (t.experts as any)?.name ?? "Unknown",
   }));
@@ -168,7 +169,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
 
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name), player_tags")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, player_tags, experts(name)")
     .order("date_made", { ascending: false });
 
   return (data ?? []).map((t) => ({
@@ -188,7 +189,8 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
     expert_id: t.expert_id,
     source_url: t.source_url ?? null,
     source_type: t.source_type ?? null,
-      player_tags: (t as any).player_tags ?? null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    player_tags: (t as any).player_tags ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expert_name: (t.experts as any)?.name ?? "Unknown",
   }));

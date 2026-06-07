@@ -41,10 +41,22 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
   const [grade, setGrade] = useState<string>(take.grade != null ? String(Math.round(take.grade)) : "");
   const [outcome, setOutcome] = useState(take.outcome_status);
   const [notes, setNotes] = useState(take.outcome_notes ?? "");
-  const [saved, setSaved] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const [playerTags, setPlayerTags] = useState<string[]>(take.player_tags ?? []);
   const [tagInput, setTagInput] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function addTag() {
+    const val = tagInput.trim();
+    if (val && !playerTags.includes(val)) {
+      setPlayerTags(prev => [...prev, val]);
+    }
+    setTagInput("");
+  }
+
+  function removeTag(tag: string) {
+    setPlayerTags(prev => prev.filter(t => t !== tag));
+  }
 
   function handleSave() {
     startTransition(async () => {
@@ -56,6 +68,7 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
         outcome_status: outcome,
         outcome_notes: notes.trim() || null,
         grade: grade !== "" ? Number(grade) : null,
+        player_tags: playerTags.length > 0 ? playerTags : null,
       };
       const result = await saveTakeEdits(take.take_id, edits);
       if (result.success) {
@@ -68,6 +81,7 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
           outcome_status: outcome,
           outcome_notes: notes.trim() || null,
           grade: grade !== "" ? Number(grade) : null,
+          player_tags: playerTags.length > 0 ? playerTags : null,
         });
         setTimeout(() => setSaved(false), 3000);
       }
@@ -145,6 +159,40 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
           className={`${inputClass} resize-none`}
           placeholder="What would make this take TRUE?"
         />
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-mono tracking-wider text-gray-500 mb-1 uppercase">Player Tags</label>
+        <div className="flex flex-wrap gap-1 mb-2">
+          {playerTags.map(tag => (
+            <span key={tag} className="flex items-center gap-1 rounded-full bg-gray-100 border border-gray-300 px-2 py-0.5 text-xs text-gray-700">
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="text-gray-400 hover:text-gray-700 leading-none"
+                aria-label={`Remove ${tag}`}
+              >×</button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={e => setTagInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+            placeholder="e.g. LeBron James"
+            className={`${inputClass} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={addTag}
+            className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-600 hover:border-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap"
+          >
+            Add tag
+          </button>
+        </div>
       </div>
 
       <div className="border-t border-gray-200 pt-4 grid md:grid-cols-3 gap-3">
@@ -650,6 +698,18 @@ export default function AdminTakesDashboard() {
                 <p className="mt-2 text-sm text-gray-700 leading-relaxed">
                   "{take.summary ?? take.raw_text}"
                 </p>
+                {take.player_tags && take.player_tags.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {take.player_tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-700"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {isGraded && take.outcome_notes && (
                   <p className="mt-1 text-xs text-gray-500 italic">{take.outcome_notes}</p>
                 )}

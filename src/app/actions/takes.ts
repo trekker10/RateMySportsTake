@@ -87,6 +87,7 @@ export async function saveTakeEdits(takeId: string, edits: {
   grade?: number | null;
   outcome_status?: string;
   outcome_notes?: string | null;
+  player_tags?: string[] | null;
 }): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = createAdminClient();
   const { error } = await supabase.from("takes").update(edits).eq("take_id", takeId);

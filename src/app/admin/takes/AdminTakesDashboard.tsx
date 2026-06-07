@@ -568,7 +568,7 @@ export default function AdminTakesDashboard() {
                   {take.boldness_score != null && (
                     <span className="text-gray-500 text-xs mt-0.5">· B={take.boldness_score}</span>
                   )}
-                  {take.rating_status !== "rated" && (
+                  {take.rating_status !== "rated" && take.grade == null && !(take.grading_criteria && take.time_horizon_date) && (
                     <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-900/40 text-amber-400 border border-amber-800">
                       NOT RATED YET
                     </span>
@@ -598,7 +598,7 @@ export default function AdminTakesDashboard() {
                       className="rounded-lg border border-red-200 text-red-400 hover:border-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 text-xs transition-colors"
                       title="Delete take"
                     >🗑</button>
-                    {take.rating_status !== "rated" && take.rateStatus === "idle" && (
+                    {take.rating_status !== "rated" && !(take.grading_criteria && take.time_horizon_date) && take.rateStatus === "idle" && (
                       <button onClick={() => rateOne(take.take_id)} className="rounded-lg border border-blue-300 text-blue-600 hover:border-blue-500 px-3 py-1 text-xs transition-colors">
                         Rate it
                       </button>

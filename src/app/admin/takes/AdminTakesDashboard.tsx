@@ -1,11 +1,105 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
 import { getAllFantasyTakesAdmin, gradeFantasyTake, gradeFantasyTakeSingle, rateSingleFantasyTake, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
+import { searchPlayers, getPlayerByCanonicalName } from "@/app/actions/players";
 import type { FantasyScoredTake } from "@/lib/fantasy-takescore";
 import Link from "next/link";
+
+// ── Player search typeahead ───────────────────────────────────────────────────
+interface PlayerOption { player_id: string; canonical_name: string; aliases: string[] }
+
+function PlayerSearchInput({
+  onSelect,
+}: {
+  onSelect: (player: PlayerOption) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlayerOption[]>([]);
+  const [open, setOpen] = useState(false);
+  const [cursor, setCursor] = useState(-1);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const runSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    const res = await searchPlayers(q);
+    setResults(res);
+    setOpen(res.length > 0);
+    setCursor(-1);
+  }, []);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const q = e.target.value;
+    setQuery(q);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => runSearch(q), 300);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setCursor(c => Math.min(c + 1, results.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)); }
+    else if (e.key === "Enter" && cursor >= 0) { e.preventDefault(); select(results[cursor]); }
+    else if (e.key === "Escape") { setOpen(false); }
+  }
+
+  function select(player: PlayerOption) {
+    onSelect(player);
+    setQuery("");
+    setResults([]);
+    setOpen(false);
+  }
+
+  // Close on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={wrapRef} className="relative min-w-[200px]">
+      <div className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 focus-within:border-gray-500">
+        <span className="text-gray-400 text-sm shrink-0">👤</span>
+        <input
+          type="text"
+          value={query}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Filter by player…"
+          className="flex-1 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent"
+        />
+      </div>
+      {open && (
+        <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          {results.map((p, i) => (
+            <li key={p.player_id}>
+              <button
+                type="button"
+                onMouseDown={() => select(p)}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  i === cursor ? "bg-gray-900 text-white" : "text-gray-800 hover:bg-gray-50"
+                }`}
+              >
+                {p.canonical_name}
+                {(p.aliases ?? []).length > 0 && (
+                  <span className={`ml-1.5 text-xs ${i === cursor ? "text-gray-300" : "text-gray-400"}`}>
+                    ({p.aliases.slice(0, 2).join(", ")}{p.aliases.length > 2 ? "…" : ""})
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 type TakeState = AdminTake & {
   gradeStatus: "idle" | "grading" | "done" | "error";
@@ -269,6 +363,7 @@ function ResolveBadge({ date }: { date: string }) {
 }
 
 export default function AdminTakesDashboard() {
+  const searchParams = useSearchParams();
   const [takeTypeTab, setTakeTypeTab] = useState<TakeTypeTab>("analyst");
   const [takes, setTakes] = useState<TakeState[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
@@ -280,11 +375,18 @@ export default function AdminTakesDashboard() {
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulking, setBulking] = useState(false);
+  const [playerFilter, setPlayerFilter] = useState<PlayerOption | null>(null);
 
+  // Load takes and resolve ?playerFilter= URL param
   useEffect(() => {
     startLoad(async () => {
       const all = await getAllTakesForAdmin();
       setTakes(all.map((t) => ({ ...t, gradeStatus: "idle", rateStatus: "idle" })));
+      const pf = searchParams.get("playerFilter");
+      if (pf) {
+        const player = await getPlayerByCanonicalName(pf);
+        if (player) setPlayerFilter(player);
+      }
     });
   }, []);
 
@@ -413,6 +515,11 @@ export default function AdminTakesDashboard() {
   const allTakes = takes ?? [];
   const today = new Date().toISOString().split("T")[0];
 
+  // Build the set of names to match for the player filter (canonical + aliases)
+  const playerFilterNames = playerFilter
+    ? new Set([playerFilter.canonical_name, ...(playerFilter.aliases ?? [])].map(n => n.toLowerCase()))
+    : null;
+
   const filtered = allTakes
     .filter((t) => {
       if (filter === "pending")  return t.outcome_status === "pending";
@@ -420,6 +527,10 @@ export default function AdminTakesDashboard() {
       if (filter === "unrated")  return t.rating_status !== "rated" && t.grade == null && !(t.grading_criteria && t.time_horizon_date);
       if (filter === "overdue")  return t.outcome_status === "pending" && !!t.time_horizon_date && t.time_horizon_date <= today;
       return true;
+    })
+    .filter((t) => {
+      if (!playerFilterNames) return true;
+      return (t.player_tags ?? []).some(tag => playerFilterNames.has(tag.toLowerCase()));
     })
     .filter((t) => {
       if (!search.trim()) return true;
@@ -509,7 +620,7 @@ export default function AdminTakesDashboard() {
 
       {takeTypeTab === "analyst" && <>
 
-      {/* Search + sort */}
+      {/* Search + player filter + sort */}
       <div className="flex flex-wrap gap-3 items-center">
         <input
           type="text"
@@ -518,6 +629,7 @@ export default function AdminTakesDashboard() {
           placeholder="Search by analyst, take text, notes…"
           className="flex-1 min-w-[220px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-500"
         />
+        <PlayerSearchInput onSelect={(p) => setPlayerFilter(p)} />
         <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
           <span className="mr-1">SORT:</span>
           {([
@@ -541,6 +653,23 @@ export default function AdminTakesDashboard() {
           ))}
         </div>
       </div>
+
+      {/* Active player filter chip */}
+      {playerFilter && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 text-white text-xs font-medium px-3 py-1.5">
+            👤 {playerFilter.canonical_name}
+            <button
+              onClick={() => setPlayerFilter(null)}
+              className="text-gray-300 hover:text-white leading-none ml-0.5 transition-colors"
+              aria-label="Clear player filter"
+            >
+              ×
+            </button>
+          </span>
+          <span className="text-xs text-gray-400">{filtered.length} take{filtered.length !== 1 ? "s" : ""}</span>
+        </div>
+      )}
 
       {/* Filter tabs + select-all */}
       <div className="flex items-center gap-2 flex-wrap">

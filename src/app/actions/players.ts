@@ -155,6 +155,27 @@ export async function importPlayersFromTags(): Promise<{
   return { success: true, imported: toInsert.length };
 }
 
+export async function searchPlayers(query: string): Promise<Pick<Player, "player_id" | "canonical_name" | "aliases">[]> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("players")
+    .select("player_id, canonical_name, aliases")
+    .ilike("canonical_name", `%${query}%`)
+    .order("canonical_name")
+    .limit(8);
+  return (data ?? []) as Pick<Player, "player_id" | "canonical_name" | "aliases">[];
+}
+
+export async function getPlayerByCanonicalName(name: string): Promise<Pick<Player, "player_id" | "canonical_name" | "aliases"> | null> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("players")
+    .select("player_id, canonical_name, aliases")
+    .ilike("canonical_name", name)
+    .single();
+  return data ?? null;
+}
+
 export async function mergePlayers(
   keepId: string,
   mergeIds: string[]

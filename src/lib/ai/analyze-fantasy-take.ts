@@ -1,6 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 const client = new Anthropic();
+
+// Load resolution guidelines once at module init
+const FANTASY_GUIDELINES = readFileSync(
+  join(process.cwd(), "src/lib/ai/guidelines/fantasy_take_resolution_guidelines.md"),
+  "utf-8"
+);
 
 export interface FantasyTakeAnalysis {
   player_name: string | null;
@@ -10,6 +18,7 @@ export interface FantasyTakeAnalysis {
   format: "dynasty" | "redraft" | "both";
   is_weekly: boolean;                    // true = start/sit/waiver week-specific take
   sport_season: string;                  // e.g. "2026 NFL"
+  resolution_date: string;              // YYYY-MM-DD determined by fantasy guidelines
   summary: string;
   reasoning: string;
   grading_criteria: string;             // "Take is TRUE if X. Take is FALSE if Y."
@@ -45,7 +54,11 @@ Timing window definitions:
 Dynasty vs Redraft signals:
 - dynasty: mentions "dynasty", "keeper", "devy", "dynasty league", age/development for future value
 - redraft: mentions "this week", "this season", "2026 season", start/sit decisions, streaming
-- both: applicable to both formats, or ambiguous`,
+- both: applicable to both formats, or ambiguous
+
+When determining resolution_date, follow these Fantasy Take Resolution Guidelines exactly:
+
+${FANTASY_GUIDELINES}`,
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -66,6 +79,7 @@ Return JSON with exactly these fields:
   "format": "dynasty" | "redraft" | "both",
   "is_weekly": true if this is a single-week prediction (start/sit this week, stream this week), false if season-long,
   "sport_season": the NFL season year as a string e.g. "2026 NFL" — infer from context or use the year closest to the date made,
+  "resolution_date": YYYY-MM-DD date determined by the Fantasy Take Resolution Guidelines above — use the take language, sport_season, player position, and date_made to pick the correct date,
   "summary": one neutral sentence describing exactly what is being predicted,
   "reasoning": one sentence explaining your category/timing/format choices,
   "grading_criteria": "Take is TRUE if [specific measurable condition — player stats, finish position, rank relative to ADP, etc.]. Take is FALSE if [the opposite condition]."
@@ -75,19 +89,21 @@ Return JSON with exactly these fields:
   });
 
   const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
   try {
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(cleaned);
     return {
-      player_name:     parsed.player_name ?? null,
-      player_position: parsed.player_position ?? null,
-      category:        parsed.category        ?? "breakout_call",
-      timing_window:   parsed.timing_window   ?? "early_season",
-      format:          parsed.format          ?? "both",
-      is_weekly:       parsed.is_weekly       ?? false,
-      sport_season:    parsed.sport_season    ?? "2026 NFL",
-      summary:          parsed.summary          ?? "",
-      reasoning:        parsed.reasoning        ?? "",
+      player_name:      parsed.player_name     ?? null,
+      player_position:  parsed.player_position ?? null,
+      category:         parsed.category        ?? "breakout_call",
+      timing_window:    parsed.timing_window   ?? "early_season",
+      format:           parsed.format          ?? "both",
+      is_weekly:        parsed.is_weekly       ?? false,
+      sport_season:     parsed.sport_season    ?? "2026 NFL",
+      resolution_date:  parsed.resolution_date ?? `${new Date().getFullYear() + 1}-01-07`,
+      summary:          parsed.summary         ?? "",
+      reasoning:        parsed.reasoning       ?? "",
       grading_criteria: parsed.grading_criteria ?? "",
     };
   } catch {
@@ -95,6 +111,7 @@ Return JSON with exactly these fields:
       player_name: null, player_position: null,
       category: "breakout_call", timing_window: "early_season",
       format: "both", is_weekly: false, sport_season: "2026 NFL",
+      resolution_date: `${new Date().getFullYear() + 1}-01-07`,
       summary: "", reasoning: "", grading_criteria: "",
     };
   }

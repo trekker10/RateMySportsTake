@@ -102,40 +102,7 @@ async function lookupPlayerADP(playerName: string, sportSeason?: string): Promis
   return null;
 }
 
-// ─── Resolution date calculator ───────────────────────────────────────────────
-
-function getResolutionDate(
-  timingWindow: string,
-  isWeekly: boolean,
-  sportSeason: string,
-): string {
-  const now = new Date();
-
-  // For weekly predictions, set to next Tuesday (games done by Mon night)
-  if (isWeekly) {
-    const day = now.getDay(); // 0=Sun, 1=Mon, 2=Tue
-    const daysUntilTuesday = day <= 2 ? 2 - day : 9 - day;
-    const tuesday = new Date(now);
-    tuesday.setDate(tuesday.getDate() + (daysUntilTuesday === 0 ? 7 : daysUntilTuesday));
-    return tuesday.toISOString().split("T")[0];
-  }
-
-  // Detect the NFL season year from sportSeason string
-  const yearMatch = sportSeason.match(/\d{4}/);
-  const year = yearMatch ? parseInt(yearMatch[0]) : now.getFullYear();
-
-  // NFL season approximate date anchors
-  const dates: Record<string, string> = {
-    post_draft:   `${year}-05-01`,   // After the draft
-    preseason:    `${year}-08-30`,   // Last preseason game
-    early_season: `${year}-10-14`,   // End of Week 6
-    midseason:    `${year}-11-18`,   // End of Week 11
-    late_season:  `${year + 1}-01-05`, // End of Week 18
-    playoffs:     `${year + 1}-01-05`, // End of fantasy playoffs
-  };
-
-  return dates[timingWindow] ?? `${year + 1}-01-05`;
-}
+// Resolution date is now determined by the AI using fantasy_take_resolution_guidelines.md
 
 // ─── Main action ──────────────────────────────────────────────────────────────
 
@@ -176,13 +143,6 @@ export async function analyzeFantasyTakeAction(
     const cfg = await getFantasyConfig();
     const boldness = suggestBoldness(adp, analysis.timing_window, cfg);
 
-    // 4. Resolution date
-    const resolutionDate = getResolutionDate(
-      analysis.timing_window,
-      analysis.is_weekly,
-      analysis.sport_season,
-    );
-
     return {
       success: true,
       data: {
@@ -194,7 +154,7 @@ export async function analyzeFantasyTakeAction(
         format:          analysis.format,
         boldness_score:  boldness,
         sport_season:    analysis.sport_season,
-        resolution_date: resolutionDate,
+        resolution_date: analysis.resolution_date,
         summary:          analysis.summary,
         reasoning:        analysis.reasoning,
         grading_criteria: analysis.grading_criteria,

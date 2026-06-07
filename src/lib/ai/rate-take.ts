@@ -1,7 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { readFileSync } from "fs";
+import { join } from "path";
 import type { TakeType, TimeHorizon } from "@/types/database";
 
 const client = new Anthropic();
+
+// Load resolution guidelines once at module init
+const ANALYST_GUIDELINES = readFileSync(
+  join(process.cwd(), "src/lib/ai/guidelines/analyst_take_resolution_guidelines.md"),
+  "utf-8"
+);
 
 interface RatingResult {
   take_type: TakeType;
@@ -29,7 +37,11 @@ export async function rateTake(
     system: [
       {
         type: "text",
-        text: "You are a sports take analyst for a take accountability platform. Objectively analyze sports takes and rate them on specific dimensions. Always respond with valid JSON only — no markdown, no explanation, no code fences.",
+        text: `You are a sports take analyst for a take accountability platform. Objectively analyze sports takes and rate them on specific dimensions. Always respond with valid JSON only — no markdown, no explanation, no code fences.
+
+When determining time_horizon and time_horizon_date, follow these resolution guidelines exactly:
+
+${ANALYST_GUIDELINES}`,
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -52,7 +64,7 @@ Return JSON with exactly these fields:
   "boldness_score": integer 0-100 mapping of difficulty (0-9=obvious, 10-39=safe, 40-69=moderate, 70-89=bold, 90-100=very bold/contrarian),
   "confidence_claimed": integer 1-10 (1=heavily hedged, 10=stated as an absolute guarantee),
   "time_horizon": one of "immediate" | "this_season" | "this_year" | "multi_year" | "career" | "unresolvable",
-  "time_horizon_date": estimated YYYY-MM-DD when the outcome will be known, or null if unresolvable,
+  "time_horizon_date": YYYY-MM-DD resolution date determined by the guidelines above — use the sport, horizon type, and date_made to pick the correct date,
   "summary": one sentence restating the claim in first person as if the analyst said it themselves (e.g. "I think Romeo Doubs will be transformative for the Patriots." — NOT "The analyst predicts..."),
   "grading_criteria": specific measurable definition of what would make this take TRUE (used for grading later),
   "flags": array of zero or more from ["bold_call", "guaranteed", "flip_risk", "vague", "unfalsifiable", "recency_bias", "hot_take", "contrarian"]

@@ -21,55 +21,74 @@
 - **Rate all unrated** bulk button with live X/N progress counter  
 - **Select all / Deselect all** in bulk action bar
 - **ResolveBadge** on each take row (Overdue / Soon / Resolves / Today) matching analyst panel
-- **FantasyEditPanel redesigned** to match analyst edit layout: source URL banner at top, take text + boldness/resolution date side-by-side, grading criteria full width, classification fields below, outcome/accuracy/grader note at bottom
+- **FantasyEditPanel redesigned** to match analyst edit layout
 - **Source URL pre-populated** from t.co link in raw_text if not explicitly stored
-- Edit panel now stacks below the row (not as a side panel)
-- **sport_season + resolution_date computed deterministically** (not AI):
-  - Jan 1–Feb 14 → previous year's season (playoffs live)
-  - Feb 15–Aug 31 → current calendar year's upcoming season  
-  - Sep 1–Dec 31 → current year's season
-  - e.g. take made June 2026 → "2026 NFL", resolves 2027-01-06
+- **Resolution date now AI-driven** using `fantasy_take_resolution_guidelines.md` (Jan 7 for season-long, weekly end for start/sit, age-based for dynasty/career)
 
 ### Expert Profile Pages
-- **Slug-based URLs** — `/experts/dynastydadff` instead of `/experts/uuid`. Old UUID URLs still work. Auto-populated from Twitter handle via SQL migration.
+- **Slug-based URLs** — `/experts/dynastydadff` instead of `/experts/uuid`. Old UUID URLs still work.
 - **FLEX + K/DST removed** from fantasy guru position report card (now QB/RB/WR/TE only)
-- **See All Takes** button fixed (was passing slug instead of UUID to server action)
+- **See All Takes** button fixed
 - **RECEIPTS stat** is clickable, links to flip-flops page, red when count > 0
 - **Position report card** for fantasy gurus
+- **Check for duplicates** button — finds same-URL and semantically similar takes via AI, shows flagged groups with Graded/Scored status and Delete buttons per take
 
 ### Analyst Takes
-- **Flip-flop contradiction detector** — AI detects when analyst contradicted themselves within 365 days. Admin trigger button on expert page. RECEIPTS stat links to `/experts/[id]/flip-flops`
+- **Flip-flop contradiction detector** — AI detects when analyst contradicted themselves within 365 days
 - **Mean/Median aggregation toggle** in TakeScore Admin
 - **Receipt image** redesign: full-width portrait, AI-generated pending teasers, grading criteria section, dynamic font sizing
+- **Resolution date now AI-driven** using `analyst_take_resolution_guidelines.md` (sport-specific: Feb 1 NFL, Jun 30 NBA, Nov 1 MLB, Jul 1 NHL, age-based for career takes)
 
-### Homepage & Navigation
-- **Leaderboard ribbon** — slow-scrolling ticker of Top 10 analysts between hero and HOW IT WORKS
-- **Mobile homepage spacing** fixes: 8px token scale, hero padding, stacked search/toggle/CTA on mobile
-- Mobile nav matches desktop: Analysts (red) + Fantasy (green) only
+### Takes Review Admin
+- **Date Added sort** — default sort; sorts by when take entered the system (`date_submitted`/`created_at`), not tweet date
+- **Fantasy takes sort bar** — Date Added · Date Made · Resolves · Guru
+- **Added Today dashboard stat** fixed — now counts by system insertion date, not tweet date
+- **NOT RATED YET badge rules**: hidden when grade != null OR (grading_criteria + time_horizon_date both set) OR rating_status = 'rated'
+- **Rate it button** follows same rules — doesn't show if take is already effectively rated
+- **Grade it button stays visible** after Rate it completes (no page reload needed)
+- **Mobile take cards** reflowed: name + meta + buttons on top row (wrapping), full take text below full-width
 
 ### Admin Portal
-- **Dashboard stats** — "Today at a Glance" with 3 cards: takes added today, total graded, review queue (overdue pending takes). Review queue card links to /admin/takes, turns amber when > 0
-- **Sidebar navigation** on all admin pages: grouped sections (Overview / Content / Grading / People / Settings), active-item highlighting, amber badge on Review Takes showing live overdue count
-- **Show Accounts** page at `/admin/show-accounts`: manage X/Twitter show accounts (@FirstTake, @GetUpESPN etc.) that tweet analyst quotes. Active toggle, delete, Add form.
-- **Public API** at `/api/show-accounts` — returns active show accounts as JSON for Python pipeline scripts (CORS open, 60s cache, `?all=1` for inactive too)
+- **Dashboard stats** — "Today at a Glance": takes added today (by insertion date), total graded, review queue
+- **Sidebar navigation** — grouped sections, active highlighting, amber badge on Review Takes
+- **Mobile collapsible sidebar** — hamburger button slides in drawer on mobile, closes on nav or backdrop tap
+- **Show Accounts** page at `/admin/show-accounts`: manage X/Twitter show accounts
+- **Public API** at `/api/show-accounts`
+- **Browse Takes** removed from sidebar
+
+### Homepage & Navigation
+- **Leaderboard ribbon** — slow-scrolling ticker of Top 10 analysts
+- **Mobile homepage spacing** fixes
+
+### Python Pipeline
+- **48hr cutoff enforced client-side** — Apify's `since=` is date-only so tweets are filtered by exact datetime after fetching. Drops tweets older than 48 hours. `max_tweets` reduced to 30 for daily runs.
+
+### Resolution Guidelines
+- `src/lib/ai/guidelines/analyst_take_resolution_guidelines.md` — sport-specific resolution dates for analyst takes
+- `src/lib/ai/guidelines/fantasy_take_resolution_guidelines.md` — fantasy-specific resolution dates (weekly, season-long, dynasty, career, ADP, etc.)
+
+---
+
+## SQL Migrations Run
+
+- ✅ `show_accounts` table created
+- ✅ `alter table experts add column if not exists slug text;` + index + populate from twitter_handle
+- ✅ `alter table experts add column if not exists is_fantasy_guru boolean default false;`
+- ✅ `alter table fantasy_takes add column if not exists source_url text;`
+- ✅ `alter table take_score_config add column if not exists aggregation_method text not null default 'mean';`
+- ✅ `flip_flops` table creation
+- ✅ `update takes set rating_status = 'rated' where rating_status != 'rated' and grade is not null;`
+- ✅ `update takes set rating_status = 'rated' where rating_status != 'rated' and grading_criteria is not null and time_horizon_date is not null;`
 
 ---
 
 ## What's Left / Pending
 
 ### Immediate
-- ✅ `show_accounts` table created in Supabase (2026-06-05)
-- [ ] **Bulk re-rate all fantasy takes** to fix stale "2025 NFL" sport_season labels (hit "Rate all unrated" or select all → Re-rate)
-
-### Previously run migrations (already done)
-- ✅ `alter table experts add column if not exists slug text;` + index + populate from twitter_handle
-- ✅ `alter table experts add column if not exists is_fantasy_guru boolean default false;`
-- ✅ `alter table fantasy_takes add column if not exists source_url text;`
-- ✅ `alter table take_score_config add column if not exists aggregation_method text not null default 'mean';`
-- ✅ `flip_flops` table creation
+- [ ] **Bulk re-rate all fantasy takes** to fix stale "2025 NFL" sport_season labels
 
 ### Features to Build
-- [ ] **Scraper attribution logic** — when a tweet from a show account quotes an analyst, attribute the take to the analyst (uses show_accounts table). Python pipeline integration.
+- [ ] **Scraper attribution logic** — when a tweet from a show account quotes an analyst, attribute the take to the analyst
 - [ ] **Fantasy take import flow** — bulk import from show accounts / Twitter scrape directly in admin
 - [ ] **TakeScore lifetime sparkline** — currently a placeholder SVG; wire up real historical data
 - [ ] **Expert edit page** improvements — slug field editable in admin, allow manual override
@@ -77,4 +96,3 @@
 - [ ] **Fantasy leaderboard** on the /fantasy page — ranked list of fantasy gurus by overall grade
 - [ ] **Public take submission** — allow users to submit takes for experts (currently admin-only)
 - [ ] **Follow feed** — logged-in users see takes from analysts they follow
-- [ ] **Mobile admin** — sidebar collapses to hamburger on small screens

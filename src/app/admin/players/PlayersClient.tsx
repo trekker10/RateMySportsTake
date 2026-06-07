@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createPlayer,
   updatePlayer,
@@ -322,6 +323,7 @@ function MergeModal({
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function PlayersClient({ initialPlayers }: { initialPlayers: Player[] }) {
+  const router = useRouter();
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [search, setSearch] = useState("");
   const [drawerPlayer, setDrawerPlayer] = useState<Player | null | "new">(null);
@@ -492,7 +494,7 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
       {/* Table */}
       <div className="rounded-xl border border-gray-300 overflow-hidden" style={{ backgroundColor: "#f5f0e6" }}>
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[32px_2fr_1fr_1fr_80px_80px_120px] gap-4 px-4 py-2.5 border-b border-gray-300 bg-gray-100 items-center">
+        <div className="hidden md:grid grid-cols-[32px_2fr_1fr_1fr_80px_80px_180px] gap-4 px-4 py-2.5 border-b border-gray-300 bg-gray-100 items-center">
           <input
             type="checkbox"
             checked={allFilteredSelected}
@@ -518,7 +520,7 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
             return (
               <div
                 key={player.player_id}
-                className={`px-4 py-3 md:grid md:grid-cols-[32px_2fr_1fr_1fr_80px_80px_120px] md:gap-4 md:items-center flex flex-col gap-2 transition-colors ${isSelected ? "bg-blue-50" : ""}`}
+                className={`px-4 py-3 md:grid md:grid-cols-[32px_2fr_1fr_1fr_80px_80px_180px] md:gap-4 md:items-center flex flex-col gap-2 transition-colors ${isSelected ? "bg-blue-50" : ""}`}
               >
                 {/* Checkbox */}
                 <input
@@ -558,6 +560,12 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => router.push(`/admin/takes?playerFilter=${encodeURIComponent(player.canonical_name)}`)}
+                    className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:border-gray-500 hover:text-gray-900 transition-colors"
+                  >
+                    View Takes
+                  </button>
                   <button onClick={(e) => { setDrawerAnchorY(e.clientY); setDrawerPlayer(player); }}
                     className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:border-gray-500 hover:text-gray-900 transition-colors">
                     Edit

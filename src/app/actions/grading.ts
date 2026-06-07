@@ -129,13 +129,14 @@ export interface AdminTake {
   expert_id: string;
   source_url: string | null;
   source_type: string | null;
+  player_tags: string[] | null;
 }
 
 export async function getTakesForExpert(expertId: string): Promise<AdminTake[]> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name), player_tags")
     .eq("expert_id", expertId)
     .order("date_made", { ascending: false });
 
@@ -166,7 +167,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
 
   const { data } = await supabase
     .from("takes")
-    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name)")
+    .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, experts(name), player_tags")
     .order("date_made", { ascending: false });
 
   return (data ?? []).map((t) => ({

@@ -43,8 +43,8 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
   const [notes, setNotes] = useState(take.outcome_notes ?? "");
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [playerTags, setPlayerTags] = React.useState<string[]>(take.player_tags ?? []);
-  const [tagInput, setTagInput] = React.useState("");
+  const [playerTags, setPlayerTags] = useState<string[]>(take.player_tags ?? []);
+  const [tagInput, setTagInput] = useState("");
 
   function handleSave() {
     startTransition(async () => {

@@ -64,11 +64,12 @@ function AliasInput({
 
 // ── Player drawer form ────────────────────────────────────────────────────────
 function PlayerDrawer({
-  player, onClose, onSaved,
+  player, onClose, onSaved, anchorY,
 }: {
   player: Player | null;
   onClose: () => void;
   onSaved: (p: Player) => void;
+  anchorY?: number;
 }) {
   const isEdit = !!player;
   const [canonicalName, setCanonicalName] = useState(player?.canonical_name ?? "");
@@ -103,8 +104,18 @@ function PlayerDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl border-l border-gray-200 flex flex-col">
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <aside
+        className="fixed z-50 w-full max-w-md bg-white shadow-2xl border border-gray-200 rounded-xl flex flex-col"
+        style={{
+          right: "1rem",
+          top: Math.min(
+            Math.max((anchorY ?? window.innerHeight / 2) - 40, 8),
+            window.innerHeight - 520
+          ),
+          maxHeight: "calc(100vh - 2rem)",
+        }}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
           <h2 className="font-semibold text-gray-900 text-base">
             {isEdit ? `Edit — ${player!.canonical_name}` : "Add Player"}
@@ -314,6 +325,7 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [search, setSearch] = useState("");
   const [drawerPlayer, setDrawerPlayer] = useState<Player | null | "new">(null);
+  const [drawerAnchorY, setDrawerAnchorY] = useState<number | undefined>(undefined);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [isImporting, startImport] = useTransition();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -428,7 +440,7 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:border-gray-500 hover:text-gray-900 disabled:opacity-50 transition-colors">
             {isImporting ? "Importing…" : "⬇ Import from tags"}
           </button>
-          <button onClick={() => setDrawerPlayer("new")}
+          <button onClick={(e) => { setDrawerAnchorY(e.clientY); setDrawerPlayer("new"); }}
             className="rounded-lg bg-gray-900 text-white px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition-colors">
             + Add Player
           </button>
@@ -546,7 +558,7 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setDrawerPlayer(player)}
+                  <button onClick={(e) => { setDrawerAnchorY(e.clientY); setDrawerPlayer(player); }}
                     className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:border-gray-500 hover:text-gray-900 transition-colors">
                     Edit
                   </button>
@@ -578,8 +590,9 @@ export default function PlayersClient({ initialPlayers }: { initialPlayers: Play
       {drawerPlayer !== null && (
         <PlayerDrawer
           player={drawerPlayer === "new" ? null : drawerPlayer}
-          onClose={() => setDrawerPlayer(null)}
+          onClose={() => { setDrawerPlayer(null); setDrawerAnchorY(undefined); }}
           onSaved={handleSaved}
+          anchorY={drawerAnchorY}
         />
       )}
 

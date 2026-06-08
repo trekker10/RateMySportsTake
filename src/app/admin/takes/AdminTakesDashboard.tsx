@@ -1128,6 +1128,7 @@ function FantasyTakesPanel() {
   const [gradingAllProgress, setGradingAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [ratingAllFantasy, setRatingAllFantasy] = useState(false);
   const [ratingAllProgress, setRatingAllProgress] = useState<{ done: number; total: number } | null>(null);
+  const [clearingTeaserId, setClearingTeaserId] = useState<string | null>(null);
   const [fSortKey, setFSortKey] = useState<"created_at" | "date_made" | "resolution_date" | "expert_name">("created_at");
   const [fSortAsc, setFSortAsc] = useState(false);
 
@@ -1557,19 +1558,29 @@ function FantasyTakesPanel() {
                       )}
 
                       {/* Remove teaser tag button — clears content_type so take becomes gradeable */}
-                      {(take as FantasyTakeRow).content_type === "teaser_list" && (
+                      {(take as FantasyTakeRow).content_type === "teaser_list" && clearingTeaserId !== take.fantasy_take_id && (
                         <button
-                          onClick={async () => {
-                            const result = await saveFantasyTakeEdits(take.fantasy_take_id, { content_type: null });
-                            if (result.success) {
-                              updateFantasyTake(take.fantasy_take_id, { content_type: null } as Partial<FantasyTakeRow>);
-                            }
+                          onClick={() => {
+                            setClearingTeaserId(take.fantasy_take_id);
+                            saveFantasyTakeEdits(take.fantasy_take_id, { content_type: null })
+                              .then(result => {
+                                if (result.success) {
+                                  updateFantasyTake(take.fantasy_take_id, { content_type: null } as Partial<FantasyTakeRow>);
+                                } else {
+                                  alert(`Failed to clear teaser tag: ${result.error}`);
+                                }
+                              })
+                              .catch(err => alert(`Error: ${err}`))
+                              .finally(() => setClearingTeaserId(null));
                           }}
                           className="rounded-lg border border-orange-300 text-orange-600 hover:border-orange-500 hover:bg-orange-50 px-3 py-1 text-xs transition-colors"
                           title="Remove teaser tag so this take can be graded"
                         >
                           ✕ Teaser
                         </button>
+                      )}
+                      {clearingTeaserId === take.fantasy_take_id && (
+                        <span className="text-xs text-orange-500 animate-pulse">Clearing…</span>
                       )}
 
                       {/* AI Grade it button — only for unresolved non-teasers */}

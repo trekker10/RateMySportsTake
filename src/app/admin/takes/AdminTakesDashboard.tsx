@@ -1107,7 +1107,7 @@ function FantasyTakesPanel() {
   const [takes, setTakes] = useState<FantasyTakeRow[] | null>(null);
   const [isLoading, startLoad] = useTransition();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "pending" | "resolved" | "overdue">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "resolved" | "overdue" | "teasers">("all");
   const [gradingId, setGradingId] = useState<string | null>(null);
   const [gradeNote, setGradeNote] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1284,9 +1284,10 @@ function FantasyTakesPanel() {
 
   const filtered = allTakes
     .filter(t => {
-      if (filter === "pending")  return t.outcome_status === "pending";
+      if (filter === "pending")  return t.outcome_status === "pending" && (t as FantasyTakeRow).content_type !== "teaser_list";
       if (filter === "resolved") return t.outcome_status === "resolved";
       if (filter === "overdue")  return t.outcome_status === "pending" && !!t.resolution_date && t.resolution_date <= todayF;
+      if (filter === "teasers")  return (t as FantasyTakeRow).content_type === "teaser_list";
       return true;
     })
     .filter(t => {
@@ -1310,9 +1311,10 @@ function FantasyTakesPanel() {
 
   const counts = {
     all:      allTakes.length,
-    pending:  allTakes.filter(t => t.outcome_status === "pending").length,
+    pending:  allTakes.filter(t => t.outcome_status === "pending" && (t as FantasyTakeRow).content_type !== "teaser_list").length,
     resolved: allTakes.filter(t => t.outcome_status === "resolved").length,
     overdue:  allTakes.filter(t => t.outcome_status === "pending" && !!t.resolution_date && t.resolution_date <= todayF).length,
+    teasers:  allTakes.filter(t => (t as FantasyTakeRow).content_type === "teaser_list").length,
   };
 
   return (
@@ -1380,18 +1382,22 @@ function FantasyTakesPanel() {
 
       {/* Filter tabs + select-all */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["all", "pending", "resolved", "overdue"] as const).map(f => (
+        {(["all", "pending", "resolved", "overdue", "teasers"] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filter === f
-                ? f === "overdue" ? "bg-red-700 text-white" : "text-white"
+                ? f === "overdue" ? "bg-red-700 text-white"
+                  : f === "teasers" ? "bg-orange-600 text-white"
+                  : "text-white"
                 : f === "overdue" && counts.overdue > 0
                   ? "text-red-600 border border-red-300 hover:border-red-500 hover:text-red-700"
-                  : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
+                  : f === "teasers" && counts.teasers > 0
+                    ? "text-orange-600 border border-orange-300 hover:border-orange-500 hover:text-orange-700"
+                    : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
             }`}
-            style={filter === f && f !== "overdue" ? { backgroundColor: "#15803d" } : {}}
+            style={filter === f && f !== "overdue" && f !== "teasers" ? { backgroundColor: "#15803d" } : {}}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-70">({counts[f]})</span>
           </button>
@@ -1480,6 +1486,11 @@ function FantasyTakesPanel() {
                       <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: "#15803d" }}>
                         {CATEGORY_LABELS[take.category] ?? take.category}
                       </span>
+                      {(take as FantasyTakeRow).content_type === "teaser_list" && (
+                        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white bg-orange-500">
+                          Teaser — No Players
+                        </span>
+                      )}
                       {take.player_name && (
                         <span className="text-gray-700 text-xs font-semibold">
                           {take.player_name}{take.player_position ? ` (${take.player_position})` : ""}
@@ -1539,8 +1550,8 @@ function FantasyTakesPanel() {
                         <span className="text-xs text-red-500">{aiRateError[take.fantasy_take_id]}</span>
                       )}
 
-                      {/* AI Grade it button — only for unresolved */}
-                      {!isResolved && aiGradingId !== take.fantasy_take_id && (
+                      {/* AI Grade it button — only for unresolved non-teasers */}
+                      {!isResolved && (take as FantasyTakeRow).content_type !== "teaser_list" && aiGradingId !== take.fantasy_take_id && (
                         <button
                           onClick={() => handleAiGrade(take.fantasy_take_id)}
                           disabled={aiGradingId !== null || aiRatingId !== null}
@@ -1552,8 +1563,8 @@ function FantasyTakesPanel() {
                       {aiGradingId === take.fantasy_take_id && (
                         <span className="text-xs text-blue-500 animate-pulse">Searching…</span>
                       )}
-                      {/* Manual Grade panel toggle */}
-                      {!isResolved && (
+                      {/* Manual Grade panel toggle — hidden for teasers */}
+                      {!isResolved && (take as FantasyTakeRow).content_type !== "teaser_list" && (
                         <button
                           onClick={() => { setExpandedId(isGradeExpanded ? null : take.fantasy_take_id); setEditExpandedId(null); }}
                           className={`rounded-lg border px-3 py-1 text-xs transition-colors ${

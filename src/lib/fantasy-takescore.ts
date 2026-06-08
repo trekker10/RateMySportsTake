@@ -141,6 +141,7 @@ export interface FantasyScoredTake {
   format: "dynasty" | "redraft" | "both" | null;
   source_url: string | null;
   created_at: string | null;
+  content_type: string | null;
 }
 
 // ─── Score computation ────────────────────────────────────────────────────────

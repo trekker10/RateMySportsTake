@@ -1562,10 +1562,10 @@ function FantasyTakesPanel() {
                         <button
                           onClick={() => {
                             setClearingTeaserId(take.fantasy_take_id);
-                            saveFantasyTakeEdits(take.fantasy_take_id, { content_type: "take" })
+                            saveFantasyTakeEdits(take.fantasy_take_id, { content_type: "standard" })
                               .then(result => {
                                 if (result.success) {
-                                  updateFantasyTake(take.fantasy_take_id, { content_type: "take" } as Partial<FantasyTakeRow>);
+                                  updateFantasyTake(take.fantasy_take_id, { content_type: "standard" } as Partial<FantasyTakeRow>);
                                 } else {
                                   alert(`Failed to clear teaser tag: ${result.error}`);
                                 }

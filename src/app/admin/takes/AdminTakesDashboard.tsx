@@ -1189,10 +1189,18 @@ function FantasyTakesPanel() {
     if (result.success && result.boldness_score != null) {
       setTakes(prev =>
         prev!.map(t => t.fantasy_take_id === takeId
-          ? { ...t, boldness_score: result.boldness_score!, } as FantasyTakeRow
+          ? {
+              ...t,
+              boldness_score: result.boldness_score!,
+              ...(result.grading_criteria != null
+                ? { grading_criteria: result.grading_criteria } as Partial<FantasyTakeRow>
+                : {}),
+            } as FantasyTakeRow
           : t
         )
       );
+      // Close edit panel so it re-mounts with the fresh grading_criteria value
+      setEditExpandedId(prev => prev === takeId ? null : prev);
     } else {
       setAiRateError(prev => ({ ...prev, [takeId]: result.error ?? "AI rating failed" }));
     }

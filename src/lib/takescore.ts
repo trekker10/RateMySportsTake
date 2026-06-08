@@ -105,6 +105,61 @@ export function scoreToGrade(score: number, cfg?: Partial<TakeScoreConfig>): str
   return "F";
 }
 
+// ─── Bell-curve grading ───────────────────────────────────────────────────────
+
+/**
+ * Given a list of {id, score} pairs, compute a bell-curve adjusted letter grade
+ * for each analyst relative to the peer group.
+ *
+ * Z-score breakpoints (evenly distributed across the 9-grade scale):
+ *   ≥ +2.0 SD → A
+ *   ≥ +1.5 SD → B+
+ *   ≥ +1.0 SD → B
+ *   ≥ +0.5 SD → B−
+ *   ≥  0.0 SD → C+
+ *   ≥ −0.5 SD → C
+ *   ≥ −1.0 SD → C−
+ *   ≥ −1.5 SD → D
+ *   <  −1.5 SD → F
+ *
+ * Returns a Map<id, grade>. Individual take scores are never read or modified.
+ */
+export function computeCurvedGrades(
+  pool: Array<{ id: string; score: number }>,
+): Map<string, string> {
+  const result = new Map<string, string>();
+  if (pool.length === 0) return result;
+
+  // Mean
+  const mean = pool.reduce((s, p) => s + p.score, 0) / pool.length;
+
+  // Population std dev
+  const variance = pool.reduce((s, p) => s + Math.pow(p.score - mean, 2), 0) / pool.length;
+  const stdDev = Math.sqrt(variance);
+
+  for (const { id, score } of pool) {
+    let grade: string;
+    if (stdDev === 0) {
+      // All scores identical — everyone gets the middle grade
+      grade = "C+";
+    } else {
+      const z = (score - mean) / stdDev;
+      if      (z >= 2.0)  grade = "A";
+      else if (z >= 1.5)  grade = "B+";
+      else if (z >= 1.0)  grade = "B";
+      else if (z >= 0.5)  grade = "B−";
+      else if (z >= 0.0)  grade = "C+";
+      else if (z >= -0.5) grade = "C";
+      else if (z >= -1.0) grade = "C−";
+      else if (z >= -1.5) grade = "D";
+      else                grade = "F";
+    }
+    result.set(id, grade);
+  }
+
+  return result;
+}
+
 export function gradeColor(grade: string): string {
   if (grade === "A")  return "#0a7a3b";
   if (grade === "B+") return "#16a34a";

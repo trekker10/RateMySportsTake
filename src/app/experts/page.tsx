@@ -5,7 +5,8 @@ import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
-import { scoreToGrade, gradeColor } from "@/lib/takescore";
+import { getFlag } from "@/app/actions/flags";
+import { scoreToGrade, gradeColor, computeCurvedGrades } from "@/lib/takescore";
 import TakeCard from "@/components/TakeCard";
 
 const RED = "#e2241a";
@@ -40,13 +41,29 @@ export default async function ExpertsPage({
     expertsQuery = expertsQuery.contains("sport_focus", [activeSport]);
   }
 
-  const [{ data: experts }, { data: recentTakes }] = await Promise.all([
+  const [{ data: experts }, { data: recentTakes }, curveModeEnabled, { data: nflPool }] = await Promise.all([
     expertsQuery,
     supabase
       .from("takes")
       .select("expert_id, grade, outcome_status, difficulty_score")
       .gte("date_made", thirtyDaysAgo),
+    getFlag("curve_mode_enabled"),
+    // Always fetch the full NFL analyst pool for curve calculation (regardless of active sport filter)
+    supabase
+      .from("experts")
+      .select("expert_id, overall_rating")
+      .eq("verified", true)
+      .neq("is_fantasy_guru", true)
+      .contains("sport_focus", ["NFL"])
+      .gt("overall_rating", 0),
   ]);
+
+  // Compute curved grades for NFL analysts when curve mode is on
+  const curvedGrades: Map<string, string> = curveModeEnabled
+    ? computeCurvedGrades(
+        (nflPool ?? []).map((e) => ({ id: e.expert_id, score: e.overall_rating }))
+      )
+    : new Map();
 
   const expertIds = (experts ?? []).map((e) => e.expert_id);
 
@@ -196,14 +213,24 @@ export default async function ExpertsPage({
             <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
             <div className="font-mono text-[10px] tracking-[0.15em]">OUTLET</div>
             <div className="font-mono text-[10px] tracking-[0.15em]">TAKES</div>
-            <div className="font-mono text-[10px] tracking-[0.15em]">TAKESCORE</div>
+            <div className="font-mono text-[10px] tracking-[0.15em] flex items-center gap-1.5">
+              TAKESCORE
+              {curveModeEnabled && (
+                <span className="rounded px-1 py-0.5 text-[8px] font-bold tracking-wider bg-indigo-600 text-white">CURVED</span>
+              )}
+            </div>
           </div>
           {/* Mobile header */}
           <div className="grid md:hidden items-center px-4 py-2.5 bg-gray-900 text-white"
             style={{ gridTemplateColumns: "44px 1fr 80px" }}>
             <div className="font-mono text-[10px] tracking-[0.15em]">RK</div>
             <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
-            <div className="font-mono text-[10px] tracking-[0.15em]">SCORE</div>
+            <div className="font-mono text-[10px] tracking-[0.15em] flex items-center gap-1">
+              SCORE
+              {curveModeEnabled && (
+                <span className="rounded px-1 py-0.5 text-[7px] font-bold bg-indigo-600 text-white">~</span>
+              )}
+            </div>
           </div>
 
           {rows.length > 0 ? rows.map((e, i) => (
@@ -241,8 +268,8 @@ export default async function ExpertsPage({
                   {e.sport_focus?.length > 0 && <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.sport_focus.join(", ")}</p>}
                 </div>
                 <div className="font-black text-xl text-gray-900">{e.total_takes}</div>
-                <div className="font-black text-2xl" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
-                  {e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}
+                <div className="font-black text-2xl" style={{ color: e.overall_rating > 0 ? gradeColor(curvedGrades.get(e.expert_id) ?? scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                  {e.overall_rating > 0 ? (curvedGrades.get(e.expert_id) ?? scoreToGrade(e.overall_rating, gradeConfig)) : "—"}
                 </div>
               </div>
 
@@ -261,8 +288,8 @@ export default async function ExpertsPage({
                   <p className="font-black text-sm uppercase tracking-tight truncate">{e.name}</p>
                   <p className="font-mono text-[9px] text-gray-400 tracking-wider truncate">{e.outlet ?? e.sport_focus?.[0] ?? "—"}</p>
                 </div>
-                <span className="font-black text-2xl shrink-0" style={{ color: e.overall_rating > 0 ? gradeColor(scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
-                  {e.overall_rating > 0 ? scoreToGrade(e.overall_rating, gradeConfig) : "—"}
+                <span className="font-black text-2xl shrink-0" style={{ color: e.overall_rating > 0 ? gradeColor(curvedGrades.get(e.expert_id) ?? scoreToGrade(e.overall_rating, gradeConfig)) : "#9ca3af" }}>
+                  {e.overall_rating > 0 ? (curvedGrades.get(e.expert_id) ?? scoreToGrade(e.overall_rating, gradeConfig)) : "—"}
                 </span>
               </div>
             </Link>

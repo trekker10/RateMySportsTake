@@ -106,7 +106,7 @@ type TakeState = AdminTake & {
   rateStatus: "idle" | "rating" | "done" | "error";
   errorMsg?: string;
 };
-type Filter = "all" | "pending" | "graded" | "unrated" | "overdue";
+type Filter = "all" | "pending" | "graded" | "unrated" | "overdue" | "no_date";
 type TakeTypeTab = "analyst" | "fantasy";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -526,6 +526,7 @@ export default function AdminTakesDashboard() {
       if (filter === "graded")   return t.outcome_status !== "pending";
       if (filter === "unrated")  return t.rating_status !== "rated" && t.grade == null && !(t.grading_criteria && t.time_horizon_date);
       if (filter === "overdue")  return t.outcome_status === "pending" && !!t.time_horizon_date && t.time_horizon_date <= today;
+      if (filter === "no_date")  return t.outcome_status === "pending" && !t.time_horizon_date;
       return true;
     })
     .filter((t) => {
@@ -569,6 +570,7 @@ export default function AdminTakesDashboard() {
     graded:  allTakes.filter((t) => t.outcome_status !== "pending").length,
     unrated: allTakes.filter((t) => t.rating_status !== "rated" && t.grade == null && !(t.grading_criteria && t.time_horizon_date)).length,
     overdue: allTakes.filter((t) => t.outcome_status === "pending" && !!t.time_horizon_date && t.time_horizon_date <= today).length,
+    no_date: allTakes.filter((t) => t.outcome_status === "pending" && !t.time_horizon_date).length,
   };
 
   return (
@@ -673,19 +675,23 @@ export default function AdminTakesDashboard() {
 
       {/* Filter tabs + select-all */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["all", "pending", "graded", "unrated", "overdue"] as Filter[]).map((f) => (
+        {(["all", "pending", "graded", "unrated", "overdue", "no_date"] as Filter[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filter === f
-                ? f === "overdue" ? "bg-red-700 text-white" : "bg-gray-900 text-white"
+                ? f === "overdue" ? "bg-red-700 text-white"
+                  : f === "no_date" ? "bg-gray-500 text-white"
+                  : "bg-gray-900 text-white"
                 : f === "overdue" && counts.overdue > 0
                   ? "text-red-600 border border-red-300 hover:border-red-500 hover:text-red-700"
-                  : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
+                  : f === "no_date" && counts.no_date > 0
+                    ? "text-gray-600 border border-gray-400 hover:border-gray-600 hover:text-gray-800"
+                    : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-60">({counts[f]})</span>
+            {f === "no_date" ? "No Date" : f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-60">({counts[f]})</span>
           </button>
         ))}
         {filtered.length > 0 && (

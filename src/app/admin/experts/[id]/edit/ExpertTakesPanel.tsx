@@ -11,7 +11,7 @@ type TakeState = AdminTake & {
   errorMsg?: string;
 };
 
-type Filter = "all" | "pending" | "graded" | "unrated";
+type Filter = "all" | "pending" | "graded" | "unrated" | "no_date";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending:         { label: "PENDING",      color: "#d97706" },
@@ -238,6 +238,7 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
     if (filter === "pending") return t.outcome_status === "pending";
     if (filter === "graded")  return t.outcome_status !== "pending";
     if (filter === "unrated") return t.rating_status !== "rated";
+    if (filter === "no_date") return t.outcome_status === "pending" && !t.time_horizon_date;
     return true;
   });
 
@@ -246,6 +247,7 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
     pending: allTakes.filter(t => t.outcome_status === "pending").length,
     graded:  allTakes.filter(t => t.outcome_status !== "pending").length,
     unrated: allTakes.filter(t => t.rating_status !== "rated").length,
+    no_date: allTakes.filter(t => t.outcome_status === "pending" && !t.time_horizon_date).length,
   };
 
   return (
@@ -328,15 +330,19 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
-        {(["all", "pending", "graded", "unrated"] as Filter[]).map(f => (
+        {(["all", "pending", "graded", "unrated", "no_date"] as Filter[]).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filter === f ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
+              filter === f
+                ? f === "no_date" ? "bg-gray-500 text-white" : "bg-gray-900 text-white"
+                : f === "no_date" && counts.no_date > 0
+                  ? "text-gray-600 border border-gray-400 hover:border-gray-600 hover:text-gray-800"
+                  : "text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500"
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-60">({counts[f]})</span>
+            {f === "no_date" ? "No Date" : f.charAt(0).toUpperCase() + f.slice(1)} <span className="opacity-60">({counts[f]})</span>
           </button>
         ))}
       </div>

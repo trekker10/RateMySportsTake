@@ -146,6 +146,7 @@ export async function saveFantasyTakeEdits(
     grader_note?: string | null;
     grading_criteria?: string | null;
     source_url?: string | null;
+    content_type?: string | null;
   },
 ): Promise<{ success: boolean; error?: string }> {
   const isAdmin = await checkIsAdmin();

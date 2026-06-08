@@ -1556,6 +1556,22 @@ function FantasyTakesPanel() {
                         <span className="text-xs text-red-500">{aiRateError[take.fantasy_take_id]}</span>
                       )}
 
+                      {/* Remove teaser tag button — clears content_type so take becomes gradeable */}
+                      {(take as FantasyTakeRow).content_type === "teaser_list" && (
+                        <button
+                          onClick={async () => {
+                            const result = await saveFantasyTakeEdits(take.fantasy_take_id, { content_type: null });
+                            if (result.success) {
+                              updateFantasyTake(take.fantasy_take_id, { content_type: null } as Partial<FantasyTakeRow>);
+                            }
+                          }}
+                          className="rounded-lg border border-orange-300 text-orange-600 hover:border-orange-500 hover:bg-orange-50 px-3 py-1 text-xs transition-colors"
+                          title="Remove teaser tag so this take can be graded"
+                        >
+                          ✕ Teaser
+                        </button>
+                      )}
+
                       {/* AI Grade it button — only for unresolved non-teasers */}
                       {!isResolved && (take as FantasyTakeRow).content_type !== "teaser_list" && aiGradingId !== take.fantasy_take_id && (
                         <button

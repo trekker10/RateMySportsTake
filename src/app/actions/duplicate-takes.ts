@@ -63,9 +63,13 @@ export async function checkDuplicateTakes(expertId: string): Promise<{
     }
 
     // ── 2. Semantic duplicates via AI ────────────────────────────────────
+    // Sanitize helper: remove lone UTF-16 surrogates that cause JSON parse errors in the API
+    const sanitize = (s: string) =>
+      s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "�");
+
     // Limit to 60 takes to keep context manageable; most recent first (already ordered)
     const takeSample = takes.slice(0, 60);
-    const takeList = takeSample.map(t => `${t.take_id}\t${t.raw_text.slice(0, 200)}`).join("\n");
+    const takeList = takeSample.map(t => `${t.take_id}\t${sanitize(t.raw_text).slice(0, 200)}`).join("\n");
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-6",

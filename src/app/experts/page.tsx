@@ -213,24 +213,14 @@ export default async function ExpertsPage({
             <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
             <div className="font-mono text-[10px] tracking-[0.15em]">OUTLET</div>
             <div className="font-mono text-[10px] tracking-[0.15em]">TAKES</div>
-            <div className="font-mono text-[10px] tracking-[0.15em] flex items-center gap-1.5">
-              TAKESCORE
-              {curveModeEnabled && (
-                <span className="rounded px-1 py-0.5 text-[8px] font-bold tracking-wider bg-indigo-600 text-white">CURVED</span>
-              )}
-            </div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">TAKESCORE</div>
           </div>
           {/* Mobile header */}
           <div className="grid md:hidden items-center px-4 py-2.5 bg-gray-900 text-white"
             style={{ gridTemplateColumns: "44px 1fr 80px" }}>
             <div className="font-mono text-[10px] tracking-[0.15em]">RK</div>
             <div className="font-mono text-[10px] tracking-[0.15em]">ANALYST</div>
-            <div className="font-mono text-[10px] tracking-[0.15em] flex items-center gap-1">
-              SCORE
-              {curveModeEnabled && (
-                <span className="rounded px-1 py-0.5 text-[7px] font-bold bg-indigo-600 text-white">~</span>
-              )}
-            </div>
+            <div className="font-mono text-[10px] tracking-[0.15em]">SCORE</div>
           </div>
 
           {rows.length > 0 ? rows.map((e, i) => (

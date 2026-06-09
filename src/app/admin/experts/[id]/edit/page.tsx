@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import ExpertEditForm from "./ExpertEditForm";
 import FindTakesPanel from "./FindTakesPanel";
 import ExpertTakesPanel from "./ExpertTakesPanel";
+import FantasyExpertTakesPanel from "./FantasyExpertTakesPanel";
 
 export default async function ExpertEditPage({
   params,
@@ -35,9 +36,12 @@ export default async function ExpertEditPage({
       <ExpertEditForm expert={expert} />
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">
-          Takes ({expert.name})
+          {expert.is_fantasy_guru ? "Fantasy Takes" : "Takes"} ({expert.name})
         </h2>
-        <ExpertTakesPanel expertId={expert.expert_id} />
+        {expert.is_fantasy_guru
+          ? <FantasyExpertTakesPanel expertId={expert.expert_id} />
+          : <ExpertTakesPanel expertId={expert.expert_id} />
+        }
       </div>
 
       <div>

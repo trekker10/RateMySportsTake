@@ -6,6 +6,7 @@ import { computeAccolades } from "@/lib/accolades";
 import type { Accolade } from "@/lib/accolades";
 import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
+import { getFlag } from "@/app/actions/flags";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
 
 export const dynamic = "force-dynamic";
@@ -50,12 +51,13 @@ export default async function FantasyPage({
 
   if (q) expertsQuery = expertsQuery.or(`name.ilike.%${q}%,outlet.ilike.%${q}%`);
 
-  const [{ data: experts }, { data: recentTakes }] = await Promise.all([
+  const [{ data: experts }, { data: recentTakes }, comingSoon] = await Promise.all([
     expertsQuery,
     supabase
       .from("takes")
       .select("expert_id, grade, outcome_status, difficulty_score")
       .gte("date_made", thirtyDaysAgo),
+    getFlag("fantasy_coming_soon"),
   ]);
 
   const expertIds = (experts ?? []).map((e) => e.expert_id);
@@ -106,7 +108,7 @@ export default async function FantasyPage({
   }
 
   return (
-    <div className="space-y-0">
+    <div className="relative space-y-0">
 
       {/* ── Header ── */}
       <div className="mb-5">
@@ -351,6 +353,36 @@ export default async function FantasyPage({
               {expertIds.length === 0 ? "No fantasy gurus found." : "No fantasy takes yet."}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Coming Soon overlay ── */}
+      {comingSoon && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center"
+          style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", backgroundColor: "rgba(255,255,255,0.45)" }}
+        >
+          {/* Stamp */}
+          <div
+            className="select-none pointer-events-none rotate-[-12deg]"
+            style={{
+              border: "6px solid #e2241a",
+              color: "#e2241a",
+              padding: "18px 36px",
+              fontFamily: "monospace",
+              fontSize: "clamp(2.5rem, 8vw, 5rem)",
+              fontWeight: 900,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              lineHeight: 1,
+              opacity: 0.88,
+              textShadow: "0 1px 0 rgba(0,0,0,0.12)",
+              boxShadow: "inset 0 0 0 4px #e2241a",
+              borderRadius: "4px",
+            }}
+          >
+            COMING<br />SOON
+          </div>
         </div>
       )}
 

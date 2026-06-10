@@ -376,6 +376,17 @@ export default function ExpertTakesPanel({ expertId }: { expertId: string }) {
                       {take.boldness_score != null && (
                         <span className="text-gray-400 text-xs">· B={take.boldness_score}</span>
                       )}
+                      {take.source_url && (
+                        <a
+                          href={take.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-xs text-blue-500 hover:text-blue-700 underline"
+                        >
+                          View source ↗
+                        </a>
+                      )}
                       {take.rating_status !== "rated" && take.grade == null && !(take.grading_criteria && take.time_horizon_date) && (
                         <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-100 text-amber-700 border border-amber-300">
                           NOT RATED YET

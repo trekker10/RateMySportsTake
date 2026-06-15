@@ -180,13 +180,18 @@ export async function POST(req: NextRequest) {
     messages: [{ role: "user", content: userContent }],
   });
 
-  const raw = (msg.content[0] as { text: string }).text.trim()
-    .replace(/^```json?\n?/, "").replace(/```$/, "");
+  const text = (msg.content[0] as { text: string }).text;
+
+  // Extract the first {...} block — handles markdown fences, preamble, trailing text
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    return NextResponse.json({ error: "Failed to parse classifier response", raw: text }, { status: 500 });
+  }
 
   try {
-    const result = JSON.parse(raw);
+    const result = JSON.parse(jsonMatch[0]);
     return NextResponse.json({ result });
   } catch {
-    return NextResponse.json({ error: "Failed to parse classifier response", raw }, { status: 500 });
+    return NextResponse.json({ error: "Failed to parse classifier response", raw: text }, { status: 500 });
   }
 }

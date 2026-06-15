@@ -110,6 +110,16 @@ function IconFootball() {
   );
 }
 
+function IconEval() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="14" rx="2"/>
+      <path d="M7 9h4M7 12h6M7 15h3"/>
+      <path d="M16 12l1.5 1.5L20 10" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -136,6 +146,7 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
         { label: "Grade Dashboard",      href: "/grade",                      icon: <IconGrade /> },
         { label: "TakeScore Admin",      href: "/admin/takescore",            icon: <IconScore /> },
         { label: "Fantasy TakeScore",    href: "/admin/fantasy-take-score",   icon: <IconFootball /> },
+        { label: "Eval Lab",             href: "/admin/eval-lab",             icon: <IconEval /> },
       ],
     },
     {

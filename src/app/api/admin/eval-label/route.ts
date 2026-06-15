@@ -6,14 +6,29 @@ export async function POST(req: NextRequest) {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { tweet_text, your_label, why, classifier_result, mode } =
-    await req.json() as {
-      tweet_text: string;
-      your_label: "yes" | "no" | "gray";
-      why?: string;
-      classifier_result?: Record<string, unknown>;
-      mode: "fantasy" | "standard";
-    };
+  const {
+    tweet_text,
+    your_label,
+    why,
+    classifier_result,
+    mode,
+    tweet_date,
+    resolution_verdict,
+    classifier_resolution_date,
+    correct_resolution_date,
+    resolution_note,
+  } = await req.json() as {
+    tweet_text: string;
+    your_label: "yes" | "no" | "gray";
+    why?: string;
+    classifier_result?: Record<string, unknown>;
+    mode: "fantasy" | "standard";
+    tweet_date?: string;
+    resolution_verdict?: "correct" | "wrong" | "adjust";
+    classifier_resolution_date?: string;
+    correct_resolution_date?: string;
+    resolution_note?: string;
+  };
 
   if (!tweet_text?.trim()) return NextResponse.json({ error: "tweet_text required" }, { status: 400 });
   if (!["yes", "no", "gray"].includes(your_label)) return NextResponse.json({ error: "invalid label" }, { status: 400 });
@@ -22,10 +37,15 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
 
   const { error } = await supabase.from(table).insert({
-    tweet_text: tweet_text.trim(),
+    tweet_text:               tweet_text.trim(),
     your_label,
-    why: why?.trim() || null,
-    classifier_result: classifier_result ?? null,
+    why:                      why?.trim() || null,
+    classifier_result:        classifier_result ?? null,
+    tweet_date:               tweet_date || null,
+    resolution_verdict:       resolution_verdict || null,
+    classifier_resolution_date: classifier_resolution_date || null,
+    correct_resolution_date:  correct_resolution_date || null,
+    resolution_note:          resolution_note?.trim() || null,
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

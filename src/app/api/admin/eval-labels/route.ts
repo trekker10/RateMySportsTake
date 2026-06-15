@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from(table)
-    .select("id, tweet_text, your_label, why, created_at")
+    .select("id, tweet_text, your_label, why, created_at, tweet_date, resolution_verdict, classifier_resolution_date, correct_resolution_date, resolution_note")
     .order("created_at", { ascending: false })
     .limit(20);
 

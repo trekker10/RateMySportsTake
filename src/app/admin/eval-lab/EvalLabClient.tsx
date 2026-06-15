@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 
 type Mode = "fantasy" | "standard";
 type Label = "yes" | "no" | "gray";
+type ResVerdict = "correct" | "wrong" | "adjust";
 
 interface ClassifierResult {
   // fantasy fields
@@ -31,13 +32,27 @@ interface ClassifierResult {
   season?: string | null;
 }
 
+interface ResolutionInfo {
+  sport_season: string;
+  timing_window: string;
+  resolution_date: string;
+  resolution_reasoning: string;
+}
+
 interface EvalRow {
   id: string;
   tweet_text: string;
   your_label: Label;
   why: string | null;
   created_at: string;
+  tweet_date: string | null;
+  resolution_verdict: ResVerdict | null;
+  classifier_resolution_date: string | null;
+  correct_resolution_date: string | null;
+  resolution_note: string | null;
 }
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const LABEL_STYLES: Record<Label, { bg: string; text: string; border: string }> = {
   yes:  { bg: "#dcfce7", text: "#166534", border: "#86efac" },
@@ -45,14 +60,30 @@ const LABEL_STYLES: Record<Label, { bg: string; text: string; border: string }> 
   gray: { bg: "#f3f4f6", text: "#374151", border: "#d1d5db" },
 };
 
+const RES_STYLES: Record<ResVerdict, { bg: string; text: string; border: string }> = {
+  correct: { bg: "#dcfce7", text: "#166534", border: "#86efac" },
+  wrong:   { bg: "#fee2e2", text: "#991b1b", border: "#fca5a5" },
+  adjust:  { bg: "#fef9c3", text: "#854d0e", border: "#fde047" },
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
 function LabelBadge({ label }: { label: Label }) {
   const s = LABEL_STYLES[label];
   return (
-    <span
-      className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase"
-      style={{ backgroundColor: s.bg, color: s.text, border: `1px solid ${s.border}` }}
-    >
+    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase whitespace-nowrap"
+      style={{ backgroundColor: s.bg, color: s.text, border: `1px solid ${s.border}` }}>
       {label}
+    </span>
+  );
+}
+
+function ResBadge({ verdict }: { verdict: ResVerdict }) {
+  const s = RES_STYLES[verdict];
+  return (
+    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase whitespace-nowrap"
+      style={{ backgroundColor: s.bg, color: s.text, border: `1px solid ${s.border}` }}>
+      {verdict}
     </span>
   );
 }
@@ -61,73 +92,95 @@ function ResultRow({ label, value }: { label: string; value: React.ReactNode }) 
   if (value === null || value === undefined || value === "") return null;
   return (
     <div className="flex gap-2 text-sm">
-      <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase w-32 shrink-0 pt-0.5">{label}</span>
+      <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase w-36 shrink-0 pt-0.5">{label}</span>
       <span className="text-gray-800">{value}</span>
     </div>
   );
 }
 
+const inputClass = "w-full rounded-lg border border-gray-300 focus:border-gray-600 px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none transition-colors";
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function EvalLabClient() {
-  const [mode, setMode] = useState<Mode>("fantasy");
-  const [tweet, setTweet] = useState("");
-  const [classifying, setClassifying] = useState(false);
-  const [result, setResult] = useState<ClassifierResult | null>(null);
+  const [mode, setMode]                 = useState<Mode>("fantasy");
+  const [tweet, setTweet]               = useState("");
+  const [tweetDate, setTweetDate]       = useState(() => new Date().toISOString().split("T")[0]);
+  const [classifying, setClassifying]   = useState(false);
+  const [result, setResult]             = useState<ClassifierResult | null>(null);
+  const [resolution, setResolution]     = useState<ResolutionInfo | null>(null);
   const [classifyError, setClassifyError] = useState<string | null>(null);
 
-  const [label, setLabel] = useState<Label | null>(null);
-  const [why, setWhy] = useState("");
-  const [saving, setSaving] = useState(false);
+  // Take label
+  const [label, setLabel]   = useState<Label | null>(null);
+  const [why, setWhy]       = useState("");
+
+  // Resolution label
+  const [resVerdict, setResVerdict]         = useState<ResVerdict>("correct");
+  const [correctResDate, setCorrectResDate] = useState("");
+  const [resNote, setResNote]               = useState("");
+
+  const [saving, setSaving]         = useState(false);
   const [savedToast, setSavedToast] = useState(false);
 
-  const [rows, setRows] = useState<EvalRow[]>([]);
+  const [rows, setRows]               = useState<EvalRow[]>([]);
   const [loadingRows, setLoadingRows] = useState(false);
 
-  // ── Fetch saved rows ─────────────────────────────────────────────────────
+  // ── Fetch saved rows ──────────────────────────────────────────────────────
   const fetchRows = useCallback(async () => {
     setLoadingRows(true);
     try {
       const res = await fetch(`/api/admin/eval-labels?mode=${mode}`);
       const data = await res.json();
       setRows(data.rows ?? []);
-    } catch {
-      // ignore
-    } finally {
-      setLoadingRows(false);
-    }
+    } catch { /* ignore */ }
+    finally { setLoadingRows(false); }
   }, [mode]);
 
   useEffect(() => {
     fetchRows();
-    // Reset classifier state when switching mode
     setResult(null);
+    setResolution(null);
     setClassifyError(null);
     setLabel(null);
     setWhy("");
+    setResVerdict("correct");
+    setCorrectResDate("");
+    setResNote("");
   }, [mode, fetchRows]);
 
-  // ── Classify ─────────────────────────────────────────────────────────────
+  // ── Classify ──────────────────────────────────────────────────────────────
   async function handleClassify() {
     if (!tweet.trim()) return;
     setClassifying(true);
     setResult(null);
+    setResolution(null);
     setClassifyError(null);
     setLabel(null);
+    setResVerdict("correct");
+    setCorrectResDate("");
 
     try {
       const res = await fetch("/api/admin/classify-tweet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweet_text: tweet, mode }),
+        body: JSON.stringify({ tweet_text: tweet, mode, tweet_date: tweetDate }),
       });
       const data = await res.json();
       if (data.error) { setClassifyError(data.error); return; }
       setResult(data.result);
+      setResolution(data.resolution ?? null);
 
-      // Pre-select label based on classifier output
+      // Pre-select take label from classifier output
       const isTake = mode === "fantasy" ? data.result?.is_fantasy_take : data.result?.is_take;
-      if (isTake === true) setLabel("yes");
+      if (isTake === true)  setLabel("yes");
       else if (isTake === false) setLabel("no");
       else setLabel(null);
+
+      // Pre-fill corrected date with classifier's suggestion for easy editing
+      if (data.resolution?.resolution_date) {
+        setCorrectResDate(data.resolution.resolution_date);
+      }
     } catch (e) {
       setClassifyError(String(e));
     } finally {
@@ -135,7 +188,7 @@ export default function EvalLabClient() {
     }
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
   async function handleSave() {
     if (!tweet.trim() || !label) return;
     setSaving(true);
@@ -143,15 +196,29 @@ export default function EvalLabClient() {
       const res = await fetch("/api/admin/eval-label", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweet_text: tweet, your_label: label, why, classifier_result: result, mode }),
+        body: JSON.stringify({
+          tweet_text:                 tweet,
+          your_label:                 label,
+          why,
+          classifier_result:          result,
+          mode,
+          tweet_date:                 tweetDate || null,
+          resolution_verdict:         resVerdict,
+          classifier_resolution_date: resolution?.resolution_date || null,
+          correct_resolution_date:    (resVerdict !== "correct" && correctResDate) ? correctResDate : null,
+          resolution_note:            resNote || null,
+        }),
       });
       const data = await res.json();
       if (data.ok) {
-        // Reset for next tweet
         setTweet("");
         setResult(null);
+        setResolution(null);
         setLabel(null);
         setWhy("");
+        setResVerdict("correct");
+        setCorrectResDate("");
+        setResNote("");
         setClassifyError(null);
         setSavedToast(true);
         setTimeout(() => setSavedToast(false), 2500);
@@ -173,9 +240,9 @@ export default function EvalLabClient() {
     fetchRows();
   }
 
-  // ── Derived display values ────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
   const isTake = result
-    ? mode === "fantasy" ? result.is_fantasy_take : result.is_take
+    ? (mode === "fantasy" ? result.is_fantasy_take : result.is_take)
     : null;
 
   const classifierLabelBadge = isTake === true
@@ -183,6 +250,8 @@ export default function EvalLabClient() {
     : isTake === false
     ? <span className="rounded-full px-2.5 py-0.5 text-xs font-bold bg-red-100 text-red-700 border border-red-300">NO — Not a Take</span>
     : null;
+
+  const showCorrectedDate = resVerdict === "wrong" || resVerdict === "adjust";
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -196,9 +265,7 @@ export default function EvalLabClient() {
       {/* ── Mode toggle ── */}
       <div className="flex border-2 border-gray-900 overflow-hidden w-fit">
         {(["fantasy", "standard"] as Mode[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
+          <button key={m} onClick={() => setMode(m)}
             className={`px-5 py-2 font-mono text-[11px] tracking-widest uppercase font-black transition-colors ${
               mode === m ? "bg-gray-900 text-white" : "bg-white text-gray-500 hover:text-gray-900"
             } ${m === "standard" ? "border-l-2 border-gray-900" : ""}`}
@@ -219,6 +286,18 @@ export default function EvalLabClient() {
           placeholder="Paste tweet here… (⌘+Enter to classify)"
           className="w-full rounded-lg border-2 border-gray-200 focus:border-gray-900 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none resize-none transition-colors"
         />
+
+        {/* Tweet date */}
+        <div className="flex items-center gap-3">
+          <label className="text-[10px] font-mono tracking-wider text-gray-500 uppercase shrink-0">Tweet date</label>
+          <input
+            type="date"
+            value={tweetDate}
+            onChange={e => setTweetDate(e.target.value)}
+            className="rounded-lg border border-gray-300 focus:border-gray-600 px-3 py-1.5 text-sm text-gray-900 focus:outline-none transition-colors"
+          />
+        </div>
+
         <button
           onClick={handleClassify}
           disabled={classifying || !tweet.trim()}
@@ -226,92 +305,160 @@ export default function EvalLabClient() {
         >
           {classifying ? "Classifying…" : "Classify ✦"}
         </button>
-        {classifyError && (
-          <p className="text-xs text-red-500">Error: {classifyError}</p>
-        )}
+        {classifyError && <p className="text-xs text-red-500">Error: {classifyError}</p>}
       </div>
 
       {/* ── Classifier result ── */}
       {result && (
-        <div className="rounded-xl border-2 border-gray-200 bg-gray-50 p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[10px] font-mono tracking-widest text-gray-400 uppercase">Classifier Result</h2>
-            {classifierLabelBadge}
+        <div className="rounded-xl border-2 border-gray-200 bg-gray-50 p-5 space-y-5">
+          {/* Take classification */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[10px] font-mono tracking-widest text-gray-400 uppercase">Classifier Result</h2>
+              {classifierLabelBadge}
+            </div>
+            <div className="space-y-2">
+              <ResultRow label="Confidence"    value={result.confidence != null ? `${(result.confidence * 100).toFixed(0)}%` : null} />
+              <ResultRow label="Summary"       value={result.summary} />
+              <ResultRow label="Category"      value={result.category} />
+              {mode === "fantasy" ? (
+                <>
+                  <ResultRow label="Player"       value={result.player_name ? `${result.player_name}${result.player_position ? ` (${result.player_position})` : ""}` : null} />
+                  <ResultRow label="Format"       value={result.format} />
+                  <ResultRow label="Timing"       value={result.timing_window} />
+                  <ResultRow label="Content Type" value={result.content_type} />
+                </>
+              ) : (
+                <>
+                  <ResultRow label="Subjects"      value={result.subjects?.length ? result.subjects.join(", ") : null} />
+                  <ResultRow label="Take Type"     value={result.take_subtype ?? result.take_type} />
+                  <ResultRow label="Time Horizon"  value={result.time_horizon} />
+                  <ResultRow label="Conf. Language" value={result.confidence_language} />
+                  <ResultRow label="Flags"         value={result.flags?.length ? result.flags.join(", ") : null} />
+                </>
+              )}
+              <ResultRow label="Boldness" value={result.boldness_score != null ? String(result.boldness_score) : (result.difficulty_score != null ? `${result.difficulty_score}/10` : null)} />
+              <ResultRow label="Season"   value={result.season} />
+              {result.grading_criteria && (
+                <div className="flex gap-2 text-sm">
+                  <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase w-36 shrink-0 pt-0.5">Grading Criteria</span>
+                  <span className="text-gray-700 text-xs leading-relaxed">{result.grading_criteria}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <ResultRow label="Confidence" value={result.confidence != null ? `${(result.confidence * 100).toFixed(0)}%` : null} />
-            <ResultRow label="Summary" value={result.summary} />
-            <ResultRow label="Category" value={result.category} />
-            {mode === "fantasy" ? (
-              <>
-                <ResultRow label="Player" value={result.player_name ? `${result.player_name}${result.player_position ? ` (${result.player_position})` : ""}` : null} />
-                <ResultRow label="Format" value={result.format} />
-                <ResultRow label="Timing" value={result.timing_window} />
-                <ResultRow label="Content Type" value={result.content_type} />
-              </>
-            ) : (
-              <>
-                <ResultRow label="Subjects" value={result.subjects?.length ? result.subjects.join(", ") : null} />
-                <ResultRow label="Take Type" value={result.take_subtype ?? result.take_type} />
-                <ResultRow label="Time Horizon" value={result.time_horizon} />
-                <ResultRow label="Confidence Lang" value={result.confidence_language} />
-                <ResultRow label="Flags" value={result.flags?.length ? result.flags.join(", ") : null} />
-              </>
-            )}
-            <ResultRow label="Boldness" value={result.boldness_score != null ? String(result.boldness_score) : (result.difficulty_score != null ? `${result.difficulty_score}/10` : null)} />
-            <ResultRow label="Season" value={result.season} />
-            {result.grading_criteria && (
-              <div className="flex gap-2 text-sm">
-                <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase w-32 shrink-0 pt-0.5">Grading Criteria</span>
-                <span className="text-gray-700 text-xs leading-relaxed">{result.grading_criteria}</span>
+          {/* Resolution date section */}
+          {resolution && (
+            <>
+              <div className="border-t border-gray-200" />
+              <div className="space-y-2">
+                <h2 className="text-[10px] font-mono tracking-widest text-gray-400 uppercase">Resolution Date Classification</h2>
+                <ResultRow label="Sport / Season"  value={resolution.sport_season} />
+                <ResultRow label="Timing Window"   value={resolution.timing_window} />
+                <ResultRow label="Suggested Date"  value={
+                  <span className="font-mono font-semibold text-gray-900">{resolution.resolution_date}</span>
+                } />
+                <ResultRow label="Reasoning"       value={
+                  <span className="text-gray-600 italic">{resolution.resolution_reasoning}</span>
+                } />
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       )}
 
       {/* ── Your label ── */}
       {result && (
-        <div className="space-y-4">
-          <h2 className="text-[10px] font-mono tracking-widest text-gray-400 uppercase">Your Label</h2>
-
-          {/* YES / NO / GRAY buttons */}
-          <div className="flex gap-2">
-            {(["yes", "no", "gray"] as Label[]).map((l) => {
-              const s = LABEL_STYLES[l];
-              const active = label === l;
-              return (
-                <button
-                  key={l}
-                  onClick={() => setLabel(l)}
-                  className={`px-6 py-2.5 rounded-lg font-black text-sm tracking-wider uppercase border-2 transition-all ${
-                    active ? "scale-105 shadow-sm" : "opacity-50 hover:opacity-80"
-                  }`}
-                  style={active
-                    ? { backgroundColor: s.bg, color: s.text, borderColor: s.border }
-                    : { backgroundColor: "#f9fafb", color: "#6b7280", borderColor: "#e5e7eb" }
-                  }
-                >
-                  {l === "yes" ? "✓ YES" : l === "no" ? "✗ NO" : "~ GRAY"}
-                </button>
-              );
-            })}
+        <div className="space-y-6">
+          {/* Take label */}
+          <div className="space-y-3">
+            <h2 className="text-[10px] font-mono tracking-widest text-gray-400 uppercase">Your Label — Take or Not?</h2>
+            <div className="flex gap-2">
+              {(["yes", "no", "gray"] as Label[]).map((l) => {
+                const s = LABEL_STYLES[l];
+                const active = label === l;
+                return (
+                  <button key={l} onClick={() => setLabel(l)}
+                    className={`px-6 py-2.5 rounded-lg font-black text-sm tracking-wider uppercase border-2 transition-all ${
+                      active ? "scale-105 shadow-sm" : "opacity-50 hover:opacity-80"
+                    }`}
+                    style={active
+                      ? { backgroundColor: s.bg, color: s.text, borderColor: s.border }
+                      : { backgroundColor: "#f9fafb", color: "#6b7280", borderColor: "#e5e7eb" }
+                    }
+                  >
+                    {l === "yes" ? "✓ YES" : l === "no" ? "✗ NO" : "~ GRAY"}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-mono tracking-wider text-gray-500 uppercase">
+                Why <span className="text-gray-400 normal-case font-normal">(optional but useful)</span>
+              </label>
+              <textarea
+                value={why}
+                onChange={e => setWhy(e.target.value)}
+                rows={2}
+                placeholder="e.g. Sarcasm, no real prediction / Thread teaser, players in replies / Clear falsifiable claim about player X"
+                className="w-full rounded-lg border border-gray-300 focus:border-gray-600 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none resize-none transition-colors"
+              />
+            </div>
           </div>
 
-          {/* Why textarea */}
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-mono tracking-wider text-gray-500 uppercase">Why <span className="text-gray-400 normal-case font-normal">(optional but useful)</span></label>
-            <textarea
-              value={why}
-              onChange={e => setWhy(e.target.value)}
-              rows={2}
-              placeholder="e.g. Sarcasm, no real prediction / Thread teaser, players in replies / Clear falsifiable claim about player X"
-              className="w-full rounded-lg border border-gray-300 focus:border-gray-600 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none resize-none transition-colors"
-            />
-          </div>
+          {/* Resolution date label */}
+          {resolution && (
+            <div className="space-y-3 pt-2 border-t border-gray-200">
+              <h2 className="text-[10px] font-mono tracking-widest text-gray-400 uppercase pt-2">Resolution Date — Correct?</h2>
+              <div className="flex gap-2">
+                {(["correct", "wrong", "adjust"] as ResVerdict[]).map((v) => {
+                  const s = RES_STYLES[v];
+                  const active = resVerdict === v;
+                  return (
+                    <button key={v} onClick={() => setResVerdict(v)}
+                      className={`px-5 py-2.5 rounded-lg font-black text-sm tracking-wider uppercase border-2 transition-all ${
+                        active ? "scale-105 shadow-sm" : "opacity-50 hover:opacity-80"
+                      }`}
+                      style={active
+                        ? { backgroundColor: s.bg, color: s.text, borderColor: s.border }
+                        : { backgroundColor: "#f9fafb", color: "#6b7280", borderColor: "#e5e7eb" }
+                      }
+                    >
+                      {v === "correct" ? "✓ CORRECT" : v === "wrong" ? "✗ WRONG" : "~ ADJUST"}
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* Save button + toast */}
+              {showCorrectedDate && (
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-mono tracking-wider text-gray-500 uppercase">Correct resolution date</label>
+                  <input
+                    type="date"
+                    value={correctResDate}
+                    onChange={e => setCorrectResDate(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-mono tracking-wider text-gray-500 uppercase">
+                  Resolution note <span className="text-gray-400 normal-case font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={resNote}
+                  onChange={e => setResNote(e.target.value)}
+                  placeholder="e.g. Should be end of 2026 season, not 3yr horizon"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Save */}
           <div className="flex items-center gap-3">
             <button
               onClick={handleSave}
@@ -320,9 +467,7 @@ export default function EvalLabClient() {
             >
               {saving ? "Saving…" : "Save to Eval Dataset"}
             </button>
-            {savedToast && (
-              <span className="text-sm font-semibold text-emerald-600 animate-pulse">✓ Saved!</span>
-            )}
+            {savedToast && <span className="text-sm font-semibold text-emerald-600 animate-pulse">✓ Saved!</span>}
           </div>
         </div>
       )}
@@ -349,11 +494,23 @@ export default function EvalLabClient() {
             {rows.map((row) => (
               <div key={row.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
                 <LabelBadge label={row.your_label} />
-                <div className="flex-1 min-w-0 space-y-0.5">
+                <div className="flex-1 min-w-0 space-y-1">
                   <p className="text-sm text-gray-800 truncate">
                     &ldquo;{row.tweet_text.length > 100 ? row.tweet_text.slice(0, 100) + "…" : row.tweet_text}&rdquo;
                   </p>
                   {row.why && <p className="text-xs text-gray-400 italic">{row.why}</p>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {row.resolution_verdict && <ResBadge verdict={row.resolution_verdict} />}
+                    {row.classifier_resolution_date && (
+                      <span className="text-[11px] font-mono text-gray-400">{row.classifier_resolution_date}</span>
+                    )}
+                    {row.correct_resolution_date && (
+                      <span className="text-[11px] font-mono text-amber-600">→ {row.correct_resolution_date}</span>
+                    )}
+                    {row.resolution_note && (
+                      <span className="text-[11px] text-gray-400 italic">{row.resolution_note}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-3">
                   <span className="text-[10px] text-gray-400 font-mono whitespace-nowrap">

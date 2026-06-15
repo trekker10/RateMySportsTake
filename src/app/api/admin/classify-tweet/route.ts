@@ -161,16 +161,76 @@ Respond ONLY with valid JSON, no markdown, no preamble:
   "summary": "one sentence plain-English summary of the claim"
 }`;
 
+// ── Resolution date computation (mirrors pipeline.py computeNflSeason logic) ─
+
+interface ResolutionInfo {
+  sport_season: string;
+  timing_window: string;
+  resolution_date: string;
+  resolution_reasoning: string;
+}
+
+function computeResolutionDate(
+  tweetDate: string,
+  category: string | null | undefined,
+  timingWindow: string | null | undefined,
+): ResolutionInfo {
+  const d = new Date(tweetDate + "T12:00:00Z");
+  const month = d.getUTCMonth() + 1; // 1-12
+  const year  = d.getUTCFullYear();
+
+  // Determine active NFL season year
+  // Aug–Dec → current year's season | Jan → previous year's season | Feb–Jul → upcoming season
+  let season: number;
+  let periodLabel: string;
+  if (month >= 8) {
+    season = year;
+    periodLabel = "in-season";
+  } else if (month === 1) {
+    season = year - 1;
+    periodLabel = "end of season";
+  } else {
+    season = year;
+    periodLabel = "offseason";
+  }
+
+  const tw = timingWindow ?? (month >= 8 || month === 1 ? "in_season" : "offseason");
+  const sport_season = `${season} NFL`;
+
+  // Dynasty / long-horizon trade advice in the offseason → 3-year window
+  const isDynastyLong =
+    (category === "dynasty_value" || category === "trade_advice") &&
+    (tw === "offseason" || tw === "post_draft");
+
+  let resolutionYear: number;
+  let reasoning: string;
+
+  if (isDynastyLong) {
+    resolutionYear = season + 3;
+    reasoning = `Dynasty/trade advice in the ${periodLabel} → 3-year horizon (end of ${resolutionYear} season).`;
+  } else {
+    resolutionYear = season + 1;
+    reasoning = `${category ?? "take"} in the ${periodLabel} → resolves end of ${season} NFL season (Jan ${resolutionYear}).`;
+  }
+
+  // End of NFL season = first Wednesday of January of resolutionYear, approximated as Jan 7
+  const resolution_date = `${resolutionYear}-01-07`;
+
+  return { sport_season, timing_window: tw, resolution_date, resolution_reasoning: reasoning };
+}
+
 export async function POST(req: NextRequest) {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { tweet_text, mode } = await req.json() as { tweet_text: string; mode: "fantasy" | "standard" };
+  const { tweet_text, mode, tweet_date } =
+    await req.json() as { tweet_text: string; mode: "fantasy" | "standard"; tweet_date?: string };
+
   if (!tweet_text?.trim()) return NextResponse.json({ error: "tweet_text required" }, { status: 400 });
 
-  const today = new Date().toISOString().split("T")[0];
+  const dateToUse = tweet_date || new Date().toISOString().split("T")[0];
   const userContent = mode === "fantasy"
-    ? `Tweet date: ${today}\n\n${tweet_text.trim()}`
+    ? `Tweet date: ${dateToUse}\n\n${tweet_text.trim()}`
     : tweet_text.trim();
 
   const msg = await claude.messages.create({
@@ -190,7 +250,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = JSON.parse(jsonMatch[0]);
-    return NextResponse.json({ result });
+
+    // Compute resolution date server-side based on tweet_date + classifier output
+    const category     = result.category ?? null;
+    const timingWindow = mode === "fantasy" ? result.timing_window : null;
+    const resolution   = computeResolutionDate(dateToUse, category, timingWindow);
+
+    return NextResponse.json({ result, resolution });
   } catch {
     return NextResponse.json({ error: "Failed to parse classifier response", raw: text }, { status: 500 });
   }

@@ -18,10 +18,17 @@ const ANALYST_GUIDELINES = `# Take Resolution Guidelines — Sports Analyst Take
 
 ## Step 2 — Resolution Dates by Sport & Horizon
 
-NFL: Immediate → end of that game week | This season → Feb 1 (year+1) | Offseason/roster/draft → Sep 1 | Multi-year → end of referenced year | Career → age-based
+NFL season calendar (critical — read carefully):
+- Tweet in Feb–Jul of year Y → predicting the UPCOMING Y season → resolves Jan 7 of year Y+1
+- Tweet in Aug–Dec of year Y → predicting the CURRENT Y season → resolves Jan 7 of year Y+1
+- Tweet in Jan of year Y → tail end of Y-1 season → resolves Jan 7 of year Y
+
+NFL: Immediate → end of that game week (next Monday) | This season / "in 2026" → Jan 7 of the following year (end of regular season, NOT Super Bowl) | Offseason/roster/draft → Sep 1 of the upcoming season | Multi-year → Jan 7 of the referenced future season end | Career → age-based
 NBA: Immediate → end of that game night | This season → Jun 30 | Multi-year → end of referenced year | Career → age-based
 MLB: Immediate → end of that game | This season → Nov 1 | Multi-year → end of referenced year | Career → age-based
 NHL: This season → Jul 1 (after Stanley Cup) | Career → age-based
+
+IMPORTANT for NFL "best season of career" or "career year" takes: These resolve at end of regular season (Jan 7), NOT Super Bowl. Stats like receptions, yards, and TDs are counted in the regular season only.
 
 ## Step 3 — Career Takes: Age-Based Estimation
 
@@ -40,7 +47,7 @@ NBA position adjustments: Guards/wings through ~36–38 | Bigs/centers through ~
 ## Quick Decision Tree
 
 Specific game or matchup? → immediate: end of that game week
-"This season" / specific current year? → this_season: end of league season (Feb 1 NFL, Jun 30 NBA, Nov 1 MLB, Jul 1 NHL)
+"This season" / specific current year? → this_season: end of league regular season (Jan 7 NFL, Jun 30 NBA, Nov 1 MLB, Jul 1 NHL)
 Offseason roster/draft/trade take? → Sep 1 NFL or start of referenced season
 Future year or "next season"? → multi_year: end of that future season
 "Never" / "career" / "GOAT" language? → career: age-based estimate
@@ -101,7 +108,7 @@ Return JSON with exactly these fields:
   "time_horizon": one of "immediate" | "this_season" | "this_year" | "multi_year" | "career" | "unresolvable",
   "time_horizon_date": YYYY-MM-DD resolution date determined by the guidelines above — use the sport, horizon type, and date_made to pick the correct date,
   "summary": one sentence restating the claim in first person as if the analyst said it themselves (e.g. "I think Romeo Doubs will be transformative for the Patriots." — NOT "The analyst predicts..."),
-  "grading_criteria": specific measurable definition of what would make this take TRUE (used for grading later),
+  "grading_criteria": specific measurable definition of what would make this take TRUE (used for grading later). For career-comparison takes like "best season of career", state the condition in relative terms (e.g. "Pickens surpasses his career highs in at least 2 of 3 major receiving categories — receptions, yards, TDs — by end of the 2026 regular season") WITHOUT citing specific historical stat numbers you may not have accurate data for. Let the grader look up the exact career highs at resolution time.,
   "flags": array of zero or more from ["bold_call", "guaranteed", "flip_risk", "vague", "unfalsifiable", "recency_bias", "hot_take", "contrarian"]
 }`,
       },

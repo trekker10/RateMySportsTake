@@ -546,7 +546,7 @@ export default function AdminTakesDashboard() {
     .sort((a, b) => {
       let av: string | number = "";
       let bv: string | number = "";
-      if (sortKey === "date_submitted")    { av = a.date_submitted ?? "";     bv = b.date_submitted ?? ""; }
+      if (sortKey === "date_submitted")    { av = a.date_submitted ?? a.date_made ?? "";     bv = b.date_submitted ?? b.date_made ?? ""; }
       if (sortKey === "date_made")         { av = a.date_made ?? "";          bv = b.date_made ?? ""; }
       if (sortKey === "time_horizon_date") { av = a.time_horizon_date ?? "9999"; bv = b.time_horizon_date ?? "9999"; }
       if (sortKey === "expert_name")       { av = a.expert_name;              bv = b.expert_name; }
@@ -776,9 +776,14 @@ export default function AdminTakesDashboard() {
                   <Link href={`/experts/${take.expert_id}`} className="font-semibold text-gray-900 hover:text-black text-sm">
                     {take.expert_name}
                   </Link>
-                  <span className="text-gray-500 text-xs mt-0.5">{take.date_made}</span>
+                  <span className="text-gray-500 text-xs mt-0.5">{take.date_made?.slice(0, 10)}</span>
                   {take.boldness_score != null && (
                     <span className="text-gray-500 text-xs mt-0.5">· B={take.boldness_score}</span>
+                  )}
+                  {take.date_submitted && (
+                    <span className="text-[10px] font-mono text-gray-400 border border-gray-300 rounded px-1.5 py-0.5" title="Date added to database">
+                      +{take.date_submitted.slice(0, 10)}
+                    </span>
                   )}
                   {take.rating_status !== "rated" && take.grade == null && !(take.grading_criteria && take.time_horizon_date) && (
                     <span className="rounded px-1.5 py-0.5 text-[10px] font-mono bg-amber-900/40 text-amber-400 border border-amber-800">

@@ -170,7 +170,7 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
   const { data } = await supabase
     .from("takes")
     .select("take_id, raw_text, summary, grading_criteria, date_made, date_submitted, time_horizon_date, boldness_score, outcome_status, outcome_notes, grade, grade_notes, rating_status, expert_id, source_url, source_type, player_tags, experts(name)")
-    .order("date_made", { ascending: false });
+    .order("date_submitted", { ascending: false, nullsFirst: false });
 
   return (data ?? []).map((t) => ({
     take_id: t.take_id,

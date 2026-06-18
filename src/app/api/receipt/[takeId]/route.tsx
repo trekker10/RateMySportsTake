@@ -122,15 +122,39 @@ export async function GET(
   }
   const analysisLabel = isPending ? "WHAT WE'RE WATCHING" : "THE ANALYSIS";
 
-  // Tweet font size — spec §4 formula
-  const textLen = displayText.length;
-  const tweetFS = textLen <= 60 ? 46 :
-    Math.round((46 - (46 - 33) * Math.min(1, (textLen - 60) / 150)) * 10) / 10;
-
   const W = 1080;
-  const textExtra = textLen > 150 ? Math.round((textLen - 150) * 1.8) : 0;
-  const analysisExtra = analysisText ? 220 : 0;
-  const H = 1080 + textExtra + analysisExtra;
+  const H = 1080;
+
+  const textLen = displayText.length;
+
+  const analysisReserve = analysisText ? 280 : 0;
+  const gradeReserve = 220;
+  const headerReserve = 260;
+  const tweetCardPadding = 144;
+  const availableTweetPx = H - headerReserve - gradeReserve - analysisReserve - tweetCardPadding - 64;
+
+  const usableWidth = 920;
+  function estimateTweetHeight(fs: number): number {
+    const charsPerLine = Math.floor(usableWidth / (fs * 0.52));
+    const lines = Math.ceil(textLen / charsPerLine);
+    return lines * fs * 1.35;
+  }
+
+  let tweetFS = 46;
+  for (let fs = 46; fs >= 22; fs -= 0.5) {
+    if (estimateTweetHeight(fs) <= availableTweetPx) {
+      tweetFS = fs;
+      break;
+    }
+  }
+
+  const gradeFS   = tweetFS < 30 ? 120 : tweetFS < 38 ? 140 : 160;
+  const verdictFS = tweetFS < 30 ? 56  : tweetFS < 38 ? 64  : 72;
+
+  const tight     = tweetFS < 32;
+  const sectionMT = tight ? 28 : 40;
+  const gradeGap  = tight ? 28 : 40;
+  const footerMT  = tight ? 12 : 20;
 
   const DISPLAY = archivoblack ? "Archivo Black, sans-serif" : "Inter, sans-serif";
 
@@ -195,7 +219,7 @@ export async function GET(
 
         {/* Analysis */}
         {analysisText && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: sectionMT }}>
             <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
               <div style={{ flexGrow: 1, height: 1, backgroundColor: "rgba(0,0,0,0.2)" }} />
               <span style={{ fontSize: 18, letterSpacing: "0.24em", color: "rgba(22,26,23,0.6)", fontFamily: "monospace", marginLeft: 16, marginRight: 16 }}>{analysisLabel}</span>
@@ -208,25 +232,25 @@ export async function GET(
         )}
 
         {/* Divider line */}
-        <div style={{ display: "flex", width: "100%", height: 2, backgroundColor: INK, marginTop: analysisText ? 36 : 52 }} />
+        <div style={{ display: "flex", width: "100%", height: 2, backgroundColor: INK, marginTop: tight ? 24 : 36 }} />
 
         {/* Grade row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40, marginTop: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: gradeGap, marginTop: 28 }}>
           <div style={{ display: "flex" }}>
-            <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 168, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "5px 5px 0 rgba(0,0,0,0.1)" }}>{letterGrade ?? "—"}</span>
+            <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: gradeFS, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "5px 5px 0 rgba(0,0,0,0.1)" }}>{letterGrade ?? "—"}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex" }}>
               <span style={{ fontSize: 18, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
             </div>
             <div style={{ display: "flex", marginTop: 8 }}>
-              <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 72, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: verdictFS, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: footerMT }}>
           <span style={{ fontSize: 18, letterSpacing: "0.18em", color: LABEL, fontFamily: "monospace" }}>RATEMYSPORTSTAKE.COM</span>
         </div>
 

@@ -4,15 +4,18 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { getExpertTakesPage, type ProfileTake } from "@/app/actions/takes";
+import { scoreToGrade } from "@/lib/takescore";
 
 const PAGE_SIZE = 10;
 
-function verdictTag(status: string) {
-  if (status === "confirmed_true")  return { label: "RIGHT",       bg: "#0a7a3b", text: "#fff" };
-  if (status === "confirmed_false") return { label: "WRONG",       bg: "#e2241a", text: "#fff" };
-  if (status === "partially_true")  return { label: "PARTLY RIGHT", bg: "#d97706", text: "#fff" };
-  if (status === "unresolvable")    return { label: "N/A",          bg: "#6b7280", text: "#fff" };
-  return                                   { label: "PENDING",     bg: "#e5e7eb", text: "#4b5563" };
+/* ─── helpers ─────────────────────────────────────────────── */
+
+function verdictInfo(status: string): { label: string; cls: string } {
+  if (status === "confirmed_true")  return { label: "RIGHT",       cls: "right" };
+  if (status === "confirmed_false") return { label: "WRONG",       cls: "wrong" };
+  if (status === "partially_true")  return { label: "PARTLY RIGHT", cls: "wrong" };
+  if (status === "unresolvable")    return { label: "N/A",         cls: "pending" };
+  return                                   { label: "PENDING",     cls: "pending" };
 }
 
 function gradeArrows(grade: number | null): { arrows: string; positive: boolean } | null {
@@ -22,6 +25,123 @@ function gradeArrows(grade: number | null): { arrows: string; positive: boolean 
   const count = delta <= 15 ? 1 : delta <= 30 ? 2 : 3;
   return { arrows: (positive ? "↗" : "↘").repeat(count), positive };
 }
+
+function gradeChipLetter(grade: number | null): string | null {
+  if (grade == null) return null;
+  return scoreToGrade(grade).charAt(0); // "A","B","C","D","F"
+}
+
+/* ─── TakeCard ─────────────────────────────────────────────── */
+
+function TakeCard({ take, index }: { take: ProfileTake; index: number }) {
+  const [open, setOpen] = useState(false);
+
+  const v        = verdictInfo(take.outcome_status);
+  const impact   = gradeArrows(take.grade);
+  const chipLetter = gradeChipLetter(take.grade);
+  const isPending  = take.outcome_status === "pending";
+
+  const displayText = take.raw_text?.trim() || take.summary?.trim() || "";
+  const isParaphrase = !take.raw_text?.trim() && !!take.summary;
+  const analysis = take.outcome_notes ?? take.grade_notes;
+
+  const d   = new Date(take.date_made);
+  const mo  = d.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const day = d.getDate();
+
+  function toggle() {
+    setOpen((o) => !o);
+  }
+
+  return (
+    <article
+      className={`take-card${open ? " open" : ""}`}
+      data-verdict={v.cls}
+      style={{ marginTop: index === 0 ? 0 : 24 }}
+    >
+      {/* TOP ROW — date + grade chip + verdict */}
+      <div className="card-top">
+        <div className="card-meta">
+          {/* Stacked date */}
+          <span className="tc-date">
+            <span className="tc-mo">{mo}</span>
+            <span className="tc-day">{day}</span>
+          </span>
+          {/* Grade chip */}
+          {chipLetter ? (
+            <span className={`grade-chip`} data-grade={chipLetter}>
+              <b>{chipLetter}</b>
+              <small>GRADE</small>
+            </span>
+          ) : (
+            <span className="grade-chip pending">
+              <b>&ndash;</b>
+              <small>GRADE</small>
+            </span>
+          )}
+        </div>
+
+        {/* Verdict + arrows */}
+        <div className="verdict-wrap">
+          <span className={`verdict ${v.cls}`}>{v.label}</span>
+          {impact != null && !isPending && (
+            <p className={`tc-arrows ${impact.positive ? "pos" : "neg"}`}>
+              {impact.arrows}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* QUOTE */}
+      <div className="tc-quote">
+        {isParaphrase && <p className="tc-paraphrase">[Paraphrase]</p>}
+        &ldquo;{displayText}&rdquo;
+      </div>
+
+      {/* WHAT HAPPENED toggle */}
+      <div className="disclose">
+        <button
+          className="tc-toggle"
+          aria-expanded={open}
+          onClick={toggle}
+        >
+          <span>{isPending ? "AWAITING RESULT" : "WHAT HAPPENED"}</span>
+          <span className={`tc-chev${open ? " flipped" : ""}`}>▼</span>
+        </button>
+        {open && (
+          <div className="panel-pad">
+            {isPending ? (
+              <div className="pending-note">
+                Not graded yet — this take gets a grade once the result is decided.
+              </div>
+            ) : (
+              <>
+                <div className="what-lab">WHAT HAPPENED</div>
+                <div className="what">
+                  {analysis ?? "No analysis recorded yet."}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* BUTTONS */}
+      <div className="tc-actions">
+        <Link href={`/takes/${take.take_id}`} className="tc-btn tc-btn-ctx">
+          SEE FULL CONTEXT
+        </Link>
+        {!isPending && (
+          <ShareReceiptButton takeId={take.take_id} className="tc-btn tc-btn-share">
+            SHARE RECEIPT
+          </ShareReceiptButton>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/* ─── TakeLogSection ───────────────────────────────────────── */
 
 interface Props {
   expertId: string;
@@ -33,76 +153,6 @@ interface Props {
   activeGrade: string | null;
 }
 
-function TakeRow({ take, index }: { take: ProfileTake; index: number }) {
-  const v = verdictTag(take.outcome_status);
-  const impact = gradeArrows(take.grade);
-  // Prefer verbatim raw_text; fall back to summary and flag it as a paraphrase
-  const hasVerbatim = !!take.raw_text?.trim();
-  const displayText = take.raw_text?.trim() || take.summary?.trim() || "";
-  const isParaphrase = !hasVerbatim && !!take.summary;
-  const analysis = take.outcome_notes ?? take.grade_notes;
-
-  return (
-    <div
-      className="flex"
-      style={{ borderTop: index > 0 ? "1px dashed #d1d5db" : undefined }}
-    >
-      {/* Date */}
-      <div className="w-16 shrink-0 px-3 pt-4 font-mono text-[10px] tracking-wider text-gray-400 uppercase">
-        {new Date(take.date_made).toLocaleDateString("en-US", { month: "short", year: "2-digit" }).toUpperCase()}
-      </div>
-
-      {/* Take + analysis + buttons */}
-      <div className="flex-1 min-w-0">
-        <div className="px-4 py-3.5" style={{ backgroundColor: "#f5f1e9" }}>
-          {isParaphrase && (
-            <p className="font-mono text-[9px] tracking-widest text-gray-400 uppercase mb-1.5">[Paraphrase]</p>
-          )}
-          <p className="italic text-base leading-snug text-gray-800 whitespace-pre-wrap">
-            &ldquo;{displayText}&rdquo;
-          </p>
-        </div>
-        {analysis && (
-          <div className="px-4 py-3 border-t border-gray-200">
-            <p className="text-sm text-gray-600 leading-relaxed">{analysis}</p>
-          </div>
-        )}
-        <div className="px-4 py-2.5 border-t border-gray-200 flex flex-wrap gap-2">
-          <Link
-            href={`/takes/${take.take_id}`}
-            className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
-          >
-            See Full Context
-          </Link>
-          <ShareReceiptButton
-            takeId={take.take_id}
-            className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
-          >
-            Share Receipt
-          </ShareReceiptButton>
-        </div>
-      </div>
-
-      {/* Verdict + impact */}
-      <div className="shrink-0 px-4 py-4 flex flex-col items-end gap-2">
-        <span
-          className="font-mono text-[10px] tracking-wider px-2 py-1 whitespace-nowrap font-semibold"
-          style={{ backgroundColor: v.bg, color: v.text }}
-        >
-          {v.label}
-        </span>
-        {impact != null ? (
-          <p className={`italic text-xl tracking-tight leading-none ${impact.positive ? "text-emerald-600" : "text-red-600"}`}>
-            {impact.arrows}
-          </p>
-        ) : (
-          <p className="text-lg text-gray-300">—</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function TakeLogSection({
   expertId,
   initialTakes,
@@ -110,9 +160,8 @@ export default function TakeLogSection({
   verdict,
   gradeMin,
   gradeMax,
-  activeGrade,
 }: Props) {
-  const [takes, setTakes] = useState<ProfileTake[]>(initialTakes);
+  const [takes, setTakes]       = useState<ProfileTake[]>(initialTakes);
   const [isPending, startTransition] = useTransition();
 
   const hasMore = takes.length < totalTakes;
@@ -120,45 +169,129 @@ export default function TakeLogSection({
   function loadMore() {
     startTransition(async () => {
       const next = await getExpertTakesPage(
-        expertId,
-        verdict,
-        gradeMin,
-        gradeMax,
-        takes.length,
-        PAGE_SIZE
+        expertId, verdict, gradeMin, gradeMax, takes.length, PAGE_SIZE
       );
       setTakes((prev) => [...prev, ...next]);
     });
   }
 
   return (
-    <div className="bg-white border-2 border-gray-900">
-      {takes.length > 0 ? (
-        takes.map((take, i) => <TakeRow key={take.take_id} take={take} index={i} />)
-      ) : (
-        <div className="px-4 py-12 text-center italic text-gray-400">
-          No takes found for this filter.
-        </div>
-      )}
+    <>
+      <style>{`
+        /* ── tokens ── */
+        .take-card{
+          --ink:#15201a;--ink-soft:#3a4239;--ink-faint:#8a8a82;
+          --cream:#f5f1e8;--accent:#e2241a;--good:#0a7a3b;
+        }
 
-      <div className="px-4 py-3 border-t-2 border-gray-900 flex items-center justify-between">
-        {hasMore ? (
-          <button
-            onClick={loadMore}
-            disabled={isPending}
-            className="italic text-gray-500 hover:text-gray-900 text-sm transition-colors disabled:opacity-50"
-          >
-            {isPending
-              ? "Loading…"
-              : `See all ${totalTakes} takes`}
-          </button>
+        /* ── card chrome ── */
+        .take-card{
+          background:#fff;border:2px solid var(--ink);
+          padding:26px 28px 24px;display:flex;flex-direction:column;
+          transition:transform .12s ease,box-shadow .12s ease;
+        }
+        .take-card:hover{transform:translate(-3px,-3px);box-shadow:7px 7px 0 var(--ink);}
+        .take-card.open{box-shadow:7px 7px 0 var(--ink);transform:translate(-3px,-3px);}
+
+        /* ── top row ── */
+        .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+        .card-meta{display:flex;align-items:center;gap:14px;}
+
+        /* ── date ── */
+        .tc-date{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}
+        .tc-mo{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.18em;color:var(--ink-soft);}
+        .tc-day{font-family:'Archivo Black',sans-serif;font-size:34px;line-height:.86;letter-spacing:-.03em;color:var(--ink);margin-top:4px;}
+
+        /* ── grade chip ── */
+        .grade-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;
+          width:48px;height:48px;border:2px solid var(--ink);color:var(--ink);flex:none;}
+        .grade-chip b{font-family:'Archivo Black',sans-serif;font-size:24px;line-height:.9;}
+        .grade-chip small{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;}
+        .grade-chip[data-grade="A"]{border-color:#0a7a3b;color:#0a7a3b;}
+        .grade-chip[data-grade="B"]{border-color:#e07a18;color:#e07a18;}
+        .grade-chip[data-grade="C"]{border-color:#d6a312;color:#d6a312;}
+        .grade-chip[data-grade="D"]{border-color:#a8472a;color:#a8472a;}
+        .grade-chip[data-grade="F"]{border-color:#e2241a;color:#e2241a;}
+        .grade-chip.pending{border-color:var(--ink-faint);color:var(--ink-faint);border-style:dashed;}
+
+        /* ── verdict + arrows ── */
+        .verdict-wrap{text-align:right;}
+        .verdict{display:inline-block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;
+          letter-spacing:.12em;color:#fff;background:var(--good);padding:8px 16px;}
+        .verdict.wrong{background:var(--accent);}
+        .verdict.pending{background:#cfd2d7;color:var(--ink-soft);}
+        .tc-arrows{font-size:22px;font-style:italic;font-weight:900;line-height:1;margin-top:6px;letter-spacing:-.02em;}
+        .tc-arrows.pos{color:#0a7a3b;}
+        .tc-arrows.neg{color:#e2241a;}
+
+        /* ── quote ── */
+        .tc-quote{background:var(--cream);padding:22px 24px;font-style:italic;font-size:23px;
+          line-height:1.32;letter-spacing:-.01em;color:var(--ink-soft);}
+        .tc-paraphrase{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;
+          color:var(--ink-faint);text-transform:uppercase;margin-bottom:6px;font-style:normal;}
+
+        /* ── what happened toggle ── */
+        .disclose{margin-top:18px;}
+        .tc-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+          background:#fff;border:2px solid var(--ink);color:var(--ink);
+          font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;letter-spacing:.12em;
+          padding:14px 18px;text-align:left;cursor:pointer;
+          transition:background .14s ease,color .14s ease,transform .1s ease,box-shadow .1s ease;}
+        .tc-toggle:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink);}
+        .take-card.open .tc-toggle{background:var(--ink);color:#fff;}
+        .take-card.open .tc-toggle:hover{box-shadow:5px 5px 0 var(--accent);}
+        .take-card[data-verdict="pending"] .tc-toggle{border-color:var(--ink-faint);color:var(--ink-soft);}
+        .take-card[data-verdict="pending"].open .tc-toggle{background:var(--ink-soft);color:#fff;border-color:var(--ink-soft);}
+        .tc-chev{font-size:13px;transition:transform .26s ease;}
+        .tc-chev.flipped{transform:rotate(180deg);}
+
+        /* ── panel ── */
+        .panel-pad{padding-top:20px;}
+        .what-lab{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;
+          color:var(--ink-faint);margin:0 0 8px;}
+        .what{font-size:18px;line-height:1.5;color:var(--ink-soft);}
+        .pending-note{background:#eceef1;border-left:3px solid var(--ink-faint);
+          padding:16px 18px;font-size:17px;line-height:1.5;color:var(--ink-soft);font-style:italic;}
+
+        /* ── buttons ── */
+        .tc-actions{display:flex;gap:14px;margin-top:22px;}
+        .tc-btn{flex:1;border:2px solid var(--ink);font-family:'JetBrains Mono',monospace;font-weight:800;
+          font-size:16px;letter-spacing:.11em;padding:16px 14px;text-align:center;
+          transition:transform .1s ease,box-shadow .1s ease;cursor:pointer;display:block;}
+        .tc-btn-ctx{background:var(--ink);color:#fff;box-shadow:4px 4px 0 rgba(21,32,26,.25);}
+        .tc-btn-ctx:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
+        .tc-btn-ctx:active{transform:translate(2px,2px);box-shadow:none;}
+        .tc-btn-share{background:var(--accent);color:#fff;border-color:var(--ink);box-shadow:4px 4px 0 rgba(21,32,26,.25);}
+        .tc-btn-share:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
+        .tc-btn-share:active{transform:translate(2px,2px);box-shadow:none;}
+      `}</style>
+
+      <div>
+        {takes.length > 0 ? (
+          takes.map((take, i) => <TakeCard key={take.take_id} take={take} index={i} />)
         ) : (
-          <span className="italic text-gray-400 text-sm">
-            {takes.length === 0 ? "No takes" : `All ${takes.length} takes shown`}
-          </span>
+          <div className="py-12 text-center italic text-gray-400">
+            No takes found for this filter.
+          </div>
         )}
-        <span className="font-black text-xl text-gray-400">→</span>
+
+        <div className="mt-6 flex items-center justify-between border-t-2 border-gray-900 pt-4">
+          {hasMore ? (
+            <button
+              onClick={loadMore}
+              disabled={isPending}
+              className="italic text-gray-500 hover:text-gray-900 text-sm transition-colors disabled:opacity-50"
+            >
+              {isPending ? "Loading…" : `See all ${totalTakes} takes`}
+            </button>
+          ) : (
+            <span className="italic text-gray-400 text-sm">
+              {takes.length === 0 ? "No takes" : `All ${takes.length} takes shown`}
+            </span>
+          )}
+          <span className="font-black text-xl text-gray-400">→</span>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

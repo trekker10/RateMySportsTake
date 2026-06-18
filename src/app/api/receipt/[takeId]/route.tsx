@@ -206,197 +206,94 @@ export async function GET(
 
   return new ImageResponse(
     (
-      <div style={{
-        width: W,
-        height: H,
-        backgroundColor: PAPER,
-        display: "flex",
-        flexDirection: "column",
-        paddingTop: 56,
-        paddingRight: 68,
-        paddingBottom: 48,
-        paddingLeft: 68,
-      }}>
+      <div style={{ width: W, height: H, backgroundColor: PAPER, display: "flex", flexDirection: "column", paddingTop: 56, paddingRight: 68, paddingBottom: 48, paddingLeft: 68 }}>
 
         {/* ── Wordmark ── */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "baseline", fontFamily: '"Archivo Black", sans-serif', fontSize: 50, letterSpacing: "-0.02em", color: INK, lineHeight: 1 }}>
-            <span>RATE</span>
-            <span style={{ color: RED, margin: "0 2px" }}>/</span>
-            <span>MY</span>
-            <span style={{ color: RED, margin: "0 2px" }}>/</span>
-            <span>SPORTS</span>
-            <span style={{ color: RED, margin: "0 2px" }}>/</span>
-            <span>TAKE</span>
+          <div style={{ display: "flex", alignItems: "center", fontFamily: '"Archivo Black", sans-serif', fontSize: 50, color: INK, letterSpacing: "-0.02em" }}>
+            <span style={{ color: INK }}>RATE</span>
+            <span style={{ color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
+            <span style={{ color: INK }}>MY</span>
+            <span style={{ color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
+            <span style={{ color: INK }}>SPORTS</span>
+            <span style={{ color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
+            <span style={{ color: INK }}>TAKE</span>
           </div>
-          <div style={{ display: "flex", fontSize: 21, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", marginTop: 10, fontFamily: "monospace" }}>
-            THE TAKES, RATED.
+          <div style={{ display: "flex", marginTop: 10 }}>
+            <span style={{ fontSize: 21, letterSpacing: "0.26em", color: "#6b6b6b", fontFamily: "monospace" }}>THE TAKES, RATED.</span>
           </div>
         </div>
 
         {/* ── White tweet card ── */}
-        <div style={{
-          marginTop: 44,
-          backgroundColor: WHITE,
-          borderRadius: 36,
-          paddingTop: 40,
-          paddingRight: 44,
-          paddingBottom: 40,
-          paddingLeft: 44,
-          borderWidth: 2,
-          borderStyle: "solid",
-          borderColor: CARD_BOR,
-          display: "flex",
-          flexDirection: "column",
-        }}>
-          {/* Header: avatar + name/handle */}
-          <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-            {/* Avatar circle with initials */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 96,
-              height: 96,
-              borderRadius: 48,
-              backgroundColor: "#d1d5db",
-              flexShrink: 0,
-            }}>
-              <span style={{ fontSize: 34, fontWeight: 700, color: "#6b7280", fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
-                {initials}
-              </span>
-            </div>
+        <div style={{ marginTop: 44, backgroundColor: WHITE, borderRadius: 36, paddingTop: 40, paddingRight: 44, paddingBottom: 40, paddingLeft: 44, borderWidth: 2, borderStyle: "solid", borderColor: CARD_BOR, display: "flex", flexDirection: "column" }}>
 
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+            {/* Avatar */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 96, height: 96, borderRadius: 48, backgroundColor: "#d1d5db", flexShrink: 0 }}>
+              <span style={{ fontSize: 32, fontWeight: 700, color: "#6b7280" }}>{initials}</span>
+            </div>
             {/* Name + handle */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontWeight: 700, fontSize: 32, color: "#0f1419" }}>
-                  {expertName}
-                </span>
-                {/* Verified badge — satori-safe blue circle + checkmark */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 34,
-                  height: 34,
-                  borderRadius: 17,
-                  backgroundColor: "#1d9bf0",
-                  flexShrink: 0,
-                }}>
-                  <span style={{ color: "#ffffff", fontSize: 20, fontWeight: 900, lineHeight: 1 }}>✓</span>
+                <span style={{ fontSize: 32, fontWeight: 700, color: "#0f1419" }}>{expertName}</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 17, backgroundColor: "#1d9bf0", flexShrink: 0 }}>
+                  <span style={{ color: "#ffffff", fontSize: 18, fontWeight: 900 }}>✓</span>
                 </div>
               </div>
               {handle && (
-                <span style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontSize: 28, color: MUTED }}>
-                  {handle}
-                </span>
+                <div style={{ display: "flex", marginTop: 6 }}>
+                  <span style={{ fontSize: 27, color: MUTED }}>{handle}</span>
+                </div>
               )}
             </div>
           </div>
 
           {/* Tweet text */}
-          <div style={{
-            display: "flex",
-            fontSize: tweetFontSize,
-            lineHeight: 1.32,
-            letterSpacing: "-0.01em",
-            color: "#0f1419",
-            marginTop: 30,
-          marginBottom: 26,
-            fontFamily: '"Space Grotesk", system-ui, sans-serif',
-            fontWeight: 600,
-          }}>
-            {displayText}
+          <div style={{ display: "flex", marginTop: 30, marginBottom: 26 }}>
+            <span style={{ fontSize: tweetFontSize, lineHeight: 1.32, letterSpacing: "-0.01em", color: "#0f1419", fontWeight: 600 }}>{displayText}</span>
           </div>
 
           {/* Date */}
-          <div style={{ display: "flex", fontSize: 27, color: MUTED, fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
-            {tweetDate}
+          <div style={{ display: "flex" }}>
+            <span style={{ fontSize: 27, color: MUTED }}>{tweetDate}</span>
           </div>
         </div>
 
-        {/* ── THE ANALYSIS section label ── */}
+        {/* ── Analysis ── */}
         {analysisText && (
           <div style={{ display: "flex", flexDirection: "column", marginTop: 48 }}>
+            {/* Section label */}
             <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-              <div style={{ flexGrow: 1, height: 2, backgroundColor: "rgba(0,0,0,0.2)" }} />
-              <span style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 600, letterSpacing: "0.3em", color: INK }}>
-                {analysisLabel}
-              </span>
-              <div style={{ flexGrow: 1, height: 2, backgroundColor: "rgba(0,0,0,0.2)" }} />
+              <div style={{ flexGrow: 1, height: 2, backgroundColor: "#cccccc" }} />
+              <span style={{ fontSize: 22, letterSpacing: "0.3em", color: INK, fontFamily: "monospace" }}>{analysisLabel}</span>
+              <div style={{ flexGrow: 1, height: 2, backgroundColor: "#cccccc" }} />
             </div>
-
-            {/* Analysis paragraph */}
-            <div style={{
-              display: "flex",
-              fontSize: 32,
-              lineHeight: 1.44,
-              color: ANALYSIS,
-              textAlign: "center",
-              marginTop: 30,
-          marginBottom: 40,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
-            }}>
-              {analysisText}
+            {/* Text — centered via wrapping flex */}
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 30, marginBottom: 40 }}>
+              <span style={{ fontSize: 32, lineHeight: 1.44, color: ANALYSIS, textAlign: "center" }}>{analysisText}</span>
             </div>
           </div>
         )}
 
         {/* ── Grade row ── */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 44,
-          borderTopWidth: 4,
-          borderTopStyle: "solid",
-          borderTopColor: INK,
-          paddingTop: 32,
-          marginTop: analysisText ? 0 : 48,
-        }}>
-          {/* Grade letter */}
-          <div style={{
-            display: "flex",
-            fontFamily: '"Archivo Black", sans-serif',
-            fontSize: 168,
-            lineHeight: 1,
-            color: GRADE_C,
-            letterSpacing: "-0.05em",
-          }}>
-            {letterGrade ?? "—"}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 44, borderTopWidth: 4, borderTopStyle: "solid", borderTopColor: INK, paddingTop: 32, marginTop: analysisText ? 0 : 48 }}>
+          <div style={{ display: "flex" }}>
+            <span style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: 168, color: GRADE_C, letterSpacing: "-0.05em" }}>{letterGrade ?? "—"}</span>
           </div>
-
-          {/* Right block */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            <div style={{ display: "flex", fontFamily: "monospace", fontSize: 21, letterSpacing: "0.24em", color: LABEL }}>
-              FINAL GRADE
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex" }}>
+              <span style={{ fontFamily: "monospace", fontSize: 21, letterSpacing: "0.24em", color: LABEL }}>FINAL GRADE</span>
             </div>
-            <div style={{
-              display: "flex",
-              fontFamily: '"Archivo Black", sans-serif',
-              fontSize: 60,
-              color: GRADE_C,
-              letterSpacing: "-0.02em",
-              marginTop: 10,
-              lineHeight: 1,
-            }}>
-              {verdict}
+            <div style={{ display: "flex", marginTop: 10 }}>
+              <span style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: 60, color: GRADE_C, letterSpacing: "-0.02em" }}>{verdict}</span>
             </div>
           </div>
         </div>
 
         {/* ── Footer ── */}
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          fontFamily: "monospace",
-          fontSize: 22,
-          letterSpacing: "0.16em",
-          color: LABEL,
-          marginTop: 32,
-        }}>
-          RATEMYSPORTSTAKE.COM
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
+          <span style={{ fontFamily: "monospace", fontSize: 22, letterSpacing: "0.16em", color: LABEL }}>RATEMYSPORTSTAKE.COM</span>
         </div>
 
       </div>

@@ -212,8 +212,10 @@ export async function GET(
         backgroundColor: PAPER,
         display: "flex",
         flexDirection: "column",
-        padding: "56px 68px 48px",
-        boxSizing: "border-box",
+        paddingTop: 56,
+        paddingRight: 68,
+        paddingBottom: 48,
+        paddingLeft: 68,
       }}>
 
         {/* ── Wordmark ── */}
@@ -237,7 +239,10 @@ export async function GET(
           marginTop: 44,
           backgroundColor: WHITE,
           borderRadius: 36,
-          padding: "40px 44px",
+          paddingTop: 40,
+          paddingRight: 44,
+          paddingBottom: 40,
+          paddingLeft: 44,
           borderWidth: 2,
           borderStyle: "solid",
           borderColor: CARD_BOR,
@@ -268,11 +273,19 @@ export async function GET(
                 <span style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontWeight: 700, fontSize: 32, color: "#0f1419" }}>
                   {expertName}
                 </span>
-                {/* Verified badge per spec §6 */}
-                <svg width="34" height="34" viewBox="0 0 24 24">
-                  <path fill="#1d9bf0" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"/>
-                  <path fill="#fff" d="M9.8 15.7l-3-3 1.4-1.4 1.6 1.6 4.6-4.6 1.4 1.4z"/>
-                </svg>
+                {/* Verified badge — satori-safe blue circle + checkmark */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  backgroundColor: "#1d9bf0",
+                  flexShrink: 0,
+                }}>
+                  <span style={{ color: "#ffffff", fontSize: 20, fontWeight: 900, lineHeight: 1 }}>✓</span>
+                </div>
               </div>
               {handle && (
                 <span style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontSize: 28, color: MUTED }}>
@@ -289,7 +302,8 @@ export async function GET(
             lineHeight: 1.32,
             letterSpacing: "-0.01em",
             color: "#0f1419",
-            margin: "30px 0 26px",
+            marginTop: 30,
+          marginBottom: 26,
             fontFamily: '"Space Grotesk", system-ui, sans-serif',
             fontWeight: 600,
           }}>
@@ -306,11 +320,11 @@ export async function GET(
         {analysisText && (
           <div style={{ display: "flex", flexDirection: "column", marginTop: 48 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-              <div style={{ flex: 1, height: 2, backgroundColor: "rgba(0,0,0,0.2)" }} />
+              <div style={{ flexGrow: 1, height: 2, backgroundColor: "rgba(0,0,0,0.2)" }} />
               <span style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 600, letterSpacing: "0.3em", color: INK }}>
                 {analysisLabel}
               </span>
-              <div style={{ flex: 1, height: 2, backgroundColor: "rgba(0,0,0,0.2)" }} />
+              <div style={{ flexGrow: 1, height: 2, backgroundColor: "rgba(0,0,0,0.2)" }} />
             </div>
 
             {/* Analysis paragraph */}
@@ -320,7 +334,8 @@ export async function GET(
               lineHeight: 1.44,
               color: ANALYSIS,
               textAlign: "center",
-              margin: "30px 0 40px",
+              marginTop: 30,
+          marginBottom: 40,
               fontFamily: '"Space Grotesk", system-ui, sans-serif',
             }}>
               {analysisText}
@@ -334,7 +349,9 @@ export async function GET(
           alignItems: "center",
           justifyContent: "center",
           gap: 44,
-          borderTop: `4px solid ${INK}`,
+          borderTopWidth: 4,
+          borderTopStyle: "solid",
+          borderTopColor: INK,
           paddingTop: 32,
           marginTop: analysisText ? 0 : 48,
         }}>
@@ -343,7 +360,7 @@ export async function GET(
             display: "flex",
             fontFamily: '"Archivo Black", sans-serif',
             fontSize: 168,
-            lineHeight: 0.78,
+            lineHeight: 1,
             color: GRADE_C,
             letterSpacing: "-0.05em",
           }}>

@@ -5,37 +5,35 @@ import { scoreToGrade } from "@/lib/takescore";
 
 export const runtime = "edge";
 
-// ── Spec §5 color tokens ──────────────────────────────────────────────────────
-const PAPER    = "#f1ece0";
-const INK      = "#161a17";
-const RED      = "#cf2c20";   // wordmark slashes
-const GRADE_C  = "#d23b2b";   // grade letter + verdict
-const MUTED    = "#536471";   // @handle, tweet date
-const ANALYSIS = "#454b46";   // analysis paragraph
-const LABEL    = "#8b9088";   // FINAL GRADE label + footer
-const WHITE    = "#ffffff";
-const CARD_BOR = "#e7e2d4";   // tweet card border
-
-// ── Spec §4: tweet font size (spec values, not scaled yet) ───────────────────
-function tweetSizeSpec(text: string, max = 23, min = 16.5, lo = 60, hi = 210): number {
-  const len = (text || "").length;
-  if (len <= lo) return max;
-  const t = Math.min(1, (len - lo) / (hi - lo));
-  return Math.round((max - (max - min) * t) * 10) / 10;
+function verdictLabel(status: string) {
+  if (status === "confirmed_true")  return "NAILED IT";
+  if (status === "confirmed_false") return "WAY OFF";
+  if (status === "partially_true")  return "PARTLY RIGHT";
+  if (status === "unresolvable")    return "N/A";
+  return "PENDING";
 }
 
-// ── Analysis text helpers ─────────────────────────────────────────────────────
+function gradeColor(grade: string) {
+  if (grade === "A")  return "#0a7a3b";
+  if (grade === "B+") return "#15803d";
+  if (grade === "B")  return "#16a34a";
+  if (grade === "B−") return "#22c55e";
+  if (grade === "C+") return "#ca8a04";
+  if (grade === "C")  return "#d97706";
+  if (grade === "C−") return "#f59e0b";
+  if (grade === "D")  return "#ea580c";
+  return "#d23b2b";
+}
+
 function trimAnalysis(text: string): string {
-  // ≤180 chars → fits in 3 lines per spec §3 heuristic
-  if (text.length <= 180) return text;
-  // Try to cut to 2 sentences
+  if (text.length <= 200) return text;
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
   let result = "";
   for (const s of sentences) {
-    if ((result + s).length > 180) break;
+    if ((result + s).length > 200) break;
     result += s;
   }
-  return result.trim() || text.slice(0, 180).trim();
+  return result.trim() || text.slice(0, 200).trim();
 }
 
 async function generatePendingTeaser(
@@ -48,88 +46,17 @@ async function generatePendingTeaser(
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 120,
-        system: "You write short, neutral sports commentary for a take accountability site. Write exactly 1-2 casual sentences (max 160 chars total) previewing what to watch for. Completely neutral — no editorializing. Conversational fan-voice. No quotes around your response.",
-        messages: [{
-          role: "user",
-          content: `Analyst: ${expertName}\nTake: "${takeText}"\nWill be judged on: ${gradingCriteria}`,
-        }],
+        max_tokens: 100,
+        system: "Write 1-2 neutral sentences (max 160 chars) previewing what to watch for with this sports take. Conversational, no quotes.",
+        messages: [{ role: "user", content: `Analyst: ${expertName}\nTake: "${takeText}"\nJudged on: ${gradingCriteria}` }],
       }),
     });
     const json = await res.json() as { content?: Array<{ text?: string }> };
-    return json?.content?.[0]?.text?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-function verdictLabel(status: string): string {
-  if (status === "confirmed_true")  return "NAILED IT";
-  if (status === "confirmed_false") return "WAY OFF";
-  if (status === "partially_true")  return "PARTLY RIGHT";
-  if (status === "unresolvable")    return "N/A";
-  return "PENDING";
-}
-
-// ── Dynamic height computation (all values at 2× scale = 1120px wide) ────────
-function computeHeight(displayText: string, analysisText: string | null): number {
-  const S = 2; // scale
-  const tweetFsPx  = tweetSizeSpec(displayText) * S;
-  // Available width for tweet text: (560 - 34×2 - 22×2) × S = 448 × S
-  const tweetAreaW = 448 * S;
-  const avgCharW   = tweetFsPx * 0.54; // Space Grotesk ~0.54 avg char width ratio
-  const charsPerLine = Math.max(10, Math.floor(tweetAreaW / avgCharW));
-  const tweetLines = Math.max(1, Math.ceil(displayText.length / charsPerLine));
-  const tweetTextH = tweetLines * tweetFsPx * 1.32;
-
-  // Analysis
-  let analysisBlockH = 0;
-  if (analysisText && analysisText.length > 0) {
-    const aLines = Math.min(3, Math.max(1, Math.ceil(analysisText.length / 58)));
-    analysisBlockH = (48 + 22 + 30 + aLines * 32 * 1.44 + 40) * S / S; // already in 2× units below
-    // Redo in 2× units:
-    analysisBlockH = 96 + 44 + 60 + aLines * 32 * 1.44 * S + 80;
-  }
-
-  const fixed =
-    56  +   // top padding
-    50  +   // wordmark
-    10  +   // wordmark → subline gap
-    21  +   // subline
-    44  +   // gap to tweet card
-    40  +   // card top padding
-    96  +   // avatar height
-    30  +   // avatar → tweet text margin
-    26  +   // tweet text → date margin
-    27  +   // date
-    40  +   // card bottom padding
-    4   +   // top divider border
-    32  +   // grade row padding-top
-    168 +   // grade letter (84 × S)
-    32  +   // footer margin-top
-    22  +   // footer text
-    48  +   // bottom padding
-    40;     // safety buffer
-
-  return Math.ceil(fixed + tweetTextH + analysisBlockH);
-}
-
-// ── Load a Google Font as ArrayBuffer ────────────────────────────────────────
-async function loadGFont(family: string, weight: number): Promise<ArrayBuffer | null> {
-  try {
-    const css = await fetch(
-      `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`
-    ).then(r => r.text());
-    const url = css.match(/src: url\((.+?)\) format\('woff2'\)/)?.[1];
-    if (!url) return null;
-    return fetch(url).then(r => r.arrayBuffer());
+    const t = json?.content?.[0]?.text?.trim() ?? "";
+    return t.length > 0 ? trimAnalysis(t) : null;
   } catch {
     return null;
   }
@@ -142,15 +69,17 @@ export async function GET(
   const { takeId } = await params;
   const supabase = await createClient();
 
-  // Load fonts in parallel — Archivo Black (wordmark/grade/verdict) is critical
-  const [archivoBuf, spaceGroteskBuf] = await Promise.all([
-    loadGFont("Archivo Black", 400),
-    loadGFont("Space Grotesk", 700),
-  ]);
+  // Load Inter Black — same approach as the previously working version
+  let interBlack: ArrayBuffer | null = null;
+  try {
+    const css = await fetch("https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap").then(r => r.text());
+    const url = css.match(/src: url\((.+?)\) format\('woff2'\)/)?.[1];
+    if (url) interBlack = await fetch(url).then(r => r.arrayBuffer());
+  } catch { /* fall back to system font */ }
 
   const { data: take } = await supabase
     .from("takes")
-    .select("*, experts(name, twitter_handle, avatar_url)")
+    .select("*, experts(name, twitter_handle)")
     .eq("take_id", takeId)
     .single();
 
@@ -158,142 +87,137 @@ export async function GET(
 
   const gradeConfig = await getTakeScoreConfig();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const expert = (take as any).experts;
-  const expertName: string = expert?.name ?? "Unknown Analyst";
-  const rawHandle: string  = expert?.twitter_handle ?? "";
-  const handle = rawHandle
-    ? (rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`)
-    : null;
+  const expert     = (take as any).experts;
+  const expertName = (expert?.name ?? "Unknown Analyst") as string;
+  const rawHandle  = (expert?.twitter_handle ?? "") as string;
+  const handle     = rawHandle ? (rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`) : null;
 
-  // Avatar initials fallback (spec §2: fall back to neutral gray circle)
-  const initials = expertName
-    .split(" ").filter(Boolean).slice(0, 2)
-    .map((w: string) => w[0].toUpperCase()).join("");
+  const initials = expertName.split(" ").filter(Boolean).slice(0, 2).map((w: string) => w[0].toUpperCase()).join("");
 
   const letterGrade = take.grade != null ? scoreToGrade(take.grade, gradeConfig) : null;
   const verdict     = verdictLabel(take.outcome_status);
+  const gc          = gradeColor(letterGrade ?? "F");
 
-  // Prefer verbatim raw_text, strip t.co URLs per spec §2
-  const rawDisplay  = take.raw_text?.trim() || take.summary?.trim() || "";
+  const rawDisplay  = (take.raw_text?.trim() || take.summary?.trim() || "") as string;
   const displayText = rawDisplay.replace(/\s*https?:\/\/t\.co\/\S+/g, "").trim();
 
-  // Tweet date: "Jun 16, 2026"
-  const d = new Date(take.date_made);
+  const d = new Date(take.date_made ?? Date.now());
   const tweetDate = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   const isPending = take.outcome_status === "pending";
   let analysisText: string | null = null;
   if (!isPending) {
     const raw = take.outcome_notes?.trim() || take.grade_notes?.trim() || null;
-    analysisText = raw ? trimAnalysis(raw) : null;
+    if (raw) analysisText = trimAnalysis(raw);
   } else if (take.grading_criteria?.trim()) {
     analysisText = await generatePendingTeaser(expertName, displayText, take.grading_criteria.trim());
-    if (analysisText) analysisText = trimAnalysis(analysisText);
   }
   const analysisLabel = isPending ? "WHAT WE'RE WATCHING" : "THE ANALYSIS";
 
-  // ── Dimensions (2× retina render per spec §8) ──────────────────────────────
-  const W = 1120; // 560 × 2
-  const H = computeHeight(displayText, analysisText);
+  // Tweet font size — spec §4 formula
+  const textLen = displayText.length;
+  const tweetFS = textLen <= 60 ? 46 :
+    Math.round((46 - (46 - 33) * Math.min(1, (textLen - 60) / 150)) * 10) / 10;
 
-  // ── All CSS values are 2× spec values ─────────────────────────────────────
-  const tweetFontSize = tweetSizeSpec(displayText) * 2;
+  // Simple fixed height that works for all lengths; analysis adds height
+  const W = 1080;
+  const H = analysisText
+    ? (textLen > 200 ? 1400 : 1280)
+    : (textLen > 200 ? 1200 : 1080);
 
-  const fonts = [
-    ...(archivoBuf    ? [{ name: "Archivo Black",  data: archivoBuf,    weight: 400 as const, style: "normal" as const }] : []),
-    ...(spaceGroteskBuf ? [{ name: "Space Grotesk", data: spaceGroteskBuf, weight: 700 as const, style: "normal" as const }] : []),
-  ];
+  const CREAM  = "#f1ece0";
+  const INK    = "#161a17";
+  const RED    = "#cf2c20";
+  const MUTED  = "#536471";
+  const LABEL  = "#8b9088";
+  const ANALC  = "#454b46";
 
   return new ImageResponse(
     (
-      <div style={{ width: W, height: H, backgroundColor: PAPER, display: "flex", flexDirection: "column", paddingTop: 56, paddingRight: 68, paddingBottom: 48, paddingLeft: 68 }}>
+      <div style={{ width: W, height: H, backgroundColor: CREAM, display: "flex", flexDirection: "column", paddingTop: 52, paddingRight: 64, paddingBottom: 44, paddingLeft: 64 }}>
 
-        {/* ── Wordmark ── */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", fontFamily: '"Archivo Black", sans-serif', fontSize: 50, color: INK, letterSpacing: "-0.02em" }}>
-            <span style={{ color: INK }}>RATE</span>
-            <span style={{ color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
-            <span style={{ color: INK }}>MY</span>
-            <span style={{ color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
-            <span style={{ color: INK }}>SPORTS</span>
-            <span style={{ color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
-            <span style={{ color: INK }}>TAKE</span>
-          </div>
-          <div style={{ display: "flex", marginTop: 10 }}>
-            <span style={{ fontSize: 21, letterSpacing: "0.26em", color: "#6b6b6b", fontFamily: "monospace" }}>THE TAKES, RATED.</span>
-          </div>
+        {/* Wordmark */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>RATE</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>MY</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>SPORTS</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>TAKE</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
+          <span style={{ fontSize: 18, letterSpacing: "0.26em", color: "#6b6b6b", fontFamily: "monospace" }}>THE TAKES, RATED.</span>
         </div>
 
-        {/* ── White tweet card ── */}
-        <div style={{ marginTop: 44, backgroundColor: WHITE, borderRadius: 36, paddingTop: 40, paddingRight: 44, paddingBottom: 40, paddingLeft: 44, borderWidth: 2, borderStyle: "solid", borderColor: CARD_BOR, display: "flex", flexDirection: "column" }}>
+        {/* Tweet card */}
+        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: 36, paddingRight: 40, paddingBottom: 36, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e2e8f0" }}>
 
-          {/* Header row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 24 }}>
             {/* Avatar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 96, height: 96, borderRadius: 48, backgroundColor: "#d1d5db", flexShrink: 0 }}>
-              <span style={{ fontSize: 32, fontWeight: 700, color: "#6b7280" }}>{initials}</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 88, height: 88, borderRadius: 44, backgroundColor: "#d1d5db", flexShrink: 0 }}>
+              <span style={{ fontSize: 30, fontWeight: 900, color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{initials}</span>
             </div>
-            {/* Name + handle */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            {/* Name + handle stacked */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 32, fontWeight: 700, color: "#0f1419" }}>{expertName}</span>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 17, backgroundColor: "#1d9bf0", flexShrink: 0 }}>
-                  <span style={{ color: "#ffffff", fontSize: 18, fontWeight: 900 }}>✓</span>
+                <span style={{ fontSize: 28, fontWeight: 900, color: "#0f1419", fontFamily: "Inter, sans-serif" }}>{expertName}</span>
+                {/* Blue verified circle */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 15, backgroundColor: "#1d9bf0" }}>
+                  <span style={{ color: "#ffffff", fontSize: 16, fontWeight: 900, fontFamily: "Inter, sans-serif" }}>✓</span>
                 </div>
               </div>
-              {handle && (
-                <div style={{ display: "flex", marginTop: 6 }}>
-                  <span style={{ fontSize: 27, color: MUTED }}>{handle}</span>
-                </div>
-              )}
+              {handle && <span style={{ fontSize: 22, color: MUTED, fontFamily: "monospace" }}>{handle}</span>}
             </div>
           </div>
 
           {/* Tweet text */}
-          <div style={{ display: "flex", marginTop: 30, marginBottom: 26 }}>
-            <span style={{ fontSize: tweetFontSize, lineHeight: 1.32, letterSpacing: "-0.01em", color: "#0f1419", fontWeight: 600 }}>{displayText}</span>
+          <div style={{ display: "flex" }}>
+            <span style={{ fontSize: tweetFS, lineHeight: 1.35, letterSpacing: "-0.01em", color: "#0f1419", fontFamily: "Inter, sans-serif", fontWeight: 700 }}>{displayText}</span>
           </div>
 
           {/* Date */}
-          <div style={{ display: "flex" }}>
-            <span style={{ fontSize: 27, color: MUTED }}>{tweetDate}</span>
+          <div style={{ display: "flex", marginTop: 20 }}>
+            <span style={{ fontSize: 22, color: MUTED, fontFamily: "monospace" }}>{tweetDate}</span>
           </div>
         </div>
 
-        {/* ── Analysis ── */}
+        {/* Analysis */}
         {analysisText && (
-          <div style={{ display: "flex", flexDirection: "column", marginTop: 48 }}>
-            {/* Section label */}
-            <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-              <div style={{ flexGrow: 1, height: 2, backgroundColor: "#cccccc" }} />
-              <span style={{ fontSize: 22, letterSpacing: "0.3em", color: INK, fontFamily: "monospace" }}>{analysisLabel}</span>
-              <div style={{ flexGrow: 1, height: 2, backgroundColor: "#cccccc" }} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
+            <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+              <div style={{ flexGrow: 1, height: 1, backgroundColor: INK }} />
+              <span style={{ fontSize: 18, letterSpacing: "0.24em", color: INK, fontFamily: "monospace", marginLeft: 16, marginRight: 16 }}>{analysisLabel}</span>
+              <div style={{ flexGrow: 1, height: 1, backgroundColor: INK }} />
             </div>
-            {/* Text — centered via wrapping flex */}
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 30, marginBottom: 40 }}>
-              <span style={{ fontSize: 32, lineHeight: 1.44, color: ANALYSIS, textAlign: "center" }}>{analysisText}</span>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
+              <span style={{ fontSize: 28, lineHeight: 1.5, color: ANALC, fontFamily: "Inter, sans-serif", textAlign: "center" }}>{analysisText}</span>
             </div>
           </div>
         )}
 
-        {/* ── Grade row ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 44, borderTopWidth: 4, borderTopStyle: "solid", borderTopColor: INK, paddingTop: 32, marginTop: analysisText ? 0 : 48 }}>
+        {/* Divider line */}
+        <div style={{ display: "flex", width: "100%", height: 2, backgroundColor: INK, marginTop: analysisText ? 36 : 52 }} />
+
+        {/* Grade row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40, marginTop: 28 }}>
           <div style={{ display: "flex" }}>
-            <span style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: 168, color: GRADE_C, letterSpacing: "-0.05em" }}>{letterGrade ?? "—"}</span>
+            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 148, color: gc, letterSpacing: "-0.04em", lineHeight: 1 }}>{letterGrade ?? "—"}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex" }}>
-              <span style={{ fontFamily: "monospace", fontSize: 21, letterSpacing: "0.24em", color: LABEL }}>FINAL GRADE</span>
+              <span style={{ fontSize: 18, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
             </div>
-            <div style={{ display: "flex", marginTop: 10 }}>
-              <span style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: 60, color: GRADE_C, letterSpacing: "-0.02em" }}>{verdict}</span>
+            <div style={{ display: "flex", marginTop: 8 }}>
+              <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
             </div>
           </div>
         </div>
 
-        {/* ── Footer ── */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
-          <span style={{ fontFamily: "monospace", fontSize: 22, letterSpacing: "0.16em", color: LABEL }}>RATEMYSPORTSTAKE.COM</span>
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 36 }}>
+          <span style={{ fontSize: 18, letterSpacing: "0.18em", color: LABEL, fontFamily: "monospace" }}>RATEMYSPORTSTAKE.COM</span>
         </div>
 
       </div>
@@ -301,7 +225,7 @@ export async function GET(
     {
       width: W,
       height: H,
-      fonts,
+      ...(interBlack ? { fonts: [{ name: "Inter", data: interBlack, weight: 900 as const, style: "normal" as const }] } : {}),
     }
   );
 }

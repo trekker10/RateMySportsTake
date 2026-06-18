@@ -87,7 +87,7 @@ export async function GET(
 
   const { data: take } = await supabase
     .from("takes")
-    .select("*, experts(name, twitter_handle)")
+    .select("*, experts(name, twitter_handle, avatar_url)")
     .eq("take_id", takeId)
     .single();
 
@@ -99,6 +99,7 @@ export async function GET(
   const expertName = (expert?.name ?? "Unknown Analyst") as string;
   const rawHandle  = (expert?.twitter_handle ?? "") as string;
   const handle     = rawHandle ? (rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`) : null;
+  const avatarUrl  = (expert?.avatar_url ?? null) as string | null;
 
   const initials = expertName.split(" ").filter(Boolean).slice(0, 2).map((w: string) => w[0].toUpperCase()).join("");
 
@@ -207,9 +208,14 @@ export async function GET(
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 24 }}>
             {/* Avatar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, backgroundColor: "#d1d5db", flexShrink: 0 }}>
-              <span style={{ fontSize: avatarFS, fontWeight: 900, color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{initials}</span>
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={expertName} style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, objectFit: "cover", flexShrink: 0 }} />
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, backgroundColor: "#d1d5db", flexShrink: 0 }}>
+                <span style={{ fontSize: avatarFS, fontWeight: 900, color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{initials}</span>
+              </div>
+            )}
             {/* Name + handle stacked */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

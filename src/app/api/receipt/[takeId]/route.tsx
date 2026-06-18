@@ -140,6 +140,12 @@ export async function GET(
   const LABEL  = "#8b9088";
   const ANALC  = "#454b46";
 
+  const fontList = [
+    ...(interBlack   ? [{ name: "Inter",         data: interBlack,   weight: 900 as const, style: "normal" as const }] : []),
+    ...(archivoblack ? [{ name: "Archivo Black", data: archivoblack, weight: 400 as const, style: "normal" as const }] : []),
+  ];
+  const imgOpts = { width: W, height: H, ...(fontList.length > 0 ? { fonts: fontList } : {}) };
+
   return new ImageResponse(
     (
       <div style={{ width: W, height: H, backgroundColor: CREAM, display: "flex", flexDirection: "column", paddingTop: 52, paddingRight: 64, paddingBottom: 32, paddingLeft: 64 }}>
@@ -230,12 +236,6 @@ export async function GET(
 
       </div>
     ),
-    (() => {
-      const fontList = [
-        ...(interBlack ? [{ name: "Inter", data: interBlack, weight: 900 as const, style: "normal" as const }] : []),
-        ...(archivoblack ? [{ name: "Archivo Black", data: archivoblack, weight: 400 as const, style: "normal" as const }] : []),
-      ];
-      return { width: W, height: H, ...(fontList.length > 0 ? { fonts: fontList } : {}) };
-    })()
+    imgOpts
   );
 }

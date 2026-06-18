@@ -68,84 +68,6 @@ async function generatePendingTeaser(
   }
 }
 
-// Simple barcode lines
-function Barcode() {
-  const bars = [3,1,2,1,3,2,1,2,3,1,2,3,1,2,1,3,2,1,3,1,2,1,2,3,1,2,1];
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", height: 32, gap: 1 }}>
-      {bars.map((w, i) => (
-        <div key={i} style={{
-          width: w * 2,
-          height: i % 3 === 0 ? 32 : 24,
-          backgroundColor: "#1a1a1a",
-        }} />
-      ))}
-    </div>
-  );
-}
-
-function HRule() {
-  return <div style={{ width: "100%", height: 1, backgroundColor: "#d6cfc0" }} />;
-}
-
-function SectionLabel({ label }: { label: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 12 }}>
-      <div style={{ flex: 1, height: 1, backgroundColor: "#1a1a1a" }} />
-      <span style={{ fontSize: 13, letterSpacing: "0.22em", color: "#1a1a1a", fontFamily: "monospace", whiteSpace: "nowrap" }}>
-        {label}
-      </span>
-      <div style={{ flex: 1, height: 1, backgroundColor: "#1a1a1a" }} />
-    </div>
-  );
-}
-
-// Blue verified badge (Twitter-style)
-function VerifiedBadge() {
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: 26,
-      height: 26,
-      borderRadius: "50%",
-      backgroundColor: "#1d9bf0",
-      marginLeft: 6,
-      flexShrink: 0,
-    }}>
-      <span style={{ color: "white", fontSize: 14, fontWeight: 900, lineHeight: 1 }}>✓</span>
-    </div>
-  );
-}
-
-// Avatar circle — shows initials of the analyst
-function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
-
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: 80,
-      height: 80,
-      borderRadius: "50%",
-      backgroundColor: "#d1d5db",
-      flexShrink: 0,
-    }}>
-      <span style={{ fontSize: 28, fontWeight: 900, color: "#6b7280", fontFamily: "sans-serif" }}>
-        {initials}
-      </span>
-    </div>
-  );
-}
-
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ takeId: string }> }
@@ -187,7 +109,6 @@ export async function GET(
   // Tweet date — short format: "Jun 16, 2026"
   const d = new Date(take.date_made);
   const tweetDate = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const postedLabel = `${d.toLocaleDateString("en-US", { month: "short" }).toUpperCase()} '${String(d.getFullYear()).slice(2)}`;
 
   const handle = expert?.twitter_handle
     ? (expert.twitter_handle.startsWith("@") ? expert.twitter_handle : `@${expert.twitter_handle}`)
@@ -211,18 +132,27 @@ export async function GET(
   // Scale tweet text font based on length
   const textLen = displayText.length;
   const tweetFontSize =
-    textLen < 60  ? 56 :
-    textLen < 100 ? 46 :
-    textLen < 160 ? 38 :
-    textLen < 240 ? 32 :
-    textLen < 340 ? 26 :
-    textLen < 460 ? 22 :
-    19;
+    textLen < 60  ? 54 :
+    textLen < 100 ? 44 :
+    textLen < 160 ? 36 :
+    textLen < 240 ? 30 :
+    textLen < 340 ? 25 :
+    textLen < 460 ? 21 :
+    18;
+
+  // Avatar initials
+  const initials = expertName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0].toUpperCase())
+    .join("");
 
   const cream = "#f5f1e9";
   const W = 1080;
   const H = 1350;
-  const PAD = 72; // horizontal padding
+  const PAD = 68;
+  const CARD_W = W - PAD * 2;
 
   return new ImageResponse(
     (
@@ -234,128 +164,165 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: `56px ${PAD}px 44px`,
+          padding: `52px ${PAD}px 44px`,
           gap: 0,
+          fontFamily: "Inter, sans-serif",
         }}
       >
         {/* ── Logo ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 6 }}>
-          {["RATE", "MY", "SPORTS", "TAKE"].map((word, i) => (
-            <div key={word} style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ fontSize: 44, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em", fontFamily: "Inter, sans-serif" }}>
-                {word}
-              </span>
-              {i < 3 && (
-                <span style={{ fontSize: 44, fontWeight: 900, color: "#e2241a", fontFamily: "Inter, sans-serif" }}>/</span>
-              )}
-            </div>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em" }}>RATE</span>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#e2241a" }}>/</span>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em" }}>MY</span>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#e2241a" }}>/</span>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em" }}>SPORTS</span>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#e2241a" }}>/</span>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#1a1a1a", letterSpacing: "-0.03em" }}>TAKE</span>
         </div>
-        <p style={{ fontSize: 12, letterSpacing: "0.22em", color: "#6b7280", fontFamily: "monospace", margin: "0 0 36px", textTransform: "uppercase" }}>
-          The Takes, Rated.
-        </p>
+        <div style={{ display: "flex", fontSize: 12, letterSpacing: "0.22em", color: "#6b7280", fontFamily: "monospace", marginBottom: 36 }}>
+          THE TAKES, RATED.
+        </div>
 
         {/* ── Fake Tweet Card ── */}
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          width: W - PAD * 2,
-          backgroundColor: "#ffffff",
-          borderRadius: 20,
-          border: "1px solid #e5e7eb",
-          padding: "36px 40px 32px",
-          gap: 0,
-        }}>
-          {/* Header row: avatar + name/handle */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-            <Avatar name={expertName} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <span style={{ fontSize: 26, fontWeight: 900, color: "#0f1419", fontFamily: "Inter, sans-serif", letterSpacing: "-0.01em" }}>
-                  {expertName}
-                </span>
-                <VerifiedBadge />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: CARD_W,
+            backgroundColor: "#ffffff",
+            borderRadius: 20,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "#e2e8f0",
+            padding: "36px 40px 32px 40px",
+          }}
+        >
+          {/* Header: avatar + name/handle on left, date on right */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            {/* Left: avatar + name block */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              {/* Avatar circle */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 76,
+                height: 76,
+                borderRadius: 38,
+                backgroundColor: "#d1d5db",
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 26, fontWeight: 900, color: "#6b7280" }}>{initials}</span>
               </div>
-              <span style={{ fontSize: 18, color: "#536471", fontFamily: "monospace" }}>
-                {handle ?? ""}
-              </span>
+
+              {/* Name + handle */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 24, fontWeight: 900, color: "#0f1419", letterSpacing: "-0.01em" }}>
+                    {expertName}
+                  </span>
+                  {/* Verified badge */}
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: "#1d9bf0",
+                  }}>
+                    <span style={{ color: "white", fontSize: 13, fontWeight: 900 }}>✓</span>
+                  </div>
+                </div>
+                {handle && (
+                  <span style={{ fontSize: 17, color: "#536471", fontFamily: "monospace" }}>{handle}</span>
+                )}
+              </div>
             </div>
-            {/* Date top-right */}
-            <span style={{ marginLeft: "auto", fontSize: 17, color: "#536471", fontFamily: "monospace", flexShrink: 0 }}>
+
+            {/* Right: date */}
+            <span style={{ fontSize: 17, color: "#536471", fontFamily: "monospace", flexShrink: 0 }}>
               {tweetDate}
             </span>
           </div>
 
           {/* Tweet text */}
-          <p style={{
-            fontSize: tweetFontSize,
-            fontWeight: 700,
-            color: "#0f1419",
-            lineHeight: 1.4,
-            margin: "0 0 0",
-            fontFamily: "Inter, sans-serif",
-            letterSpacing: "-0.01em",
-          }}>
+          <div style={{ display: "flex", fontSize: tweetFontSize, fontWeight: 700, color: "#0f1419", lineHeight: 1.4, letterSpacing: "-0.01em" }}>
             {displayText}
-          </p>
+          </div>
         </div>
 
         {/* ── Analysis ── */}
         {analysisText && (
-          <div style={{ width: W - PAD * 2, display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
-            <SectionLabel label={analysisLabel} />
-            <p style={{
-              fontSize: 30,
+          <div style={{ width: CARD_W, display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
+            {/* Section label with rules */}
+            <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 12 }}>
+              <div style={{ flex: 1, height: 1, backgroundColor: "#1a1a1a" }} />
+              <span style={{ fontSize: 12, letterSpacing: "0.22em", color: "#1a1a1a", fontFamily: "monospace" }}>
+                {analysisLabel}
+              </span>
+              <div style={{ flex: 1, height: 1, backgroundColor: "#1a1a1a" }} />
+            </div>
+            <div style={{
+              display: "flex",
+              fontSize: 29,
               color: "#374151",
               textAlign: "center",
               lineHeight: 1.55,
-              margin: "18px 0 0",
+              marginTop: 18,
               fontFamily: "serif",
               fontStyle: "italic",
               width: "100%",
             }}>
               {analysisText}
-            </p>
+            </div>
           </div>
         )}
 
         {/* ── Grade ── */}
-        <div style={{ width: W - PAD * 2, display: "flex", flexDirection: "column", alignItems: "center", marginTop: analysisText ? 36 : 48 }}>
-          <HRule />
+        <div style={{ width: CARD_W, display: "flex", flexDirection: "column", alignItems: "center", marginTop: analysisText ? 36 : 52 }}>
+          {/* Thin rule */}
+          <div style={{ width: "100%", height: 1, backgroundColor: "#d6cfc0" }} />
+
           <div style={{ display: "flex", alignItems: "center", gap: 44, marginTop: 28 }}>
             {/* Letter grade */}
             {letterGrade ? (
               <span style={{
-                fontSize: 160,
+                fontSize: 152,
                 fontWeight: 900,
                 color: gradeColor(letterGrade),
-                fontFamily: "Inter, serif",
                 lineHeight: 1,
                 letterSpacing: "-0.04em",
               }}>
                 {letterGrade}
               </span>
             ) : (
-              <span style={{ fontSize: 80, fontWeight: 900, color: "#9ca3af", fontFamily: "sans-serif" }}>—</span>
+              <span style={{ fontSize: 80, fontWeight: 900, color: "#9ca3af" }}>—</span>
             )}
 
             {/* Verdict block */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 12, letterSpacing: "0.22em", color: "#9ca3af", fontFamily: "monospace", textTransform: "uppercase" }}>
-                Final Grade
+              <span style={{ fontSize: 12, letterSpacing: "0.22em", color: "#9ca3af", fontFamily: "monospace" }}>
+                FINAL GRADE
               </span>
               <span style={{
-                fontSize: letterGrade && letterGrade.length > 1 ? 42 : 48,
+                fontSize: 44,
                 fontWeight: 900,
                 color: verdict.color,
-                fontFamily: "Inter, sans-serif",
                 letterSpacing: "0.01em",
                 lineHeight: 1.1,
               }}>
                 {verdict.label}
               </span>
-              <div style={{ marginTop: 8 }}>
-                <Barcode />
+              {/* Barcode */}
+              <div style={{ display: "flex", alignItems: "flex-end", height: 32, gap: 1, marginTop: 8 }}>
+                {[3,1,2,1,3,2,1,2,3,1,2,3,1,2,1,3,2,1,3,1,2,1,2,3,1,2,1].map((w, i) => (
+                  <div key={i} style={{
+                    width: w * 2,
+                    height: i % 3 === 0 ? 32 : 24,
+                    backgroundColor: "#1a1a1a",
+                  }} />
+                ))}
               </div>
             </div>
           </div>
@@ -364,17 +331,17 @@ export async function GET(
         {/* ── Footer ── */}
         <div style={{
           marginTop: "auto",
-          borderTop: "1px solid #d1d5db",
           paddingTop: 18,
-          width: W - PAD * 2,
+          width: CARD_W,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          borderTop: "1px solid #d1d5db",
         }}>
           <div style={{ width: 4, height: 32, backgroundColor: "#1a1a1a" }} />
-          <p style={{ fontSize: 13, letterSpacing: "0.14em", color: "#6b7280", fontFamily: "monospace" }}>
+          <span style={{ fontSize: 13, letterSpacing: "0.14em", color: "#6b7280", fontFamily: "monospace" }}>
             RATEMYSPORTSTAKE.COM
-          </p>
+          </span>
           <div style={{ width: 4, height: 32, backgroundColor: "#1a1a1a" }} />
         </div>
       </div>

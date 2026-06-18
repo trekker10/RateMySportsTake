@@ -67,6 +67,7 @@ export async function GET(
   { params }: { params: Promise<{ takeId: string }> }
 ) {
   const { takeId } = await params;
+  const baseUrl = new URL(_req.url).origin;
   const supabase = await createClient();
 
   // Load Inter Black — same approach as the previously working version
@@ -152,13 +153,8 @@ export async function GET(
 
         {/* Wordmark */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>RATE</span>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: RED, marginLeft: 4, marginRight: 4 }}>/</span>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>MY</span>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: RED, marginLeft: 4, marginRight: 4 }}>/</span>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>SPORTS</span>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: RED, marginLeft: 4, marginRight: 4 }}>/</span>
-          <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>TAKE</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${baseUrl}/wordmark.png`} alt="RATE/MY/SPORTS/TAKE" style={{ height: 64, objectFit: "contain" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
           <span style={{ fontSize: 19, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", fontFamily: "Inter, sans-serif" }}>THE TAKES, RATED.</span>

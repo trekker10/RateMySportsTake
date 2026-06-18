@@ -178,7 +178,7 @@ export async function GET(
         {/* Wordmark */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`${baseUrl}/wordmark.png`} alt="RATE/MY/SPORTS/TAKE" style={{ height: 64, objectFit: "contain" }} />
+          <img src={`${baseUrl}/wordmark.png`} alt="RATE/MY/SPORTS/TAKE" style={{ height: 96, objectFit: "contain" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
           <span style={{ fontSize: 19, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", fontFamily: "Inter, sans-serif" }}>THE TAKES, RATED.</span>

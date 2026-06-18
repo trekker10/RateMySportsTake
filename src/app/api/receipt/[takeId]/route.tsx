@@ -230,13 +230,12 @@ export async function GET(
 
       </div>
     ),
-    {
-      width: W,
-      height: H,
-      fonts: [
+    (() => {
+      const fontList = [
         ...(interBlack ? [{ name: "Inter", data: interBlack, weight: 900 as const, style: "normal" as const }] : []),
         ...(archivoblack ? [{ name: "Archivo Black", data: archivoblack, weight: 400 as const, style: "normal" as const }] : []),
-      ],
-    }
+      ];
+      return { width: W, height: H, ...(fontList.length > 0 ? { fonts: fontList } : {}) };
+    })()
   );
 }

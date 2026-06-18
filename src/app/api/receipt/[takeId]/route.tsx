@@ -127,34 +127,48 @@ export async function GET(
 
   const textLen = displayText.length;
 
-  const analysisReserve = analysisText ? 280 : 0;
-  const gradeReserve = 220;
-  const headerReserve = 260;
-  const tweetCardPadding = 144;
-  const availableTweetPx = H - headerReserve - gradeReserve - analysisReserve - tweetCardPadding - 64;
+  const HEADER_H      = 148;
+  const TWEET_META_H  = 160;
+  const ANALYSIS_H    = analysisText ? 260 : 0;
+  const GRADE_H       = 240;
+  const OUTER_PAD     = 96;
+
+  const availableTweetTextH = H - HEADER_H - TWEET_META_H - ANALYSIS_H - GRADE_H - OUTER_PAD;
 
   const usableWidth = 920;
   function estimateTweetHeight(fs: number): number {
-    const charsPerLine = Math.floor(usableWidth / (fs * 0.52));
-    const lines = Math.ceil(textLen / charsPerLine);
-    return lines * fs * 1.35;
+    const charsPerLine = Math.floor(usableWidth / (fs * 0.54));
+    const lines = Math.ceil(textLen / Math.max(charsPerLine, 1));
+    return Math.ceil(lines * fs * 1.35);
   }
 
-  let tweetFS = 46;
-  for (let fs = 46; fs >= 22; fs -= 0.5) {
-    if (estimateTweetHeight(fs) <= availableTweetPx) {
+  let tweetFS = 44;
+  for (let fs = 44; fs >= 18; fs -= 0.5) {
+    if (estimateTweetHeight(fs) <= availableTweetTextH) {
       tweetFS = fs;
       break;
     }
   }
+  if (tweetFS < 18) tweetFS = 18;
 
-  const gradeFS   = tweetFS < 30 ? 120 : tweetFS < 38 ? 140 : 160;
-  const verdictFS = tweetFS < 30 ? 56  : tweetFS < 38 ? 64  : 72;
+  const tight      = tweetFS < 36;
+  const veryTight  = tweetFS < 26;
 
-  const tight     = tweetFS < 32;
-  const sectionMT = tight ? 28 : 40;
-  const gradeGap  = tight ? 28 : 40;
-  const footerMT  = tight ? 12 : 20;
+  const gradeFS   = veryTight ? 100 : tight ? 130 : 160;
+  const verdictFS = veryTight ? 46  : tight ? 58  : 72;
+
+  const sectionMT = veryTight ? 16 : tight ? 24 : 40;
+  const gradeGap  = veryTight ? 20 : tight ? 28 : 40;
+  const footerMT  = veryTight ? 8  : tight ? 14 : 20;
+  const dividerMT = veryTight ? 16 : tight ? 24 : 36;
+  const tweetMT   = veryTight ? 28 : tight ? 36 : 52;
+
+  const avatarSize = veryTight ? 64 : 88;
+  const avatarFS   = veryTight ? 22 : 30;
+  const nameFSval  = veryTight ? 24 : 28;
+  const handleFS   = veryTight ? 18 : 22;
+
+  const tweetCardMaxH = H - HEADER_H - ANALYSIS_H - GRADE_H - OUTER_PAD;
 
   const DISPLAY = archivoblack ? "Archivo Black, sans-serif" : "Inter, sans-serif";
 
@@ -180,29 +194,29 @@ export async function GET(
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`${baseUrl}/wordmark.png`} alt="RATE/MY/SPORTS/TAKE" style={{ height: 96, objectFit: "contain" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: tweetMT }}>
           <span style={{ fontSize: 19, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", fontFamily: "Inter, sans-serif" }}>THE TAKES, RATED.</span>
         </div>
 
         {/* Tweet card */}
-        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: 36, paddingRight: 40, paddingBottom: 36, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e7e2d4", boxShadow: "0 14px 30px -16px rgba(0,0,0,0.4)" }}>
+        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: 36, paddingRight: 40, paddingBottom: 36, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e7e2d4", boxShadow: "0 14px 30px -16px rgba(0,0,0,0.4)", maxHeight: tweetCardMaxH, overflow: "hidden" }}>
 
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 24 }}>
             {/* Avatar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 88, height: 88, borderRadius: 44, backgroundColor: "#d1d5db", flexShrink: 0 }}>
-              <span style={{ fontSize: 30, fontWeight: 900, color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{initials}</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, backgroundColor: "#d1d5db", flexShrink: 0 }}>
+              <span style={{ fontSize: avatarFS, fontWeight: 900, color: "#6b7280", fontFamily: "Inter, sans-serif" }}>{initials}</span>
             </div>
             {/* Name + handle stacked */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 28, fontWeight: 900, color: "#0f1419", fontFamily: "Inter, sans-serif" }}>{expertName}</span>
+                <span style={{ fontSize: nameFSval, fontWeight: 900, color: "#0f1419", fontFamily: "Inter, sans-serif" }}>{expertName}</span>
                 {/* Blue verified circle */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 15, backgroundColor: "#1d9bf0" }}>
                   <span style={{ color: "#ffffff", fontSize: 16, fontWeight: 900, fontFamily: "Inter, sans-serif" }}>✓</span>
                 </div>
               </div>
-              {handle && <span style={{ fontSize: 22, color: MUTED, fontFamily: "monospace" }}>{handle}</span>}
+              {handle && <span style={{ fontSize: handleFS, color: MUTED, fontFamily: "monospace" }}>{handle}</span>}
             </div>
           </div>
 
@@ -232,7 +246,7 @@ export async function GET(
         )}
 
         {/* Divider line */}
-        <div style={{ display: "flex", width: "100%", height: 2, backgroundColor: INK, marginTop: tight ? 24 : 36 }} />
+        <div style={{ display: "flex", width: "100%", height: 2, backgroundColor: INK, marginTop: dividerMT }} />
 
         {/* Grade row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: gradeGap, marginTop: 28 }}>

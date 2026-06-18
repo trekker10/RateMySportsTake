@@ -40,7 +40,7 @@ export async function gradeTake(params: {
     system: [
       {
         type: "text",
-        text: "You are a sports take grader. Search the web to find out what actually happened, then grade the prediction objectively. Respond with a JSON object only — no markdown, no explanation.",
+        text: "You are a sports take grader. Search the web to find out what actually happened, then grade the prediction objectively. Respond with a single valid JSON object only — no markdown, no explanation, no literal newlines inside string values (use a space instead).",
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -93,9 +93,27 @@ Final grade = clamp(accuracy_score + difficulty_bonus - confidence_penalty, 0, 1
   const match = last.text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error("No JSON in grading response");
 
-  const parsed = JSON.parse(match[0]);
+  let jsonStr = match[0];
+
+  // Sanitize: replace literal newlines/tabs inside JSON string values
+  // so that badly-escaped Claude output doesn't break JSON.parse
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    // Replace literal newlines inside quoted strings with a space
+    jsonStr = jsonStr.replace(/"((?:[^"\\]|\\.)*)"/g, (_m, inner: string) =>
+      `"${inner.replace(/\n/g, " ").replace(/\r/g, "").replace(/\t/g, " ")}"`
+    );
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (e2) {
+      throw new Error(`Grading JSON parse failed: ${e2 instanceof Error ? e2.message : e2} — raw: ${jsonStr.slice(0, 300)}`);
+    }
+  }
+
   return {
     ...parsed,
     outcome_date: new Date().toISOString().split("T")[0],
-  };
+  } as GradingResult;
 }

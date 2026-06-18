@@ -77,6 +77,13 @@ export async function GET(
     if (url) interBlack = await fetch(url).then(r => r.arrayBuffer());
   } catch { /* fall back to system font */ }
 
+  let archivoblack: ArrayBuffer | null = null;
+  try {
+    const css2 = await fetch("https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap").then(r => r.text());
+    const url2 = css2.match(/src: url\((.+?)\) format\('woff2'\)/)?.[1];
+    if (url2) archivoblack = await fetch(url2).then(r => r.arrayBuffer());
+  } catch { /* fall back */ }
+
   const { data: take } = await supabase
     .from("takes")
     .select("*, experts(name, twitter_handle)")
@@ -119,11 +126,10 @@ export async function GET(
   const tweetFS = textLen <= 60 ? 46 :
     Math.round((46 - (46 - 33) * Math.min(1, (textLen - 60) / 150)) * 10) / 10;
 
-  // Simple fixed height that works for all lengths; analysis adds height
   const W = 1080;
-  const H = analysisText
-    ? (textLen > 200 ? 1400 : 1280)
-    : (textLen > 200 ? 1200 : 1080);
+  const textExtra = textLen > 150 ? Math.round((textLen - 150) * 1.8) : 0;
+  const analysisExtra = analysisText ? 220 : 0;
+  const H = 1080 + textExtra + analysisExtra;
 
   const CREAM  = "#f1ece0";
   const INK    = "#161a17";
@@ -138,16 +144,16 @@ export async function GET(
 
         {/* Wordmark */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>RATE</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: RED, marginLeft: 3, marginRight: 3 }}>/</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>MY</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: RED, marginLeft: 3, marginRight: 3 }}>/</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>SPORTS</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: RED, marginLeft: 3, marginRight: 3 }}>/</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>TAKE</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>RATE</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: RED, marginLeft: 4, marginRight: 4 }}>/</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>MY</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: RED, marginLeft: 4, marginRight: 4 }}>/</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>SPORTS</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: RED, marginLeft: 4, marginRight: 4 }}>/</span>
+          <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 58, color: INK, letterSpacing: "-0.01em" }}>TAKE</span>
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
-          <span style={{ fontSize: 18, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", fontFamily: "Inter, sans-serif" }}>THE TAKES, RATED.</span>
+          <span style={{ fontSize: 19, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", fontFamily: "Inter, sans-serif" }}>THE TAKES, RATED.</span>
         </div>
 
         {/* Tweet card */}
@@ -203,20 +209,20 @@ export async function GET(
         {/* Grade row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40, marginTop: 28 }}>
           <div style={{ display: "flex" }}>
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 148, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "4px 4px 0 rgba(0,0,0,0.08)" }}>{letterGrade ?? "—"}</span>
+            <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 168, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "5px 5px 0 rgba(0,0,0,0.1)" }}>{letterGrade ?? "—"}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex" }}>
               <span style={{ fontSize: 18, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
             </div>
             <div style={{ display: "flex", marginTop: 8 }}>
-              <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
+              <span style={{ fontFamily: "Archivo Black, sans-serif", fontWeight: 400, fontSize: 72, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
           <span style={{ fontSize: 18, letterSpacing: "0.18em", color: LABEL, fontFamily: "monospace" }}>RATEMYSPORTSTAKE.COM</span>
         </div>
 
@@ -225,7 +231,10 @@ export async function GET(
     {
       width: W,
       height: H,
-      ...(interBlack ? { fonts: [{ name: "Inter", data: interBlack, weight: 900 as const, style: "normal" as const }] } : {}),
+      fonts: [
+        ...(interBlack ? [{ name: "Inter", data: interBlack, weight: 900 as const, style: "normal" as const }] : []),
+        ...(archivoblack ? [{ name: "Archivo Black", data: archivoblack, weight: 400 as const, style: "normal" as const }] : []),
+      ],
     }
   );
 }

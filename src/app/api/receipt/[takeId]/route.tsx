@@ -168,6 +168,9 @@ export async function GET(
   const nameFSval  = veryTight ? 24 : 28;
   const handleFS   = veryTight ? 18 : 22;
 
+  const cardPadV   = veryTight ? 20 : tight ? 28 : 36;  // tweet card top/bottom padding
+  const dateMT     = veryTight ? 10 : tight ? 14 : 20;  // marginTop on date row
+
   const tweetCardMaxH = H - HEADER_H - ANALYSIS_H - GRADE_H - OUTER_PAD;
 
   const DISPLAY = archivoblack ? "Archivo Black, sans-serif" : "Inter, sans-serif";
@@ -199,7 +202,7 @@ export async function GET(
         </div>
 
         {/* Tweet card */}
-        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: 36, paddingRight: 40, paddingBottom: 36, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e7e2d4", boxShadow: "0 14px 30px -16px rgba(0,0,0,0.4)", maxHeight: tweetCardMaxH, overflow: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: cardPadV, paddingRight: 40, paddingBottom: cardPadV, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e7e2d4", boxShadow: "0 14px 30px -16px rgba(0,0,0,0.4)", maxHeight: tweetCardMaxH, overflow: "hidden" }}>
 
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 24 }}>
@@ -226,7 +229,7 @@ export async function GET(
           </div>
 
           {/* Date */}
-          <div style={{ display: "flex", marginTop: 20 }}>
+          <div style={{ display: "flex", marginTop: dateMT }}>
             <span style={{ fontSize: 22, color: MUTED, fontFamily: "monospace" }}>{tweetDate}</span>
           </div>
         </div>

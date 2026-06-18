@@ -134,24 +134,24 @@ export async function GET(
 
   return new ImageResponse(
     (
-      <div style={{ width: W, height: H, backgroundColor: CREAM, display: "flex", flexDirection: "column", paddingTop: 52, paddingRight: 64, paddingBottom: 44, paddingLeft: 64 }}>
+      <div style={{ width: W, height: H, backgroundColor: CREAM, display: "flex", flexDirection: "column", paddingTop: 52, paddingRight: 64, paddingBottom: 32, paddingLeft: 64 }}>
 
         {/* Wordmark */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>RATE</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>MY</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>SPORTS</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: RED, marginLeft: 2, marginRight: 2 }}>/</span>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 46, color: INK, letterSpacing: "-0.02em" }}>TAKE</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>RATE</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: RED, marginLeft: 3, marginRight: 3 }}>/</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>MY</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: RED, marginLeft: 3, marginRight: 3 }}>/</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>SPORTS</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: RED, marginLeft: 3, marginRight: 3 }}>/</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 52, color: INK, letterSpacing: "-0.03em" }}>TAKE</span>
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
-          <span style={{ fontSize: 18, letterSpacing: "0.26em", color: "#6b6b6b", fontFamily: "monospace" }}>THE TAKES, RATED.</span>
+          <span style={{ fontSize: 18, letterSpacing: "0.26em", color: "rgba(0,0,0,0.42)", fontFamily: "Inter, sans-serif" }}>THE TAKES, RATED.</span>
         </div>
 
         {/* Tweet card */}
-        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: 36, paddingRight: 40, paddingBottom: 36, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e2e8f0" }}>
+        <div style={{ display: "flex", flexDirection: "column", backgroundColor: "#ffffff", borderRadius: 28, paddingTop: 36, paddingRight: 40, paddingBottom: 36, paddingLeft: 40, borderWidth: 1, borderStyle: "solid", borderColor: "#e7e2d4", boxShadow: "0 14px 30px -16px rgba(0,0,0,0.4)" }}>
 
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 24 }}>
@@ -174,7 +174,7 @@ export async function GET(
 
           {/* Tweet text */}
           <div style={{ display: "flex" }}>
-            <span style={{ fontSize: tweetFS, lineHeight: 1.35, letterSpacing: "-0.01em", color: "#0f1419", fontFamily: "Inter, sans-serif", fontWeight: 700 }}>{displayText}</span>
+            <span style={{ fontSize: tweetFS, lineHeight: 1.35, letterSpacing: "-0.01em", color: "#0f1419", fontFamily: "Inter, sans-serif", fontWeight: 400 }}>{displayText}</span>
           </div>
 
           {/* Date */}
@@ -187,9 +187,9 @@ export async function GET(
         {analysisText && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 40 }}>
             <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-              <div style={{ flexGrow: 1, height: 1, backgroundColor: INK }} />
-              <span style={{ fontSize: 18, letterSpacing: "0.24em", color: INK, fontFamily: "monospace", marginLeft: 16, marginRight: 16 }}>{analysisLabel}</span>
-              <div style={{ flexGrow: 1, height: 1, backgroundColor: INK }} />
+              <div style={{ flexGrow: 1, height: 1, backgroundColor: "rgba(0,0,0,0.2)" }} />
+              <span style={{ fontSize: 18, letterSpacing: "0.24em", color: "rgba(22,26,23,0.6)", fontFamily: "monospace", marginLeft: 16, marginRight: 16 }}>{analysisLabel}</span>
+              <div style={{ flexGrow: 1, height: 1, backgroundColor: "rgba(0,0,0,0.2)" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
               <span style={{ fontSize: 28, lineHeight: 1.5, color: ANALC, fontFamily: "Inter, sans-serif", textAlign: "center" }}>{analysisText}</span>
@@ -203,7 +203,7 @@ export async function GET(
         {/* Grade row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40, marginTop: 28 }}>
           <div style={{ display: "flex" }}>
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 148, color: gc, letterSpacing: "-0.04em", lineHeight: 1 }}>{letterGrade ?? "—"}</span>
+            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 900, fontSize: 148, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "4px 4px 0 rgba(0,0,0,0.08)" }}>{letterGrade ?? "—"}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex" }}>
@@ -216,7 +216,7 @@ export async function GET(
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 36 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
           <span style={{ fontSize: 18, letterSpacing: "0.18em", color: LABEL, fontFamily: "monospace" }}>RATEMYSPORTSTAKE.COM</span>
         </div>
 

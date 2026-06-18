@@ -66,7 +66,12 @@ export async function rateSingleTake(takeId: string): Promise<{ success: true } 
 
   try {
     const rating = await rateTake(textToRate, take.sport ?? "", take.source_type, take.date_made);
-    await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", takeId);
+    const { subjects, ...ratingWithoutSubjects } = rating;
+    await supabase.from("takes").update({
+      ...ratingWithoutSubjects,
+      player_tags: subjects && subjects.length > 0 ? subjects : undefined,
+      rating_status: "rated",
+    }).eq("take_id", takeId);
     return { success: true };
   } catch (err) {
     await supabase.from("takes").update({ rating_status: "failed" }).eq("take_id", takeId);

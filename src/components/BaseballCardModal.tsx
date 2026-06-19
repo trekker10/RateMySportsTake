@@ -72,18 +72,12 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
           {/* RMST wordmark tab — top left */}
           <div style={{
             position: "absolute", top: 0, left: 0,
-            background: "#fff", padding: "13px 22px 17px 15px",
+            background: "#fff", padding: "14px 20px 20px 14px",
             clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 84%)",
             boxShadow: "2px 3px 7px rgba(0,0,0,.30)",
           }}>
-            <div style={{
-              fontFamily: "'Archivo Black', sans-serif", fontStyle: "italic",
-              color: "#1a1a1a", letterSpacing: "-.03em", lineHeight: .9,
-              transform: "skewX(-3deg)",
-            }}>
-              <div style={{ fontSize: 27 }}>RATE<span style={{ color: "#e2241a" }}>/</span>MY</div>
-              <div style={{ fontSize: 27 }}>SPORTS<span style={{ color: "#e2241a" }}>/</span>TAKE</div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/wordmark.png" alt="RATE/MY/SPORTS/TAKE" style={{ width: 180, display: "block" }} />
           </div>
 
           {/* ANALYST pennant — top right */}

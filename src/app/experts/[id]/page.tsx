@@ -8,6 +8,7 @@ import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
 import TakeLogSection from "./TakeLogSection";
 import FantasyTakeLogSection from "./FantasyTakeLogSection";
+import BaseballCardModal from "@/components/BaseballCardModal";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
@@ -110,6 +111,8 @@ export default async function ExpertProfilePage({
     { data: followRow },
     { data: allGradedTakes },
     { data: fantasyTakes },
+    { data: wlData },
+    { data: showRow },
   ] = await Promise.all([
     takesQuery,
     countQuery,
@@ -119,6 +122,10 @@ export default async function ExpertProfilePage({
       : Promise.resolve({ data: null }),
     supabase.from("takes").select("grade").eq("expert_id", expertId).not("grade", "is", null),
     createAdminClient().from("fantasy_takes").select("fantasy_take_id, category, raw_text, player_name, player_position, timing_window, boldness_score, outcome_status, accuracy_score, grader_note, date_made, resolution_date, sport_season").eq("expert_id", expertId).order("date_made", { ascending: false }),
+    supabase.from("takes").select("outcome_status").eq("expert_id", expertId).in("outcome_status", ["confirmed_true", "confirmed_false", "partially_true"]),
+    expert.outlet
+      ? supabase.from("shows").select("logo_url, network, name").or(`network.ilike.${expert.outlet},name.ilike.${expert.outlet}`).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   // Build 5-bucket distribution (B and C aggregate their sub-tiers)
@@ -138,6 +145,16 @@ export default async function ExpertProfilePage({
   const nameParts = expert.name.trim().split(" ");
   const firstName = nameParts.slice(0, -1).join(" ");
   const lastName  = nameParts[nameParts.length - 1];
+
+  // Baseball card data
+  const cardWins   = (wlData ?? []).filter(t => t.outcome_status === "confirmed_true").length;
+  const cardLosses = (wlData ?? []).filter(t => t.outcome_status !== "confirmed_true").length;
+  const cardRecord = cardWins > 0 || cardLosses > 0 ? `${cardWins}–${cardLosses}` : "—";
+  const cardBeat   = expert.sport_focus?.[0] ?? "NBA";
+  const cardGrade  = expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—";
+  const cardScore  = expert.overall_rating ?? 0;
+  const cardAcc    = expert.accuracy_rate > 0 ? Math.round(expert.accuracy_rate) : 0;
+  const cardLogoUrl = (showRow as { logo_url?: string | null } | null)?.logo_url ?? null;
 
   function boldnessTier(avg: number): { label: string; color: string } {
     if (avg <= 0)  return { label: "—",             color: "#9ca3af" };
@@ -250,8 +267,21 @@ export default async function ExpertProfilePage({
               </div>
 
               {/* TakeScore inline */}
-              <div className="mt-3 mb-1">
+              <div className="mt-3 mb-1 flex flex-wrap items-center gap-3">
                 <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
+                <BaseballCardModal
+                  first={nameParts[0]}
+                  last={lastName}
+                  beat={cardBeat}
+                  grade={cardGrade}
+                  score={cardScore}
+                  acc={cardAcc}
+                  record={cardRecord}
+                  rank={rank}
+                  network={expert.outlet ?? ""}
+                  logoUrl={cardLogoUrl}
+                  portraitUrl={expert.avatar_url ?? null}
+                />
               </div>
               {expert.is_fantasy_guru ? (
                 <div className="flex items-baseline gap-2 mt-3">
@@ -297,8 +327,21 @@ export default async function ExpertProfilePage({
                 <> · <a href={`https://x.com/${expert.twitter_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">{expert.twitter_handle}</a></>
               )}
             </p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <FollowButton expertId={expert.expert_id} initialFollowing={!!followRow} isLoggedIn={!!user} />
+              <BaseballCardModal
+                first={nameParts[0]}
+                last={lastName}
+                beat={cardBeat}
+                grade={cardGrade}
+                score={cardScore}
+                acc={cardAcc}
+                record={cardRecord}
+                rank={rank}
+                network={expert.outlet ?? ""}
+                logoUrl={cardLogoUrl}
+                portraitUrl={expert.avatar_url ?? null}
+              />
             </div>
           </div>
 

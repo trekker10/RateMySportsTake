@@ -194,20 +194,10 @@ export default function BaseballCardModal(props: BaseballCardProps) {
       <button
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 10,
-          background: "#e2241a", color: "#fff",
-          border: "2px solid #15201a", borderRadius: 40,
-          padding: "14px 24px", fontSize: 17, fontWeight: 600,
-          boxShadow: "4px 4px 0 rgba(21,32,26,.25)",
-          cursor: "pointer", whiteSpace: "nowrap",
-          transition: "transform .12s ease, box-shadow .12s ease",
-          fontFamily: "inherit",
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translate(-2px,-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "6px 6px 0 #15201a"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ""; (e.currentTarget as HTMLButtonElement).style.boxShadow = "4px 4px 0 rgba(21,32,26,.25)"; }}
+        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+        style={{ background: "#e2241a" }}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ width: 18, height: 18, flexShrink: 0 }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-4 h-4 shrink-0">
           <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
           <line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/>
         </svg>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 interface ShareReceiptButtonProps {
   takeId: string;
@@ -13,10 +13,11 @@ interface ShareReceiptButtonProps {
 export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, className, children }: ShareReceiptButtonProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const imageUrl = imageUrlProp ?? `/api/receipt/${takeId}`;
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => { setOpen(false); setCopied(false); };
+  const handleOpen = () => { setImgLoaded(false); setOpen(true); };
+  const handleClose = () => { setOpen(false); setCopied(false); setImgLoaded(false); };
 
   const handleDownload = useCallback(() => {
     const a = document.createElement("a");
@@ -68,13 +69,26 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
             </div>
 
             {/* Receipt image */}
-            <div className="p-4 bg-gray-50">
+            <div className="p-4 bg-gray-50 relative">
+              {/* Loading spinner */}
+              {!imgLoaded && (
+                <div className="flex items-center justify-center py-14 gap-4">
+                  <style>{`
+                    @keyframes spin-ball { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                    .spin-ball { animation: spin-ball 0.9s linear infinite; image-rendering: pixelated; }
+                  `}</style>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/basketball-pixel.png" alt="" className="spin-ball" width={64} height={64} />
+                  <p className="font-mono text-[13px] tracking-[0.25em] uppercase text-gray-500">Loading…</p>
+                </div>
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl}
                 alt="Take receipt"
                 className="w-full block"
-                style={{ imageRendering: "crisp-edges" }}
+                style={{ imageRendering: "crisp-edges", display: imgLoaded ? "block" : "none" }}
+                onLoad={() => setImgLoaded(true)}
               />
             </div>
 

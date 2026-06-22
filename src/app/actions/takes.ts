@@ -67,11 +67,15 @@ export async function rateSingleTake(takeId: string): Promise<{ success: true } 
   try {
     const rating = await rateTake(textToRate, take.sport ?? "", take.source_type, take.date_made);
     const { subjects, ...ratingWithoutSubjects } = rating;
-    await supabase.from("takes").update({
+    const { error: updateError } = await supabase.from("takes").update({
       ...ratingWithoutSubjects,
       player_tags: subjects && subjects.length > 0 ? subjects : undefined,
       rating_status: "rated",
     }).eq("take_id", takeId);
+    if (updateError) {
+      console.error("rateSingleTake update failed:", updateError.message);
+      return { success: false, error: updateError.message };
+    }
     return { success: true };
   } catch (err) {
     await supabase.from("takes").update({ rating_status: "failed" }).eq("take_id", takeId);
@@ -384,7 +388,8 @@ export async function importTake(params: {
 
   try {
     const rating = await rateTake(rawText, sport, sourceType, dateMade);
-    await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", take.take_id);
+    const { error: rateErr } = await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", take.take_id);
+    if (rateErr) console.error("Rate update failed:", rateErr.message);
   } catch {
     await supabase.from("takes").update({ rating_status: "failed" }).eq("take_id", take.take_id);
   }
@@ -413,7 +418,8 @@ export async function importTakeForExpert(params: {
 
   try {
     const rating = await rateTake(rawText, sport, sourceType, dateMade);
-    await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", take.take_id);
+    const { error: rateErr } = await supabase.from("takes").update({ ...rating, rating_status: "rated" }).eq("take_id", take.take_id);
+    if (rateErr) console.error("Rate update failed:", rateErr.message);
   } catch {
     await supabase.from("takes").update({ rating_status: "failed" }).eq("take_id", take.take_id);
   }

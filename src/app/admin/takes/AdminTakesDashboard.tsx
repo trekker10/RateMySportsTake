@@ -131,7 +131,7 @@ function TakeEditPanel({ take, onSaved }: { take: TakeState; onSaved: (updated: 
   const [summary, setSummary] = useState(take.summary ?? "");
   const [criteria, setCriteria] = useState(take.grading_criteria ?? "");
   const [boldness, setBoldness] = useState<string>(take.boldness_score != null ? String(take.boldness_score) : "");
-  const [resDate, setResDate] = useState(take.time_horizon_date ?? "");
+  const [resDate, setResDate] = useState(take.time_horizon_date ? take.time_horizon_date.slice(0, 10) : "");
   const [grade, setGrade] = useState<string>(take.grade != null ? String(Math.round(take.grade)) : "");
   const [outcome, setOutcome] = useState(take.outcome_status);
   const [notes, setNotes] = useState(take.outcome_notes ?? "");

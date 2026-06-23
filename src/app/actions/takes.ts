@@ -145,7 +145,16 @@ export async function submitTake(formData: FormData) {
     expertId = newExpert.expert_id;
   }
 
-  // Insert the take
+  // Classify with Claude first so we can insert everything in one shot
+  let rating: Awaited<ReturnType<typeof rateTake>> | null = null;
+  try {
+    rating = await rateTake(rawText, sport, sourceType, dateMade);
+  } catch (err) {
+    console.error("AI rating failed:", err);
+  }
+
+  const { subjects, player_tags, team_tags, league_tag, ...ratingFields } = rating ?? {};
+
   const { data: take, error: takeError } = await supabase
     .from("takes")
     .insert({
@@ -155,27 +164,19 @@ export async function submitTake(formData: FormData) {
       source_url: sourceUrl,
       sport,
       date_made: dateMade,
+      rating_status: rating ? "rated" : "pending",
+      ...(rating ? {
+        ...ratingFields,
+        player_tags: (player_tags && player_tags.length > 0) ? player_tags : (subjects && subjects.length > 0 ? subjects : null),
+        team_tags: (team_tags && team_tags.length > 0) ? team_tags : null,
+        league_tag: league_tag ?? null,
+      } : {}),
     })
     .select("take_id")
     .single();
 
   if (takeError || !take) {
     throw new Error(`Failed to insert take: ${takeError?.message}`);
-  }
-
-  // Rate with Claude — update take regardless of success/failure
-  try {
-    const rating = await rateTake(rawText, sport, sourceType, dateMade);
-    await supabase
-      .from("takes")
-      .update({ ...rating, rating_status: "rated" })
-      .eq("take_id", take.take_id);
-  } catch (err) {
-    console.error("AI rating failed:", err);
-    await supabase
-      .from("takes")
-      .update({ rating_status: "failed" })
-      .eq("take_id", take.take_id);
   }
 
   redirect(`/takes/${take.take_id}`);

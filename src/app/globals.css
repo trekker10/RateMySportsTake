@@ -266,3 +266,58 @@ body {
     font-size: 17px;
   }
 }
+
+/* ---------------- OUTLET LOGO BAR ---------------- */
+.outlets {
+  background: #f5f1e8;
+  border-top: 2px solid var(--ink);
+  padding: 24px 24px 25px;
+}
+.outlets-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.outlets-head {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: clamp(17px, 1.9vw, 22px);
+  color: var(--ink);
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+}
+.outlets-head b {
+  font-family: 'Archivo Black', sans-serif;
+  font-weight: normal;
+  letter-spacing: -0.01em;
+}
+.logo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 30px 78px;
+  margin-top: 19px;
+}
+.logo-row img { display: block; width: auto; }
+
+.lo-espn { height: 30px; }
+.lo-fs1  { height: 38px; }
+.lo-cbs  { height: 22px; }
+.lo-fox  { height: 56px; }
+.lo-tnt  { height: 52px; }
+.lo-br   { height: 46px; }
+
+@media (max-width: 640px) {
+  .outlets { padding: 21px 24px 23px; }
+  .logo-row { gap: 24px 54px; margin-top: 16px; }
+  .lo-espn { height: 25px; }
+  .lo-fs1  { height: 31px; }
+  .lo-cbs  { height: 18px; }
+  .lo-fox  { height: 46px; }
+  .lo-tnt  { height: 43px; }
+  .lo-br   { height: 38px; }
+}

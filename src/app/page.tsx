@@ -54,6 +54,21 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* ── Outlet Logo Bar ── */}
+      <section className="outlets">
+        <div className="outlets-inner">
+          <p className="outlets-head">Track your <b>favorite analysts</b> from major sports outlets.</p>
+          <div className="logo-row">
+            <img className="lo-espn" src="/espn-grey.png"  alt="ESPN" />
+            <img className="lo-fs1"  src="/fs1-grey.png"   alt="FS1" />
+            <img className="lo-cbs"  src="/cbs-grey.png"   alt="CBS Sports" />
+            <img className="lo-fox"  src="/fox-grey.png"   alt="FOX Sports" />
+            <img className="lo-tnt"  src="/tnt-grey.png"   alt="TNT" />
+            <img className="lo-br"   src="/br-grey.png"    alt="Bleacher Report" />
+          </div>
+        </div>
+      </section>
+
       {/* ── Leaderboard Ribbon ── */}
       <LeaderboardRibbon experts={rankedExperts ?? []} gradeConfig={gradeConfig} />
 

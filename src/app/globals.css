@@ -321,10 +321,10 @@ body {
     width: 100%;
     margin-top: 14px;
   }
-  .lo-espn { height: 17px; }
-  .lo-fs1  { height: 21px; }
-  .lo-cbs  { height: 12px; }
-  .lo-fox  { height: 32px; }
-  .lo-tnt  { height: 29px; }
-  .lo-br   { height: 26px; }
+  .lo-espn { height: 13px; }
+  .lo-fs1  { height: 16px; }
+  .lo-cbs  { height: 9px; }
+  .lo-fox  { height: 24px; }
+  .lo-tnt  { height: 22px; }
+  .lo-br   { height: 20px; }
 }

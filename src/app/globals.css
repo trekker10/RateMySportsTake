@@ -312,12 +312,19 @@ body {
 .lo-br   { height: 46px; }
 
 @media (max-width: 640px) {
-  .outlets { padding: 21px 24px 23px; }
-  .logo-row { gap: 24px 54px; margin-top: 16px; }
-  .lo-espn { height: 25px; }
-  .lo-fs1  { height: 31px; }
-  .lo-cbs  { height: 18px; }
-  .lo-fox  { height: 46px; }
-  .lo-tnt  { height: 43px; }
-  .lo-br   { height: 38px; }
+  .outlets { padding: 18px 16px 20px; }
+  .outlets-head { font-size: 14px; }
+  .logo-row {
+    flex-wrap: nowrap;
+    gap: 0;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 14px;
+  }
+  .lo-espn { height: 17px; }
+  .lo-fs1  { height: 21px; }
+  .lo-cbs  { height: 12px; }
+  .lo-fox  { height: 32px; }
+  .lo-tnt  { height: 29px; }
+  .lo-br   { height: 26px; }
 }

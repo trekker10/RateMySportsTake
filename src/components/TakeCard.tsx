@@ -83,9 +83,11 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
     <>
       <style>{`
         .tfc-card {
-          background: #fff;
+          background: #ffffff;
           border: 1.5px solid #e2ddd4;
+          border-radius: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          overflow: hidden;
           padding: 22px 24px 20px;
           display: flex;
           flex-direction: column;
@@ -143,18 +145,18 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         /* grade chip */
         .tfc-chip {
           display: flex; flex-direction: column; align-items: center;
-          border: 2px solid currentColor; border-radius: 6px;
+          border: 2px solid currentColor; border-radius: 4px;
           padding: 4px 8px; min-width: 48px; text-align: center;
           line-height: 1;
         }
         .tfc-chip b {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 22px; font-weight: 700; line-height: 1.1;
+          font-size: 18px; font-weight: 700; line-height: 1.1;
         }
         .tfc-chip small {
           font-family: 'JetBrains Mono', monospace;
           font-size: 9px; letter-spacing: 0.14em;
-          text-transform: uppercase; margin-top: 2px; color: #8b9088;
+          text-transform: uppercase; margin-top: 2px; color: #9ca3af;
         }
 
         /* verdict */
@@ -168,7 +170,7 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
 
         /* quote block */
         .tfc-quote {
-          background: rgba(0,0,0,0.03); border-radius: 8px;
+          background: #f5f0e6; border-radius: 6px;
           padding: 16px; font-style: italic; font-size: 15px;
           line-height: 1.55; color: #15201a; margin-bottom: 12px;
         }
@@ -184,34 +186,35 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         }
 
         /* what happened */
-        .tfc-disclose { margin-bottom: 14px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+        .tfc-disclose { margin-bottom: 14px; border: 1.5px solid #161a17; border-radius: 0; overflow: hidden; }
         .tfc-toggle {
           width: 100%; display: flex; align-items: center;
-          justify-content: space-between; padding: 10px 14px;
-          font-family: 'JetBrains Mono', monospace; font-size: 10px;
-          letter-spacing: 0.16em; text-transform: uppercase;
-          color: #4b5563; background: transparent; border: none; cursor: pointer;
+          justify-content: space-between; padding: 12px 16px;
+          font-family: 'JetBrains Mono', monospace; font-size: 11px;
+          letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;
+          color: #161a17; background: #ffffff; border: none; cursor: pointer;
           transition: background .1s;
         }
         .tfc-toggle:hover { background: rgba(0,0,0,0.03); }
         .tfc-toggle.open { background: #15201a; color: #fff; }
-        .tfc-chev { transition: transform .2s; display: inline-block; }
+        .tfc-chev { transition: transform .2s; display: inline-block; color: #161a17; }
+        .tfc-toggle.open .tfc-chev { color: #fff; }
         .tfc-chev.flipped { transform: rotate(180deg); }
         .tfc-panel { padding: 14px 16px; font-size: 14px; line-height: 1.6; color: #3a4239; }
 
         /* buttons */
         .tfc-actions { display: flex; gap: 8px; }
         .tfc-btn {
-          flex: 1; padding: 12px 0; text-align: center;
-          font-family: 'JetBrains Mono', monospace; font-size: 16px;
-          letter-spacing: 0.11em; text-transform: uppercase;
-          border-radius: 6px; border: none; cursor: pointer;
+          flex: 1; padding: 10px 0; text-align: center;
+          font-family: 'JetBrains Mono', monospace; font-size: 11px;
+          letter-spacing: 0.16em; text-transform: uppercase;
+          border-radius: 0; border: none; cursor: pointer;
           text-decoration: none; display: block;
           transition: opacity .15s;
         }
         .tfc-btn:hover { opacity: 0.85; }
-        .tfc-btn-ctx   { background: #161a17; color: #fff; }
-        .tfc-btn-share { background: #cf2c20; color: #fff; }
+        .tfc-btn-ctx   { background: #161a17; color: #ffffff; }
+        .tfc-btn-share { background: #cf2c20; color: #ffffff; }
       `}</style>
 
       <article className={`tfc-card${open ? " open" : ""}`}>

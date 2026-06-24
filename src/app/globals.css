@@ -31,6 +31,12 @@
   }
 }
 
+@media (max-width: 920px) {
+  .takes-feed-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 html {
   overflow-x: hidden;
   max-width: 100%;

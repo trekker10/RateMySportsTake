@@ -295,7 +295,8 @@ export default async function ExpertsPage({
       {activeView === "takes" && (
         <div>
           {takesRows && takesRows.length > 0 ? (
-            <div className="space-y-3">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start" }}
+              className="takes-feed-grid">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {takesRows.map((take) => <TakeCard key={take.take_id} take={take as any} showExpert />)}
             </div>

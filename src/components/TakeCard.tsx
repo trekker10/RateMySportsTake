@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import type { Take, Expert } from "@/types/database";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
@@ -12,12 +15,39 @@ interface TakeCardProps {
   showExpert?: boolean;
 }
 
-function verdictTag(status: string) {
-  if (status === "confirmed_true")  return { label: "RIGHT",      bg: "#0a7a3b", text: "#fff" };
-  if (status === "confirmed_false") return { label: "WRONG",      bg: "#e2241a", text: "#fff" };
-  if (status === "partially_true")  return { label: "PARTLY RIGHT", bg: "#d97706", text: "#fff" };
-  if (status === "unresolvable")    return { label: "N/A",         bg: "#6b7280", text: "#fff" };
-  return                                   { label: "PENDING",    bg: "#e5e7eb", text: "#4b5563" };
+function verdictInfo(status: string): { label: string; cls: string; bg: string; color: string } {
+  if (status === "confirmed_true")  return { label: "RIGHT",        cls: "right",   bg: "#0a7a3b", color: "#fff" };
+  if (status === "confirmed_false") return { label: "WRONG",        cls: "wrong",   bg: "#e2241a", color: "#fff" };
+  if (status === "partially_true")  return { label: "PARTLY RIGHT", cls: "partial", bg: "#d97706", color: "#fff" };
+  if (status === "unresolvable")    return { label: "N/A",          cls: "na",      bg: "#6b7280", color: "#fff" };
+  return                                   { label: "PENDING",      cls: "pending", bg: "#e5e7eb", color: "#4b5563" };
+}
+
+function gradeColor(grade: number | null): string {
+  if (grade == null) return "#9ca3af";
+  if (grade >= 93) return "#0a7a3b";
+  if (grade >= 90) return "#15803d";
+  if (grade >= 83) return "#16a34a";
+  if (grade >= 80) return "#22c55e";
+  if (grade >= 73) return "#ca8a04";
+  if (grade >= 70) return "#d97706";
+  if (grade >= 63) return "#f59e0b";
+  if (grade >= 60) return "#ea580c";
+  return "#d23b2b";
+}
+
+function gradeChipLetter(grade: number | null): string | null {
+  if (grade == null) return null;
+  if (grade >= 93) return "A";
+  if (grade >= 90) return "A−";
+  if (grade >= 83) return "B+";
+  if (grade >= 80) return "B";
+  if (grade >= 73) return "B−";
+  if (grade >= 70) return "C+";
+  if (grade >= 63) return "C";
+  if (grade >= 60) return "C−";
+  if (grade >= 50) return "D";
+  return "F";
 }
 
 function gradeArrows(grade: number | null): { arrows: string; positive: boolean } | null {
@@ -33,101 +63,232 @@ function initials(name: string) {
 }
 
 export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
-  const v = verdictTag(take.outcome_status);
-  const impact = gradeArrows(take.grade);
-  const expert = take.experts;
-  const filed = new Date(take.date_made).toLocaleDateString("en-US", {
-    month: "short", year: "2-digit",
-  }).toUpperCase();
+  const [open, setOpen] = useState(false);
+
+  const v          = verdictInfo(take.outcome_status);
+  const impact     = gradeArrows(take.grade);
+  const chipLetter = gradeChipLetter(take.grade);
+  const chipColor  = gradeColor(take.grade);
+  const isPending  = take.outcome_status === "pending";
+  const expert     = take.experts;
+  const analysis   = (take as any).outcome_notes ?? (take as any).grade_notes;
+
+  const displayText   = take.raw_text?.trim() || take.summary?.trim() || "";
+  const isParaphrase  = !take.raw_text?.trim() && !!take.summary;
+
+  const d   = new Date(take.date_made);
+  const mo  = d.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const day = d.getDate();
 
   return (
-    <div className="bg-white border-2 border-gray-900">
+    <>
+      <style>{`
+        .tfc-card {
+          background: #fff;
+          border: 2px solid #15201a;
+          padding: 22px 24px 20px;
+          display: flex;
+          flex-direction: column;
+          transition: transform .12s ease, box-shadow .12s ease;
+        }
+        .tfc-card:hover { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #15201a; }
+        .tfc-card.open  { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #15201a; }
 
-      {/* Header row */}
-      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-3 min-w-0">
-          {showExpert && expert ? (
-            <>
-              <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0 flex items-center justify-center text-xs font-bold text-gray-600">
-                {initials(expert.name)}
-              </div>
-              <div className="min-w-0">
-                <Link href={expertUrl(expert)} className="font-black text-sm uppercase tracking-tight hover:underline">
-                  {expert.name}
-                </Link>
-                <p className="font-mono text-[9px] tracking-wider text-gray-400 uppercase">
-                  {[expert.outlet, `Filed ${filed}`].filter(Boolean).join(" · ")}
-                </p>
-              </div>
-            </>
-          ) : (
-            <p className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
-              Filed {filed}{take.sport ? ` · ${take.sport}` : ""}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="font-mono text-[10px] tracking-wider px-2 py-1 font-semibold"
-            style={{ backgroundColor: v.bg, color: v.text }}
-          >
-            {v.label}
-          </span>
-          {impact != null && (
-            <span className={`font-black text-lg italic tracking-tight ${impact.positive ? "text-emerald-600" : "text-red-600"}`}>
-              {impact.arrows}
+        /* analyst header */
+        .tfc-expert {
+          display: flex; align-items: center; gap: 10px;
+          margin-bottom: 16px; padding-bottom: 14px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .tfc-avatar {
+          width: 34px; height: 34px; border-radius: 50%;
+          background: #e5e7eb; display: flex; align-items: center;
+          justify-content: center; font-size: 12px; font-weight: 700;
+          color: #4b5563; flex-shrink: 0;
+        }
+        .tfc-expert-name {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 13px; text-transform: uppercase;
+          letter-spacing: -0.01em; color: #15201a;
+          text-decoration: none;
+        }
+        .tfc-expert-name:hover { text-decoration: underline; }
+        .tfc-expert-meta {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 9px; letter-spacing: 0.12em;
+          text-transform: uppercase; color: #9ca3af;
+          margin-top: 1px;
+        }
+
+        /* top row: date + grade + verdict */
+        .tfc-top {
+          display: flex; align-items: flex-start;
+          justify-content: space-between; gap: 12px;
+          margin-bottom: 16px;
+        }
+        .tfc-meta { display: flex; align-items: center; gap: 12px; }
+
+        /* stacked date */
+        .tfc-date { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+        .tfc-mo {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px; letter-spacing: 0.1em;
+          text-transform: uppercase; color: #8a8a82;
+        }
+        .tfc-day {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 30px; color: #15201a; line-height: 1;
+        }
+
+        /* grade chip */
+        .tfc-chip {
+          display: flex; flex-direction: column; align-items: center;
+          border: 2px solid currentColor; padding: 4px 8px; min-width: 42px;
+          line-height: 1;
+        }
+        .tfc-chip b {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 16px; font-weight: normal; line-height: 1.1;
+        }
+        .tfc-chip small {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 8px; letter-spacing: 0.15em;
+          text-transform: uppercase; margin-top: 2px; opacity: 0.7;
+        }
+
+        /* verdict */
+        .tfc-verdict-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .tfc-verdict {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px; letter-spacing: 0.14em;
+          text-transform: uppercase; padding: 5px 10px;
+          border-radius: 4px; white-space: nowrap;
+        }
+        .tfc-arrows { font-size: 16px; font-weight: 900; font-style: italic; text-align: right; }
+        .tfc-arrows.pos { color: #0a7a3b; }
+        .tfc-arrows.neg { color: #e2241a; }
+
+        /* quote block */
+        .tfc-quote {
+          background: rgba(0,0,0,0.03); border-radius: 8px;
+          padding: 16px; font-style: italic; font-size: 15px;
+          line-height: 1.55; color: #15201a; margin-bottom: 12px;
+        }
+        .tfc-quote-text {
+          display: -webkit-box; -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3; overflow: hidden;
+        }
+        .tfc-paraphrase {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 9px; letter-spacing: 0.1em;
+          text-transform: uppercase; color: #9ca3af;
+          margin-bottom: 6px; font-style: normal;
+        }
+
+        /* what happened */
+        .tfc-disclose { margin-bottom: 14px; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+        .tfc-toggle {
+          width: 100%; display: flex; align-items: center;
+          justify-content: space-between; padding: 10px 14px;
+          font-family: 'JetBrains Mono', monospace; font-size: 10px;
+          letter-spacing: 0.16em; text-transform: uppercase;
+          color: #4b5563; background: transparent; border: none; cursor: pointer;
+          transition: background .1s;
+        }
+        .tfc-toggle:hover { background: rgba(0,0,0,0.03); }
+        .tfc-toggle.open { background: #15201a; color: #fff; }
+        .tfc-chev { transition: transform .2s; display: inline-block; }
+        .tfc-chev.flipped { transform: rotate(180deg); }
+        .tfc-panel { padding: 14px 16px; font-size: 14px; line-height: 1.6; color: #3a4239; }
+
+        /* buttons */
+        .tfc-actions { display: flex; gap: 8px; }
+        .tfc-btn {
+          flex: 1; padding: 12px 0; text-align: center;
+          font-family: 'JetBrains Mono', monospace; font-size: 11px;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          border-radius: 6px; border: none; cursor: pointer;
+          text-decoration: none; display: block;
+          transition: opacity .15s;
+        }
+        .tfc-btn:hover { opacity: 0.85; }
+        .tfc-btn-ctx   { background: #161a17; color: #fff; }
+        .tfc-btn-share { background: #cf2c20; color: #fff; }
+      `}</style>
+
+      <article className={`tfc-card${open ? " open" : ""}`}>
+
+        {/* ── Analyst header (only in feed view) ── */}
+        {showExpert && expert && (
+          <div className="tfc-expert">
+            <div className="tfc-avatar">{initials(expert.name)}</div>
+            <div>
+              <Link href={expertUrl(expert)} className="tfc-expert-name">{expert.name}</Link>
+              <p className="tfc-expert-meta">
+                {[expert.outlet, `Filed ${mo} ${day}`].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Top row: date + grade chip + verdict ── */}
+        <div className="tfc-top">
+          <div className="tfc-meta">
+            <div className="tfc-date">
+              <span className="tfc-mo">{mo}</span>
+              <span className="tfc-day">{day}</span>
+            </div>
+            <div className="tfc-chip" style={{ color: chipColor }}>
+              <b>{chipLetter ?? "–"}</b>
+              <small>GRADE</small>
+            </div>
+          </div>
+          <div className="tfc-verdict-wrap">
+            <span className="tfc-verdict" style={{ backgroundColor: v.bg, color: v.color }}>
+              {v.label}
             </span>
-          )}
+            {impact != null && !isPending && (
+              <p className={`tfc-arrows ${impact.positive ? "pos" : "neg"}`}>{impact.arrows}</p>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Quote */}
-      <div className="px-4 py-4" style={{ backgroundColor: "#f5f1e9" }}>
-        <p className="italic text-lg leading-snug text-gray-800 whitespace-pre-wrap">
-          &ldquo;{take.raw_text}&rdquo;
-        </p>
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-gray-200 space-y-3">
-        <div className="flex flex-wrap items-baseline gap-4">
-          {take.grade != null && (() => {
-            const g = gradeArrows(take.grade);
-            return g ? (
-              <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
-                GRADE <span className={`font-black italic text-base ml-1 tracking-tight ${g.positive ? "text-emerald-600" : "text-red-600"}`}>{g.arrows}</span>
-              </span>
-            ) : null;
-          })()}
-          {take.outcome_notes && (
-            <span className="font-mono text-[10px] tracking-wider text-gray-400 uppercase">
-              OUTCOME <span className="font-normal normal-case tracking-normal text-gray-600 italic ml-1">{take.outcome_notes}</span>
-            </span>
-          )}
+        {/* ── Quote ── */}
+        <div className="tfc-quote">
+          {isParaphrase && <p className="tfc-paraphrase">[Paraphrase]</p>}
+          <p className="tfc-quote-text">&ldquo;{displayText}&rdquo;</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/takes/${take.take_id}`}
-            className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
+
+        {/* ── What Happened toggle ── */}
+        <div className="tfc-disclose">
+          <button
+            className={`tfc-toggle${open ? " open" : ""}`}
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
           >
-            See Full Context
+            <span>{isPending ? "AWAITING RESULT" : "WHAT HAPPENED"}</span>
+            <span className={`tfc-chev${open ? " flipped" : ""}`}>▼</span>
+          </button>
+          {open && (
+            <div className="tfc-panel">
+              {isPending
+                ? "Not graded yet — this take gets a grade once the result is decided."
+                : (analysis ?? "No analysis recorded yet.")}
+            </div>
+          )}
+        </div>
+
+        {/* ── Actions ── */}
+        <div className="tfc-actions">
+          <Link href={`/takes/${take.take_id}`} className="tfc-btn tfc-btn-ctx">
+            SEE FULL CONTEXT
           </Link>
-          <ShareReceiptButton
-            takeId={take.take_id}
-            className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
-          >
-            Share Receipt
+          <ShareReceiptButton takeId={take.take_id} className="tfc-btn tfc-btn-share">
+            SHARE RECEIPT
           </ShareReceiptButton>
-          {expert && (
-            <Link
-              href={expertUrl(expert)}
-              className="px-3 py-1.5 border border-gray-300 font-mono text-[10px] tracking-wider text-gray-600 hover:border-gray-700 hover:text-gray-900 transition-colors uppercase"
-            >
-              {expert.name.split(" ")[0]}&apos;s Card →
-            </Link>
-          )}
         </div>
-      </div>
-    </div>
+
+      </article>
+    </>
   );
 }

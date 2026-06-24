@@ -85,7 +85,7 @@ export default async function ExpertsPage({
   if (activeView === "takes" && expertIds.length > 0) {
     let takesQuery = supabase
       .from("takes")
-      .select("*, experts(name, expert_id, slug, outlet)")
+      .select("*, experts(name, expert_id, slug, outlet, avatar_url)")
       .in("expert_id", expertIds)
       .order("date_made", { ascending: false })
       .limit(50);

@@ -7,7 +7,7 @@ import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { expertUrl } from "@/lib/expert-url";
 
 type TakeWithExpert = Take & {
-  experts?: Pick<Expert, "name" | "expert_id" | "slug" | "outlet"> | null;
+  experts?: Pick<Expert, "name" | "expert_id" | "slug" | "outlet" | "avatar_url"> | null;
 };
 
 interface TakeCardProps {
@@ -221,7 +221,11 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         {/* ── Analyst header (only in feed view) ── */}
         {showExpert && expert && (
           <div className="tfc-expert">
-            <div className="tfc-avatar">{initials(expert.name)}</div>
+            <div className="tfc-avatar">
+              {expert.avatar_url
+                ? <img src={expert.avatar_url} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                : initials(expert.name)}
+            </div>
             <div>
               <Link href={expertUrl(expert)} className="tfc-expert-name">{expert.name}</Link>
               <p className="tfc-expert-meta">

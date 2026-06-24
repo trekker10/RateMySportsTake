@@ -79,6 +79,15 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
   const mo  = d.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
   const day = d.getDate();
 
+  const fmtDate = (iso: string) => {
+    const dt = new Date(iso);
+    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+  };
+  const madeFmt = `${mo} ${day}`;
+  const isResolved = take.outcome_status !== "pending";
+  const resDate = take.time_horizon_date ? fmtDate(take.time_horizon_date) : "TBD";
+  const trackSecondLabel = isResolved ? `RESOLVED ${resDate}` : `RESOLUTION DATE ${resDate}`;
+
   return (
     <>
       <style>{`
@@ -121,6 +130,15 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
           text-transform: uppercase; color: #9ca3af;
           margin-top: 1px;
         }
+        .tfc-track {
+          display: flex; align-items: center; gap: 7px; margin-top: 3px;
+          font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em;
+          text-transform: uppercase; flex-wrap: wrap;
+        }
+        .tfc-track-made { color: #8a8a82; }
+        .tfc-track-arrow { color: #8a8a82; }
+        .tfc-track-resolved { color: #0a7a3b; font-weight: 700; }
+        .tfc-track-pending  { color: #8a8a82; font-weight: 600; }
 
         /* top row: date + grade + verdict */
         .tfc-top {
@@ -229,9 +247,14 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
             </div>
             <div>
               <Link href={expertUrl(expert)} className="tfc-expert-name">{expert.name}</Link>
-              <p className="tfc-expert-meta">
-                {[expert.outlet, `Filed ${mo} ${day}`].filter(Boolean).join(" · ")}
-              </p>
+              {expert.outlet && <p className="tfc-expert-meta">{expert.outlet}</p>}
+              <div className="tfc-track">
+                <span className="tfc-track-made">TAKE MADE {madeFmt}</span>
+                <span className="tfc-track-arrow">→</span>
+                <span className={isResolved ? "tfc-track-resolved" : "tfc-track-pending"}>
+                  {trackSecondLabel}
+                </span>
+              </div>
             </div>
           </div>
         )}

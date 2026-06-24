@@ -205,8 +205,8 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         .tfc-actions { display: flex; gap: 8px; }
         .tfc-btn {
           flex: 1; padding: 12px 0; text-align: center;
-          font-family: 'JetBrains Mono', monospace; font-size: 11px;
-          letter-spacing: 0.18em; text-transform: uppercase;
+          font-family: 'JetBrains Mono', monospace; font-size: 16px;
+          letter-spacing: 0.11em; text-transform: uppercase;
           border-radius: 6px; border: none; cursor: pointer;
           text-decoration: none; display: block;
           transition: opacity .15s;

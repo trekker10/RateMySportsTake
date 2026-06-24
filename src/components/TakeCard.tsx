@@ -15,16 +15,16 @@ interface TakeCardProps {
   showExpert?: boolean;
 }
 
-function verdictInfo(status: string): { label: string; cls: string; bg: string; color: string } {
-  if (status === "confirmed_true")  return { label: "RIGHT",        cls: "right",   bg: "#0a7a3b", color: "#fff" };
-  if (status === "confirmed_false") return { label: "WRONG",        cls: "wrong",   bg: "#e2241a", color: "#fff" };
-  if (status === "partially_true")  return { label: "PARTLY RIGHT", cls: "partial", bg: "#d97706", color: "#fff" };
-  if (status === "unresolvable")    return { label: "N/A",          cls: "na",      bg: "#6b7280", color: "#fff" };
-  return                                   { label: "PENDING",      cls: "pending", bg: "#e5e7eb", color: "#4b5563" };
+function verdictInfo(status: string): { label: string; bg: string; color: string; border?: string } {
+  if (status === "confirmed_true")  return { label: "RIGHT ↗↗",    bg: "#15803d", color: "#fff" };
+  if (status === "confirmed_false") return { label: "WRONG ↘↘",    bg: "#d23b2b", color: "#fff" };
+  if (status === "partially_true")  return { label: "PARTLY RIGHT ↘", bg: "#d97706", color: "#fff" };
+  if (status === "unresolvable")    return { label: "N/A",           bg: "#6b7280", color: "#fff" };
+  return                                   { label: "PENDING",       bg: "transparent", color: "#6b7280", border: "1px solid #d1d5db" };
 }
 
 function gradeColor(grade: number | null): string {
-  if (grade == null) return "#9ca3af";
+  if (grade == null) return "#d1d5db";
   if (grade >= 93) return "#0a7a3b";
   if (grade >= 90) return "#15803d";
   if (grade >= 83) return "#16a34a";
@@ -50,12 +50,11 @@ function gradeChipLetter(grade: number | null): string | null {
   return "F";
 }
 
-function gradeArrows(grade: number | null): { arrows: string; positive: boolean } | null {
-  if (grade == null) return null;
-  const delta = Math.abs(Math.round(grade - 50));
-  const positive = Math.round(grade) >= 50;
-  const count = delta <= 15 ? 1 : delta <= 30 ? 2 : 3;
-  return { arrows: (positive ? "↗" : "↘").repeat(count), positive };
+function cleanTakeText(raw: string): string {
+  return raw
+    .replace(/^RT @\w+:\s*/i, "")
+    .replace(/\s*https?:\/\/t\.co\/\S+/g, "")
+    .trim();
 }
 
 function initials(name: string) {
@@ -66,15 +65,15 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
   const [open, setOpen] = useState(false);
 
   const v          = verdictInfo(take.outcome_status);
-  const impact     = gradeArrows(take.grade);
   const chipLetter = gradeChipLetter(take.grade);
   const chipColor  = gradeColor(take.grade);
   const isPending  = take.outcome_status === "pending";
   const expert     = take.experts;
   const analysis   = (take as any).outcome_notes ?? (take as any).grade_notes;
 
-  const displayText   = take.raw_text?.trim() || take.summary?.trim() || "";
-  const isParaphrase  = !take.raw_text?.trim() && !!take.summary;
+  const rawDisplay  = take.raw_text?.trim() || take.summary?.trim() || "";
+  const displayText = cleanTakeText(rawDisplay);
+  const isParaphrase = !take.raw_text?.trim() && !!take.summary;
 
   const d   = new Date(take.date_made);
   const mo  = d.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
@@ -85,7 +84,8 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
       <style>{`
         .tfc-card {
           background: #fff;
-          border: 2px solid #15201a;
+          border: 1.5px solid #e2ddd4;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
           padding: 22px 24px 20px;
           display: flex;
           flex-direction: column;
@@ -101,10 +101,10 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
           border-bottom: 1px solid #e5e7eb;
         }
         .tfc-avatar {
-          width: 34px; height: 34px; border-radius: 50%;
+          width: 38px; height: 38px; border-radius: 50%;
           background: #e5e7eb; display: flex; align-items: center;
           justify-content: center; font-size: 12px; font-weight: 700;
-          color: #4b5563; flex-shrink: 0;
+          color: #4b5563; flex-shrink: 0; overflow: hidden;
         }
         .tfc-expert-name {
           font-family: 'Archivo Black', sans-serif;
@@ -132,41 +132,39 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         .tfc-date { display: flex; flex-direction: column; align-items: center; line-height: 1; }
         .tfc-mo {
           font-family: 'JetBrains Mono', monospace;
-          font-size: 11px; letter-spacing: 0.1em;
-          text-transform: uppercase; color: #8a8a82;
+          font-size: 11px; letter-spacing: 0.12em;
+          text-transform: uppercase; color: #8b9088;
         }
         .tfc-day {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 30px; color: #15201a; line-height: 1;
+          font-size: 48px; font-weight: 900; color: #161a17; line-height: 1;
         }
 
         /* grade chip */
         .tfc-chip {
           display: flex; flex-direction: column; align-items: center;
-          border: 2px solid currentColor; padding: 4px 8px; min-width: 42px;
+          border: 2px solid currentColor; border-radius: 6px;
+          padding: 4px 8px; min-width: 48px; text-align: center;
           line-height: 1;
         }
         .tfc-chip b {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 16px; font-weight: normal; line-height: 1.1;
+          font-size: 22px; font-weight: 700; line-height: 1.1;
         }
         .tfc-chip small {
           font-family: 'JetBrains Mono', monospace;
-          font-size: 8px; letter-spacing: 0.15em;
-          text-transform: uppercase; margin-top: 2px; opacity: 0.7;
+          font-size: 9px; letter-spacing: 0.14em;
+          text-transform: uppercase; margin-top: 2px; color: #8b9088;
         }
 
         /* verdict */
-        .tfc-verdict-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .tfc-verdict-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
         .tfc-verdict {
           font-family: 'JetBrains Mono', monospace;
-          font-size: 10px; letter-spacing: 0.14em;
-          text-transform: uppercase; padding: 5px 10px;
+          font-size: 10px; letter-spacing: 0.14em; font-weight: 700;
+          text-transform: uppercase; padding: 6px 12px;
           border-radius: 4px; white-space: nowrap;
         }
-        .tfc-arrows { font-size: 16px; font-weight: 900; font-style: italic; text-align: right; }
-        .tfc-arrows.pos { color: #0a7a3b; }
-        .tfc-arrows.neg { color: #e2241a; }
 
         /* quote block */
         .tfc-quote {
@@ -223,7 +221,7 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
           <div className="tfc-expert">
             <div className="tfc-avatar">
               {expert.avatar_url
-                ? <img src={expert.avatar_url} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                ? <img src={expert.avatar_url} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : initials(expert.name)}
             </div>
             <div>
@@ -242,18 +240,18 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
               <span className="tfc-mo">{mo}</span>
               <span className="tfc-day">{day}</span>
             </div>
-            <div className="tfc-chip" style={{ color: chipColor }}>
-              <b>{chipLetter ?? "–"}</b>
+            <div className="tfc-chip" style={{ color: chipLetter ? chipColor : "#8b9088", borderColor: chipLetter ? chipColor : "#d1d5db" }}>
+              <b>{chipLetter ?? "—"}</b>
               <small>GRADE</small>
             </div>
           </div>
           <div className="tfc-verdict-wrap">
-            <span className="tfc-verdict" style={{ backgroundColor: v.bg, color: v.color }}>
+            <span
+              className="tfc-verdict"
+              style={{ backgroundColor: v.bg, color: v.color, border: v.border ?? "none" }}
+            >
               {v.label}
             </span>
-            {impact != null && !isPending && (
-              <p className={`tfc-arrows ${impact.positive ? "pos" : "neg"}`}>{impact.arrows}</p>
-            )}
           </div>
         </div>
 

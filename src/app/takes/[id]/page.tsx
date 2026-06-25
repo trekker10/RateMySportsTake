@@ -332,7 +332,28 @@ export default async function TakePage({
         {take.grading_criteria && (
           <div className="td-block" style={{ marginTop: 16 }}>
             <div className="td-sec-lab">GRADING CRITERIA</div>
-            <EditableGradingCriteria takeId={take.take_id} initial={take.grading_criteria} />
+            {(() => {
+              const raw: string = take.grading_criteria;
+              // Try to split on TRUE IF / FALSE IF patterns
+              const trueMatch = raw.match(/(?:(?:this\s+take\s+is\s+)?true\s+if)[:\s]+(.+?)(?=(?:(?:it\s+is\s+)?false\s+if|$))/i);
+              const falseMatch = raw.match(/(?:(?:it\s+is\s+)?false\s+if)[:\s]+(.+?)$/i);
+              if (trueMatch && falseMatch) {
+                return (
+                  <div className="td-crit">
+                    <div className="td-cond">
+                      <span className="tf" style={{ background: GOOD }}>TRUE IF</span>
+                      <div className="txt">{trueMatch[1].trim()}</div>
+                    </div>
+                    <div className="td-cond">
+                      <span className="tf" style={{ background: ACCENT }}>FALSE IF</span>
+                      <div className="txt">{falseMatch[1].trim()}</div>
+                    </div>
+                  </div>
+                );
+              }
+              // Fallback: plain text
+              return <p style={{ fontSize: 15, lineHeight: 1.6, color: SOFT }}>{raw}</p>;
+            })()}
           </div>
         )}
 

@@ -46,7 +46,7 @@ export default function ReelCard({
       {/* Body */}
       <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
-          <span style={{ fontFamily: "'Archivo Black',sans-serif", fontSize: 96, lineHeight: .78, letterSpacing: "-.04em", color: gradeColor }}>{grade}</span>
+          <span style={{ fontFamily: "'Archivo Black',sans-serif", fontSize: 68, lineHeight: .78, letterSpacing: "-.04em", color: gradeColor }}>{grade}</span>
           <span style={{ display: "inline-block", fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 12, letterSpacing: ".1em", padding: "3px 8px", backgroundColor: verdictBg, color: verdictColor }}>
             {verdictLabel}
           </span>

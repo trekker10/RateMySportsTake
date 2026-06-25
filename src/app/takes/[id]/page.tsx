@@ -99,7 +99,7 @@ export default async function TakePage({
           font-size:20px;color:${SOFT};border:2px solid ${INK};overflow:hidden; }
         .td-av img { width:100%;height:100%;object-fit:cover; }
         .td-who { flex:1;min-width:0; }
-        .td-name { font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-.03em;line-height:1; }
+        .td-name { font-family:'Archivo Black',sans-serif;font-size:36px;letter-spacing:-.03em;line-height:1; }
         .td-meta { display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;
           font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:${SOFT}; }
         .td-meta .pip { width:4px;height:4px;background:${FAINT};border-radius:50%; }
@@ -224,8 +224,6 @@ export default async function TakePage({
             <div className="td-who">
               <div className="td-name">{expert.name}</div>
               <div className="td-meta">
-                {take.source_type && <span className="src">{sourceLabel}</span>}
-                {take.source_type && <span className="pip" />}
                 <span>{dateMade}</span>
                 {take.sport && <><span className="pip" /><span className="league">{take.sport}</span></>}
                 {expert.outlet && <><span className="pip" /><span>{expert.outlet.toUpperCase()}</span></>}

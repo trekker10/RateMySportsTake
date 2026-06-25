@@ -119,13 +119,18 @@ export default function TakesFeed({ takes }: TakesFeedProps) {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [selectedVerdicts, setSelectedVerdicts] = useState<string[]>([]);
 
+  // Normalize sport names — strip year prefixes like "2026 NFL" → "NFL"
+  function normalizeSport(sport: string): string {
+    return sport.replace(/^\d{4}(?:-\d{2,4})?\s+/i, "").trim();
+  }
+
   // Derive sport options dynamically from actual takes data
   const sportOptions = Array.from(
-    new Set(takes.map((t) => t.sport).filter(Boolean))
+    new Set(takes.map((t) => t.sport ? normalizeSport(t.sport) : null).filter(Boolean))
   ).sort() as string[];
 
   const filtered = takes.filter((t) => {
-    const sportMatch = selectedSports.length === 0 || selectedSports.includes(t.sport);
+    const sportMatch = selectedSports.length === 0 || selectedSports.includes(normalizeSport(t.sport ?? ""));
     const verdictMatch =
       selectedVerdicts.length === 0 ||
       VERDICT_OPTIONS.filter((v) => selectedVerdicts.includes(v.label))

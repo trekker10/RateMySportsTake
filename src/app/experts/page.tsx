@@ -7,7 +7,7 @@ import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { getFlag } from "@/app/actions/flags";
 import { scoreToGrade, gradeColor, computeCurvedGrades } from "@/lib/takescore";
-import TakeCard from "@/components/TakeCard";
+import TakesFeed from "@/components/TakesFeed";
 
 const RED = "#e2241a";
 const SPORTS = ["ALL SPORTS", "NBA", "NFL", "MLB", "NHL", "Soccer", "College Football", "MMA"];
@@ -295,17 +295,11 @@ export default async function ExpertsPage({
       {activeView === "takes" && (
         <div>
           {takesRows && takesRows.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start" }}
-              className="takes-feed-grid">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {takesRows.map((take) => <TakeCard key={take.take_id} take={take as any} showExpert />)}
-            </div>
+            <TakesFeed takes={takesRows} />
           ) : (
             <div className="border-2 border-gray-900 px-4 py-12 text-center italic text-gray-400 bg-white">
               {expertIds.length === 0
                 ? "No analysts found with those filters."
-                : activeSport !== "ALL SPORTS"
-                ? `No takes found for ${activeSport} analysts.`
                 : "No takes yet from these analysts."}
             </div>
           )}

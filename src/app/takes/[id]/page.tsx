@@ -320,13 +320,6 @@ export default async function TakePage({
           </div>
         )}
 
-        {/* AI Summary */}
-        {take.summary && (
-          <div className="td-block summary" style={{ marginTop: 16 }}>
-            <div className="td-sec-lab">AI SUMMARY</div>
-            <div className="td-summary-body">{take.summary}</div>
-          </div>
-        )}
 
         {/* Grading Criteria */}
         {take.grading_criteria && (

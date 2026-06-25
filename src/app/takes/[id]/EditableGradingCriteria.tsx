@@ -39,18 +39,6 @@ export default function EditableGradingCriteria({
               ✓ SAVED
             </span>
           )}
-          {!editing && (
-            <button
-              onClick={() => setEditing(true)}
-              style={{
-                border: "1.5px solid #15201a", background: "#fff", padding: "5px 12px",
-                fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 10,
-                letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer",
-              }}
-            >
-              EDIT
-            </button>
-          )}
         </div>
       </div>
 

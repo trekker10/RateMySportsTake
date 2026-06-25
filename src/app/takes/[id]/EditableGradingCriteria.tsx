@@ -30,54 +30,72 @@ export default function EditableGradingCriteria({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-          Grading Criteria
-        </p>
-        <div className="flex items-center gap-3">
-          {saved && <span className="text-xs text-emerald-500">✓ Saved</span>}
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {saved && (
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.12em", color: "#0a7a3b" }}>
+              ✓ SAVED
+            </span>
+          )}
           {!editing && (
             <button
               onClick={() => setEditing(true)}
-              className="text-xs text-gray-400 hover:text-gray-700 transition-colors border border-gray-200 rounded px-2 py-0.5"
+              style={{
+                border: "1.5px solid #15201a", background: "#fff", padding: "5px 12px",
+                fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 10,
+                letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer",
+              }}
             >
-              Edit
+              EDIT
             </button>
           )}
         </div>
       </div>
 
       {editing ? (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <textarea
             value={value}
             onChange={e => setValue(e.target.value)}
             rows={4}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none resize-none"
             autoFocus
+            style={{
+              width: "100%", border: "1.5px solid #15201a", padding: "10px 14px",
+              fontFamily: "inherit", fontSize: 14, lineHeight: 1.6, color: "#15201a",
+              resize: "vertical", outline: "none", background: "#fff", boxSizing: "border-box",
+            }}
           />
-          <p className="text-xs text-gray-400">
-            This will be used when Claude grades this take. Be specific — describe exactly what outcome would make this TRUE.
+          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.08em", color: "#8a8a82" }}>
+            Be specific — describe exactly what outcome would make this TRUE.
           </p>
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={handleSave}
               disabled={isPending || !value.trim()}
-              className="px-4 py-1.5 rounded-lg bg-emerald-500 text-black text-xs font-semibold hover:bg-emerald-400 transition-colors disabled:opacity-50"
+              style={{
+                padding: "8px 18px", background: "#15201a", color: "#fff", border: "none",
+                fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 11,
+                letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", opacity: isPending ? 0.6 : 1,
+              }}
             >
-              {isPending ? "Saving…" : "Save"}
+              {isPending ? "SAVING…" : "SAVE"}
             </button>
             <button
               onClick={handleCancel}
-              className="px-4 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs hover:border-gray-400 transition-colors"
+              style={{
+                padding: "8px 18px", background: "#fff", color: "#15201a",
+                border: "1.5px solid #15201a", fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: 700, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer",
+              }}
             >
-              Cancel
+              CANCEL
             </button>
           </div>
         </div>
       ) : (
-        <p className="text-gray-700 text-sm leading-relaxed">{value}</p>
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#3a4239" }}>{value}</p>
       )}
     </div>
   );

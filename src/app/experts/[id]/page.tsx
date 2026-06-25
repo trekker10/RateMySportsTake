@@ -113,6 +113,7 @@ export default async function ExpertProfilePage({
     { data: fantasyTakes },
     { data: wlData },
     { data: showRow },
+    { data: reelTakes },
   ] = await Promise.all([
     takesQuery,
     countQuery,
@@ -126,7 +127,38 @@ export default async function ExpertProfilePage({
     expert.outlet
       ? supabase.from("shows").select("logo_url, network, name").or(`network.ilike.${expert.outlet},name.ilike.${expert.outlet}`).maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase.from("takes").select("take_id, date_made, raw_text, outcome_status, grade, outcome_notes").eq("expert_id", expertId).order("date_made", { ascending: false }),
   ]);
+
+  // Highlight Reel — derive from full unfiltered take list
+  const allReelTakes = reelTakes ?? [];
+  const gradedReelTakes = allReelTakes.filter(t => t.grade != null);
+  const bestTake = gradedReelTakes.length > 0
+    ? gradedReelTakes.reduce((a, b) => (b.grade! > a.grade! ? b : a))
+    : null;
+  const worstTake = gradedReelTakes.length > 0
+    ? gradedReelTakes.reduce((a, b) => (b.grade! < a.grade! ? b : a))
+    : null;
+  const mostRecentTake = allReelTakes.length > 0 ? allReelTakes[0] : null;
+
+  function reelDate(dateStr: string | null): string {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).toUpperCase();
+  }
+
+  function reelQuote(rawText: string | null): string {
+    if (!rawText) return "";
+    return rawText.replace(/^RT @\w+:\s*/i, "").replace(/https?:\/\/t\.co\/\S+/g, "").trim();
+  }
+
+  function reelVerdictLabel(status: string | null): string {
+    if (!status || status === "pending") return "PENDING";
+    if (status === "confirmed_true") return "RIGHT";
+    if (status === "confirmed_false") return "WRONG";
+    if (status === "partially_true") return "PARTLY RIGHT";
+    return "PENDING";
+  }
 
   // Build 5-bucket distribution (B and C aggregate their sub-tiers)
   const distribution = GRADE_CATS.map(cat => ({
@@ -409,6 +441,105 @@ export default async function ExpertProfilePage({
           </div>
         )}
       </div>
+
+      {/* ── Highlight Reel ── */}
+      {!expert.is_fantasy_guru && (bestTake || worstTake || mostRecentTake) && (
+        <div className="bg-white border-b-2 border-gray-900">
+          <div className="max-w-5xl mx-auto" style={{ padding: "36px 24px 0" }}>
+            <style>{`
+              .reel-card { background:#fff; border:2px solid #15201a; display:flex; flex-direction:column; transition: transform .12s ease, box-shadow .12s ease; }
+              .reel-card:hover { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #15201a; }
+              .reel-tag { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; border-bottom:2px solid #15201a; color:#fff; }
+              .reel-body { padding:20px 22px; display:flex; flex-direction:column; flex:1; }
+              .reel-grade { font-family:'Archivo Black',sans-serif; font-size:56px; line-height:.78; letter-spacing:-.04em; }
+              .reel-quote { font-style:italic; font-size:17px; line-height:1.34; letter-spacing:-.01em; flex:1; color:#15201a; margin-top:14px; }
+              .reel-foot { margin-top:18px; border-top:2px solid #dfe2e6; padding-top:12px; font-size:14px; line-height:1.45; color:#3a4239; }
+              .reel-foot b { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.18em; color:#8a8a82; display:block; margin-bottom:4px; font-weight:700; }
+              .reel-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+              @media(max-width:700px){ .reel-grid { grid-template-columns:1fr; } }
+            `}</style>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"baseline", gap:14, marginBottom:22 }}>
+              <span style={{ fontFamily:"'Archivo Black',sans-serif", fontSize:32, letterSpacing:"-.03em", color:"#15201a" }}>THE HIGHLIGHT REEL</span>
+              <span style={{ fontStyle:"italic", fontSize:15, color:"#8a8a82" }}>best, worst, and most recent take — at a glance.</span>
+            </div>
+            <div className="reel-grid" style={{ paddingBottom: 36 }}>
+              {/* BEST TAKE */}
+              {bestTake && (
+                <Link href={`/takes/${bestTake.take_id}`} className="reel-card">
+                  <div className="reel-tag" style={{ backgroundColor:"#0a7a3b" }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:13, letterSpacing:".18em" }}>BEST TAKE</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:500, fontSize:11, letterSpacing:".14em", opacity:.85 }}>{reelDate(bestTake.date_made)}</span>
+                  </div>
+                  <div className="reel-body">
+                    <div style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:12 }}>
+                      <span className="reel-grade" style={{ color:"#0a7a3b" }}>{bestTake.grade != null ? scoreToGrade(bestTake.grade, gradeConfig) : "–"}</span>
+                      <div>
+                        <span style={{ display:"inline-block", fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:12, letterSpacing:".1em", padding:"3px 8px", backgroundColor: bestTake.outcome_status === "confirmed_true" ? "#0a7a3b" : bestTake.outcome_status === "pending" || !bestTake.outcome_status ? "#cfd2d7" : "#e2241a", color: bestTake.outcome_status === "pending" || !bestTake.outcome_status ? "#3a4239" : "#fff" }}>
+                          {reelVerdictLabel(bestTake.outcome_status)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="reel-quote">&ldquo;{reelQuote(bestTake.raw_text)}&rdquo;</p>
+                    <div className="reel-foot">
+                      <b>WHAT HAPPENED</b>
+                      {bestTake.outcome_notes ?? "Outcome on record."}
+                    </div>
+                  </div>
+                </Link>
+              )}
+              {/* WORST TAKE */}
+              {worstTake && (
+                <Link href={`/takes/${worstTake.take_id}`} className="reel-card">
+                  <div className="reel-tag" style={{ backgroundColor:"#e2241a" }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:13, letterSpacing:".18em" }}>WORST TAKE</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:500, fontSize:11, letterSpacing:".14em", opacity:.85 }}>{reelDate(worstTake.date_made)}</span>
+                  </div>
+                  <div className="reel-body">
+                    <div style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:12 }}>
+                      <span className="reel-grade" style={{ color:"#c43a1d" }}>{worstTake.grade != null ? scoreToGrade(worstTake.grade, gradeConfig) : "–"}</span>
+                      <div>
+                        <span style={{ display:"inline-block", fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:12, letterSpacing:".1em", padding:"3px 8px", backgroundColor: worstTake.outcome_status === "confirmed_true" ? "#0a7a3b" : worstTake.outcome_status === "pending" || !worstTake.outcome_status ? "#cfd2d7" : "#e2241a", color: worstTake.outcome_status === "pending" || !worstTake.outcome_status ? "#3a4239" : "#fff" }}>
+                          {reelVerdictLabel(worstTake.outcome_status)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="reel-quote">&ldquo;{reelQuote(worstTake.raw_text)}&rdquo;</p>
+                    <div className="reel-foot">
+                      <b>WHAT HAPPENED</b>
+                      {worstTake.outcome_notes ?? "Outcome on record."}
+                    </div>
+                  </div>
+                </Link>
+              )}
+              {/* MOST RECENT */}
+              {mostRecentTake && (
+                <Link href={`/takes/${mostRecentTake.take_id}`} className="reel-card">
+                  <div className="reel-tag" style={{ backgroundColor:"#15201a" }}>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:13, letterSpacing:".18em" }}>MOST RECENT</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontWeight:500, fontSize:11, letterSpacing:".14em", opacity:.85 }}>{reelDate(mostRecentTake.date_made)}</span>
+                  </div>
+                  <div className="reel-body">
+                    <div style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:12 }}>
+                      <span className="reel-grade" style={{ color:"#8a8a82" }}>{mostRecentTake.grade != null ? scoreToGrade(mostRecentTake.grade, gradeConfig) : "–"}</span>
+                      <div>
+                        <span style={{ display:"inline-block", fontFamily:"'JetBrains Mono',monospace", fontWeight:700, fontSize:12, letterSpacing:".1em", padding:"3px 8px", backgroundColor: mostRecentTake.outcome_status === "confirmed_true" ? "#0a7a3b" : mostRecentTake.outcome_status === "pending" || !mostRecentTake.outcome_status ? "#cfd2d7" : "#e2241a", color: mostRecentTake.outcome_status === "pending" || !mostRecentTake.outcome_status ? "#3a4239" : "#fff" }}>
+                          {reelVerdictLabel(mostRecentTake.outcome_status)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="reel-quote">&ldquo;{reelQuote(mostRecentTake.raw_text)}&rdquo;</p>
+                    <div className="reel-foot">
+                      <b>{mostRecentTake.outcome_status === "pending" || !mostRecentTake.outcome_status ? "NOT GRADED YET" : "WHAT HAPPENED"}</b>
+                      {mostRecentTake.outcome_notes ?? (mostRecentTake.outcome_status === "pending" || !mostRecentTake.outcome_status ? "Awaiting result — this take gets a grade once it resolves." : "Outcome on record.")}
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Body ── */}
       <div className="min-h-[60vh]" style={{ backgroundColor: "#ebedf0" }}>

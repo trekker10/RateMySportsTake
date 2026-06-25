@@ -456,7 +456,7 @@ export default async function ExpertProfilePage({
             `}</style>
             {/* Header */}
             <div style={{ display:"flex", alignItems:"baseline", gap:14, marginBottom:22 }}>
-              <span style={{ fontFamily:"'Archivo Black',sans-serif", fontSize:32, letterSpacing:"-.03em", color:"#15201a" }}>THE HIGHLIGHT REEL</span>
+              <span style={{ fontFamily:"'Archivo Black',sans-serif", fontSize:52, letterSpacing:"-.03em", color:"#15201a", fontWeight:900 }}>THE HIGHLIGHT REEL</span>
               <span style={{ fontStyle:"italic", fontSize:15, color:"#8a8a82" }}>best, worst, and most recent take — at a glance.</span>
             </div>
             <div className="reel-grid" style={{ paddingBottom: 36 }}>

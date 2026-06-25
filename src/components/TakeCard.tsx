@@ -81,7 +81,7 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
 
   const fmtDate = (iso: string) => {
     const dt = new Date(iso);
-    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase();
   };
   const madeFmt = `${mo} ${day}`;
   const isResolved = take.outcome_status !== "pending";

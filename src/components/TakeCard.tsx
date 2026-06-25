@@ -285,6 +285,17 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         <div className="tfc-quote">
           {isParaphrase && <p className="tfc-paraphrase">[Paraphrase]</p>}
           <p className="tfc-quote-text">&ldquo;{displayText}&rdquo;</p>
+          <Link
+            href={`/takes/${take.take_id}`}
+            style={{
+              display: "inline-block", marginTop: 8,
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+              letterSpacing: "0.12em", textTransform: "uppercase", fontStyle: "normal",
+              color: "#8b9088", textDecoration: "none", fontWeight: 600,
+            }}
+          >
+            See full take →
+          </Link>
         </div>
 
         {/* ── What Happened toggle ── */}

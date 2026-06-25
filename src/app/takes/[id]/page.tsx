@@ -243,8 +243,7 @@ export default async function TakePage({
           {take.source_url && (
             <div className="td-srcbar">
               <a className="td-src-link" href={take.source_url} target="_blank" rel="noopener noreferrer">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg>
-                VIEW ORIGINAL ON X
+                VIEW ORIGINAL SOURCE
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
               </a>
               <span className="td-src-url">{take.source_url.replace(/^https?:\/\//, "")}</span>

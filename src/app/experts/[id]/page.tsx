@@ -446,16 +446,16 @@ export default async function ExpertProfilePage({
       {/* ── Highlight Reel ── */}
       {!expert.is_fantasy_guru && (bestTake || worstTake || mostRecentTake) && (
         <div style={{ borderBottom: "3px solid #15201a", backgroundColor: "#f5f1e8", backgroundImage: "repeating-linear-gradient(-45deg, rgba(21,32,26,.045) 0 1.5px, transparent 1.5px 13px)" }}>
-          <div className="max-w-5xl mx-auto reel-section" style={{ padding: "40px 24px 46px" }}>
+          <div className="max-w-5xl mx-auto reel-section" style={{ padding: "24px 24px 28px" }}>
             <style>{`
               .reel-card { transition: transform .12s ease, box-shadow .12s ease; }
               .reel-card:hover { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #15201a; }
               .reel-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
               @media(max-width:700px){ .reel-grid { grid-template-columns:1fr; } }
-              @media(max-width:560px){ .reel-section { padding: 28px 20px 32px !important; } }
+              @media(max-width:560px){ .reel-section { padding: 16px 20px 20px !important; } }
             `}</style>
             {/* Header */}
-            <div style={{ display:"flex", alignItems:"baseline", gap:14, marginBottom:22 }}>
+            <div style={{ display:"flex", alignItems:"baseline", gap:14, marginBottom:13 }}>
               <span style={{ fontFamily:"'Archivo Black',sans-serif", fontSize:36, letterSpacing:"-.03em", color:"#15201a", fontWeight:900 }}>THE HIGHLIGHT REEL</span>
               <span style={{ fontStyle:"italic", fontSize:15, color:"#8a8a82" }}>best, worst, and most recent take — at a glance.</span>
             </div>

@@ -292,14 +292,30 @@ export default async function TakePage({
                 </>
               ) : <div className="val" style={{ color: FAINT, fontSize: 18 }}>—</div>}
             </div>
-            <div className="td-score">
-              <div className="lab">IMPACT</div>
-              {take.impact_score != null ? (
-                <>
-                  <div className="val">{take.impact_score.toFixed(1)}</div>
-                  <div className="meter"><i style={{ width: `${Math.min(100, take.impact_score)}%` }} /></div>
-                </>
-              ) : <div className="val" style={{ color: FAINT, fontSize: 18 }}>—</div>}
+            <div className="td-score" style={{ display: "flex", flexDirection: "column" }}>
+              <div className="lab">PLAYERS / TEAMS</div>
+              {(() => {
+                const tags = [
+                  ...((take.player_tags as string[] | null) ?? []),
+                  ...((take.team_tags as string[] | null) ?? []),
+                ];
+                return tags.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                    {tags.map((tag: string) => (
+                      <span key={tag} style={{
+                        fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                        fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase",
+                        background: PAPER, border: `1.5px solid ${INK}`,
+                        padding: "6px 12px", display: "inline-block",
+                      }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: FAINT, fontSize: 13, fontStyle: "italic", marginTop: 12 }}>None tagged</div>
+                );
+              })()}
             </div>
           </div>
         )}

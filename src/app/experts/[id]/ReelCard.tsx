@@ -58,7 +58,6 @@ export default function ReelCard({
           onClick={() => setOpen(o => !o)}
           style={{
             marginTop: 18,
-            borderTop: "2px solid #dfe2e6",
             paddingTop: 12,
             display: "flex",
             alignItems: "center",

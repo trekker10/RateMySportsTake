@@ -213,8 +213,8 @@ export default function BaseballCardModal(props: BaseballCardProps) {
           onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}
           style={{
             position: "fixed", inset: 0, zIndex: 120,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 28, background: "rgba(21,32,26,.82)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "flex-start", justifyContent: "center",
+            padding: "16px 28px 28px", overflowY: "auto", background: "rgba(21,32,26,.82)", backdropFilter: "blur(4px)",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, maxHeight: "100%" }}>

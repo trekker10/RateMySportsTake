@@ -100,7 +100,7 @@ export default function SignupPage() {
             {/* Username */}
             <div className="su-field">
               <label className="su-label">Username</label>
-              <input name="username" type="text" required autoComplete="username" placeholder="Snowkid41" className="su-input" />
+              <input name="username" type="text" required autoComplete="username" placeholder="Username" className="su-input" />
             </div>
 
             {/* Favorite sports */}

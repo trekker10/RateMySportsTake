@@ -107,7 +107,7 @@ export default async function DashboardPage() {
       {/* ── Greeting band ── */}
       <div style={{ background: "#fff", borderBottom: "3px solid #15201a" }}>
         <div className="max-w-5xl mx-auto" style={{ padding: "28px 24px 0" }}>
-          <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontStyle: "italic", fontSize: 34, letterSpacing: "-.03em", color: "#15201a", lineHeight: 1 }}>
+          <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontWeight: 900, fontSize: 34, letterSpacing: "-.03em", color: "#15201a", lineHeight: 1 }}>
             Welcome back,{" "}
             <span style={{ color: "#e2241a" }}>{handle}.</span>
           </h1>

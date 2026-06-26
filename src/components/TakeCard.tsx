@@ -16,6 +16,7 @@ interface TakeCardProps {
   showSave?: boolean;
   isSaved?: boolean;
   onSave?: (takeId: string, saved: boolean) => void;
+  showResolutionDate?: boolean;
 }
 
 function verdictInfo(status: string): { label: string; bg: string; color: string; border?: string } {
@@ -64,7 +65,7 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave }: TakeCardProps) {
+export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false }: TakeCardProps) {
   const [open, setOpen] = useState(false);
 
   const v          = verdictInfo(take.outcome_status);
@@ -238,6 +239,26 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         .tfc-btn-share { background: #cf2c20; color: #ffffff; }
         .tfc-btn-save  { background: #ffffff; color: #161a17; border: 1.5px solid #161a17; }
         .tfc-btn-save.saved { background: #0a7a3b; color: #ffffff; border-color: #0a7a3b; }
+
+        /* resolution date row */
+        .tfc-dates {
+          display: flex; align-items: stretch; gap: 0;
+          border: 1.5px solid #e2ddd4; border-radius: 4px;
+          overflow: hidden; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace;
+        }
+        .tfc-dates-cell {
+          flex: 1; padding: 8px 12px;
+        }
+        .tfc-dates-cell + .tfc-dates-cell { border-left: 1.5px solid #e2ddd4; }
+        .tfc-dates-label {
+          font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+          color: #8a8a82; margin-bottom: 3px;
+        }
+        .tfc-dates-value {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 15px; letter-spacing: -.02em; color: #15201a; line-height: 1;
+        }
+        .tfc-dates-value.resolves { color: #e2241a; }
       `}</style>
 
       <article className={`tfc-card${open ? " open" : ""}`}>
@@ -285,6 +306,22 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
             </span>
           </div>
         </div>
+
+        {/* ── Filed / Resolves dates ── */}
+        {showResolutionDate && (
+          <div className="tfc-dates">
+            <div className="tfc-dates-cell">
+              <p className="tfc-dates-label">FILED</p>
+              <p className="tfc-dates-value">{mo} {day}</p>
+            </div>
+            <div className="tfc-dates-cell">
+              <p className="tfc-dates-label">RESOLVES</p>
+              <p className={`tfc-dates-value${take.time_horizon_date ? " resolves" : ""}`}>
+                {take.time_horizon_date ? fmtDate(take.time_horizon_date) : "TBD"}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Quote ── */}
         <div className="tfc-quote">

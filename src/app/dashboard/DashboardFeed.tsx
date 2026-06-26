@@ -220,6 +220,7 @@ export default function DashboardFeed({ takes, initialSavedIds }: DashboardFeedP
                   take={take}
                   showExpert
                   showSave
+                  showResolutionDate
                   isSaved={savedIds.has(take.take_id)}
                   onSave={handleSave}
                 />

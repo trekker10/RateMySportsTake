@@ -22,11 +22,39 @@ export async function signUp(
   formData: FormData
 ): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  });
+
+  const email    = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const username = (formData.get("username") as string | null)?.trim() || null;
+  const sports   = formData.getAll("favorite_sports") as string[];
+  const intent   = (formData.get("user_intent") as string | null) || null;
+
+  // Validate username uniqueness before creating auth user
+  if (username) {
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .ilike("username", username)
+      .maybeSingle();
+    if (existing) return { error: "That username is already taken." };
+  }
+
+  const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: error.message };
+
+  // Write profile fields (trigger already created the row)
+  if (data.user) {
+    await supabase
+      .from("profiles")
+      .upsert({
+        user_id:         data.user.id,
+        username,
+        display_name:    username,
+        favorite_sports: sports,
+        user_intent:     intent,
+      });
+  }
+
   return { success: true };
 }
 

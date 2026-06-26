@@ -256,7 +256,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         }
         .tfc-dates-value {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 15px; letter-spacing: -.02em; color: #15201a; line-height: 1;
+          font-size: 22px; letter-spacing: -.02em; color: #15201a; line-height: 1;
         }
         .tfc-dates-value.resolves { color: #e2241a; }
       `}</style>

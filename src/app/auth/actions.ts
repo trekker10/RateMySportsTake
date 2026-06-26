@@ -43,14 +43,6 @@ export async function signUp(
   }
 
   const { data, error } = await supabase.auth.signUp({ email, password });
-if (!error && data.user) {
-
-  await fetch('/api/send-welcome-push', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: data.user.id }),
-  });
-}
   if (error) return { error: error.message };
 
   // Write profile fields via admin client (user has no session yet pre-email-confirm)

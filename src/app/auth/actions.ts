@@ -1,4 +1,5 @@
 "use server";
+import { subscribeUserToPush } from '@/lib/push';
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -43,6 +44,14 @@ export async function signUp(
   }
 
   const { data, error } = await supabase.auth.signUp({ email, password });
+if (!error && data.user) {
+  await subscribeUserToPush(data.user.id, supabase);
+  await fetch('/api/send-welcome-push', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: data.user.id }),
+  });
+}
   if (error) return { error: error.message };
 
   // Write profile fields via admin client (user has no session yet pre-email-confirm)

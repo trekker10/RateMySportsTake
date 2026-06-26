@@ -37,6 +37,12 @@
   }
 }
 
+@media (max-width: 880px) {
+  .dash-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 html {
   overflow-x: hidden;
   max-width: 100%;

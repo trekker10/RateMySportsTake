@@ -62,6 +62,14 @@ export default function ProfileDropdown({
             <p className="text-sm text-gray-700 truncate mt-0.5">{email}</p>
           </div>
 
+          <a
+            href="/dashboard"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 font-mono text-[11px] tracking-widest uppercase text-gray-700 hover:bg-gray-50 border-b border-gray-100 transition-colors"
+          >
+            My Dashboard
+          </a>
+
           {isAdmin && (
             <a
               href="/admin"

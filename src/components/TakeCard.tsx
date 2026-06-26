@@ -13,6 +13,9 @@ type TakeWithExpert = Take & {
 interface TakeCardProps {
   take: TakeWithExpert;
   showExpert?: boolean;
+  showSave?: boolean;
+  isSaved?: boolean;
+  onSave?: (takeId: string, saved: boolean) => void;
 }
 
 function verdictInfo(status: string): { label: string; bg: string; color: string; border?: string } {
@@ -61,7 +64,7 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
+export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave }: TakeCardProps) {
   const [open, setOpen] = useState(false);
 
   const v          = verdictInfo(take.outcome_status);
@@ -233,6 +236,8 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
         .tfc-btn:hover { opacity: 0.85; }
         .tfc-btn-ctx   { background: #161a17; color: #ffffff; }
         .tfc-btn-share { background: #cf2c20; color: #ffffff; }
+        .tfc-btn-save  { background: #ffffff; color: #161a17; border: 1.5px solid #161a17; }
+        .tfc-btn-save.saved { background: #0a7a3b; color: #ffffff; border-color: #0a7a3b; }
       `}</style>
 
       <article className={`tfc-card${open ? " open" : ""}`}>
@@ -319,12 +324,22 @@ export default function TakeCard({ take, showExpert = false }: TakeCardProps) {
 
         {/* ── Actions ── */}
         <div className="tfc-actions">
+          {showSave && (
+            <button
+              className={`tfc-btn tfc-btn-save${isSaved ? " saved" : ""}`}
+              onClick={() => onSave?.(take.take_id, !isSaved)}
+            >
+              {isSaved ? "SAVED ✓" : "SAVE"}
+            </button>
+          )}
           <Link href={`/takes/${take.take_id}`} className="tfc-btn tfc-btn-ctx">
             SEE FULL CONTEXT
           </Link>
-          <ShareReceiptButton takeId={take.take_id} className="tfc-btn tfc-btn-share">
-            SHARE RECEIPT
-          </ShareReceiptButton>
+          {!showSave && (
+            <ShareReceiptButton takeId={take.take_id} className="tfc-btn tfc-btn-share">
+              SHARE RECEIPT
+            </ShareReceiptButton>
+          )}
         </div>
 
       </article>

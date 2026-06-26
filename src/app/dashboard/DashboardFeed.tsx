@@ -221,6 +221,7 @@ export default function DashboardFeed({ takes, initialSavedIds }: DashboardFeedP
                   showExpert
                   showSave
                   showResolutionDate
+                  largeByline
                   isSaved={savedIds.has(take.take_id)}
                   onSave={handleSave}
                 />

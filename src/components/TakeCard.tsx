@@ -17,6 +17,7 @@ interface TakeCardProps {
   isSaved?: boolean;
   onSave?: (takeId: string, saved: boolean) => void;
   showResolutionDate?: boolean;
+  largeByline?: boolean;
 }
 
 function verdictInfo(status: string): { label: string; bg: string; color: string; border?: string } {
@@ -65,7 +66,7 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false }: TakeCardProps) {
+export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false, largeByline = false }: TakeCardProps) {
   const [open, setOpen] = useState(false);
 
   const v          = verdictInfo(take.outcome_status);
@@ -266,13 +267,13 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         {/* ── Analyst header (only in feed view) ── */}
         {showExpert && expert && (
           <div className="tfc-expert">
-            <div className="tfc-avatar">
+            <div className="tfc-avatar" style={largeByline ? { width: 57, height: 57, fontSize: 16 } : {}}>
               {expert.avatar_url
                 ? <img src={expert.avatar_url} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : initials(expert.name)}
             </div>
             <div>
-              <Link href={expertUrl(expert)} className="tfc-expert-name">{expert.name}</Link>
+              <Link href={expertUrl(expert)} className="tfc-expert-name" style={largeByline ? { fontSize: 22, fontWeight: 900 } : {}}>{expert.name}</Link>
               {expert.outlet && <p className="tfc-expert-meta">{expert.outlet}</p>}
               <div className="tfc-track">
                 <span className="tfc-track-made">TAKE MADE {madeFmt}</span>

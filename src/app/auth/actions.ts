@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 
 export async function signIn(
@@ -29,9 +30,11 @@ export async function signUp(
   const sports   = formData.getAll("favorite_sports") as string[];
   const intent   = (formData.get("user_intent") as string | null) || null;
 
+  const admin = createAdminClient();
+
   // Validate username uniqueness before creating auth user
   if (username) {
-    const { data: existing } = await supabase
+    const { data: existing } = await admin
       .from("profiles")
       .select("user_id")
       .ilike("username", username)
@@ -42,9 +45,9 @@ export async function signUp(
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: error.message };
 
-  // Write profile fields (trigger already created the row)
+  // Write profile fields via admin client (user has no session yet pre-email-confirm)
   if (data.user) {
-    await supabase
+    const { error: profileError } = await admin
       .from("profiles")
       .upsert({
         user_id:         data.user.id,
@@ -53,6 +56,7 @@ export async function signUp(
         favorite_sports: sports,
         user_intent:     intent,
       });
+    if (profileError) return { error: "Account created but profile save failed — please contact support." };
   }
 
   return { success: true };

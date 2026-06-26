@@ -1,7 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import { signUp } from "@/app/auth/actions";
+import { createClient } from "@/lib/supabase/client";
+import { subscribeUserToPush } from "@/lib/push";
+
+
 
 const SPORTS = ["NBA", "NFL", "MLB", "NHL", "SOCCER", "CFB", "WNBA", "MMA"];
 
@@ -16,7 +20,16 @@ export default function SignupPage() {
   const [selectedSports, setSelectedSports] = useState<Set<string>>(new Set());
   const [selectedIntent, setSelectedIntent] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
+useEffect(() => {
+    if (state?.success) {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) {
+          subscribeUserToPush(data.user.id, supabase);
+        }
+      });
+    }
+  }, [state?.success]);
   function toggleSport(sport: string) {
     setSelectedSports((prev) => {
       const next = new Set(prev);

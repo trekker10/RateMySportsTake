@@ -41,6 +41,7 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [permState, setPermState] = useState<PermState>("checking");
+  const [subError, setSubError] = useState<string | null>(null);
 
   // Check current browser permission state on mount
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
   }, []);
 
   async function doSubscribe() {
+    setSubError(null);
     setSubscribing(true);
     try {
       const supabase = createClient();
@@ -75,9 +77,12 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
         setSubscribed(true);
         setPermState("granted");
         setPrefs({ official: true, analyst_updates: true, take_updates: true });
-        // Auto-save defaults
         await saveNotificationPreferences({ official: true, analyst_updates: true, take_updates: true });
+      } else {
+        setSubError((result as any).error ?? "Subscription failed — see console for details.");
       }
+    } catch (err: any) {
+      setSubError(err?.message ?? "Unexpected error during subscription.");
     } finally {
       setSubscribing(false);
     }
@@ -85,8 +90,8 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
 
   async function handleEnablePush() {
     setSubscribing(true);
+    setSubError(null);
     try {
-      // Request permission first
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         setPermState("granted");
@@ -94,8 +99,8 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
       } else {
         setPermState("denied");
       }
-    } catch {
-      setPermState("denied");
+    } catch (err: any) {
+      setSubError(err?.message ?? "Permission request failed.");
     } finally {
       setSubscribing(false);
     }
@@ -184,6 +189,11 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
         >
           {subscribing ? "Setting up…" : "Enable push notifications"}
         </button>
+        {subError && (
+          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#e2241a", fontWeight: 700, marginTop: 12, letterSpacing: ".06em" }}>
+            Error: {subError}
+          </p>
+        )}
       </div>
     );
   }

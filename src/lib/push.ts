@@ -28,9 +28,9 @@ export async function subscribeUserToPush(userId: string, supabase: any) {
     if (error) throw error;
 
     return { ok: true };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Push subscription failed:', err);
-    return { ok: false };
+    return { ok: false, error: err?.message ?? String(err) };
   }
 }
 

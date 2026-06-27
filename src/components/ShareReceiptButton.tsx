@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface ShareReceiptButtonProps {
   takeId: string;
@@ -15,6 +16,9 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
   const [copied, setCopied] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const imageUrl = imageUrlProp ?? `/api/receipt/${takeId}`;
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const handleOpen = () => { setImgLoaded(false); setOpen(true); };
   const handleClose = () => { setOpen(false); setCopied(false); setImgLoaded(false); };
@@ -47,7 +51,7 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
         {children ?? "Share Receipt"}
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
@@ -115,7 +119,7 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
             </p>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }

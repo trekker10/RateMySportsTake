@@ -54,11 +54,12 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
           onClick={handleClose}
         >
           <div
-            className="relative w-full max-w-lg bg-white border-2 border-gray-900"
+            className="relative w-full max-w-lg bg-white border-2 border-gray-900 flex flex-col"
+            style={{ maxHeight: "90vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b-2 border-gray-900">
+            <div className="flex items-center justify-between px-5 py-3 border-b-2 border-gray-900 flex-shrink-0">
               <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-gray-500">Your Receipt</p>
               <button
                 onClick={handleClose}
@@ -69,7 +70,7 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
             </div>
 
             {/* Receipt image */}
-            <div className="p-4 bg-gray-50 relative">
+            <div className="p-4 bg-gray-50 relative flex-1 min-h-0 flex items-center justify-center overflow-hidden">
               {/* Loading spinner */}
               {!imgLoaded && (
                 <div className="flex items-center justify-center py-14 gap-4">
@@ -87,13 +88,13 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
                 src={imageUrl}
                 alt="Take receipt"
                 className="w-full block"
-                style={{ imageRendering: "crisp-edges", display: imgLoaded ? "block" : "none" }}
+                style={{ imageRendering: "crisp-edges", display: imgLoaded ? "block" : "none", maxHeight: "55vh", objectFit: "contain" }}
                 onLoad={() => setImgLoaded(true)}
               />
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 px-5 py-4 border-t border-gray-200">
+            <div className="flex gap-3 px-5 py-4 border-t border-gray-200 flex-shrink-0">
               <button
                 onClick={handleCopy}
                 className="flex-1 px-4 py-2.5 font-mono text-[11px] tracking-wider uppercase text-white transition-colors"
@@ -109,7 +110,7 @@ export default function ShareReceiptButton({ takeId, imageUrl: imageUrlProp, cla
               </button>
             </div>
 
-            <p className="px-5 pb-4 font-mono text-[9px] tracking-wider text-gray-400 uppercase text-center">
+            <p className="px-5 pb-4 font-mono text-[9px] tracking-wider text-gray-400 uppercase text-center flex-shrink-0">
               Copy image · paste directly to X / Instagram / iMessage
             </p>
           </div>

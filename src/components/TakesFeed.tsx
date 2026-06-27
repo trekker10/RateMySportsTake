@@ -6,6 +6,8 @@ import TakeCard from "@/components/TakeCard";
 interface TakesFeedProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   takes: any[];
+  isLoggedIn?: boolean;
+  followedTakeIds?: string[];
 }
 
 const VERDICT_OPTIONS = [
@@ -115,7 +117,7 @@ function MultiSelect({
   );
 }
 
-export default function TakesFeed({ takes }: TakesFeedProps) {
+export default function TakesFeed({ takes, isLoggedIn = false, followedTakeIds = [] }: TakesFeedProps) {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [selectedVerdicts, setSelectedVerdicts] = useState<string[]>([]);
 
@@ -185,7 +187,7 @@ export default function TakesFeed({ takes }: TakesFeedProps) {
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "start" }}
         >
           {filtered.map((take) => (
-            <TakeCard key={take.take_id} take={take} showExpert />
+            <TakeCard key={take.take_id} take={take} showExpert showFollow isLoggedIn={isLoggedIn} isFollowing={followedTakeIds.includes(take.take_id)} />
           ))}
         </div>
       ) : (

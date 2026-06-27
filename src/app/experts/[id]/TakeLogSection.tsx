@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { getExpertTakesPage, type ProfileTake } from "@/app/actions/takes";
 import { scoreToGrade } from "@/lib/takescore";
+import { followTake, unfollowTake } from "@/app/actions/takeFollows";
 
 const PAGE_SIZE = 10;
 
@@ -33,8 +34,24 @@ function gradeChipLetter(grade: number | null): string | null {
 
 /* ─── TakeCard ─────────────────────────────────────────────── */
 
-function TakeCard({ take, index }: { take: ProfileTake; index: number }) {
+function TakeCard({ take, index, isLoggedIn, initialFollowing }: { take: ProfileTake; index: number; isLoggedIn: boolean; initialFollowing: boolean }) {
   const [open, setOpen] = useState(false);
+  const [following, setFollowing] = useState(initialFollowing);
+  const [followPending, setFollowPending] = useState(false);
+
+  const handleFollow = useCallback(async () => {
+    if (!isLoggedIn) { window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`; return; }
+    const next = !following;
+    setFollowing(next);
+    setFollowPending(true);
+    try {
+      next ? await followTake(take.take_id) : await unfollowTake(take.take_id);
+    } catch {
+      setFollowing(!next);
+    } finally {
+      setFollowPending(false);
+    }
+  }, [following, isLoggedIn, take.take_id]);
 
   const v        = verdictInfo(take.outcome_status);
   const impact   = gradeArrows(take.grade);
@@ -128,6 +145,19 @@ function TakeCard({ take, index }: { take: ProfileTake; index: number }) {
 
       {/* BUTTONS */}
       <div className="tc-actions">
+        <button
+          className={`tc-btn-follow${following ? " following" : ""}`}
+          onClick={handleFollow}
+          disabled={followPending}
+          aria-pressed={following}
+          aria-label={isPending ? "Follow this take for its result" : "Follow this take"}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill={following ? "#ffffff" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+          </svg>
+          {following ? "FOLLOWING" : isPending ? "FOLLOW FOR RESULT" : "FOLLOW"}
+        </button>
         <Link href={`/takes/${take.take_id}`} className="tc-btn tc-btn-ctx">
           SEE FULL CONTEXT
         </Link>
@@ -151,6 +181,8 @@ interface Props {
   gradeMin: number | null;
   gradeMax: number | null;
   activeGrade: string | null;
+  isLoggedIn?: boolean;
+  followedTakeIds?: string[];
 }
 
 export default function TakeLogSection({
@@ -160,6 +192,8 @@ export default function TakeLogSection({
   verdict,
   gradeMin,
   gradeMax,
+  isLoggedIn = false,
+  followedTakeIds = [],
 }: Props) {
   const [takes, setTakes]       = useState<ProfileTake[]>(initialTakes);
   const [isPending, startTransition] = useTransition();
@@ -264,11 +298,22 @@ export default function TakeLogSection({
         .tc-btn-share{background:var(--accent);color:#fff;border-color:var(--ink);box-shadow:4px 4px 0 rgba(21,32,26,.25);}
         .tc-btn-share:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
         .tc-btn-share:active{transform:translate(2px,2px);box-shadow:none;}
+        .tc-btn-follow{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+          padding:16px 18px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:16px;
+          letter-spacing:.11em;text-transform:uppercase;background:#fff;color:var(--ink);
+          border:2px solid var(--ink);box-shadow:4px 4px 0 rgba(21,32,26,.18);border-radius:0;
+          cursor:pointer;transition:transform .1s ease,box-shadow .1s ease,background .14s,color .14s;white-space:nowrap;}
+        .tc-btn-follow:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
+        .tc-btn-follow:active:not(:disabled){transform:translate(2px,2px);box-shadow:0 0 0 var(--ink);}
+        .tc-btn-follow.following{background:var(--ink);color:#fff;}
+        .tc-btn-follow.following:hover:not(:disabled){box-shadow:6px 6px 0 var(--accent);}
+        .tc-btn-follow:disabled{opacity:.6;cursor:not-allowed;}
+        @media(max-width:560px){.tc-btn-follow{flex:1 1 100%;}}
       `}</style>
 
       <div>
         {takes.length > 0 ? (
-          takes.map((take, i) => <TakeCard key={take.take_id} take={take} index={i} />)
+          takes.map((take, i) => <TakeCard key={take.take_id} take={take} index={i} isLoggedIn={isLoggedIn} initialFollowing={followedTakeIds.includes(take.take_id)} />)
         ) : (
           <div className="py-12 text-center italic text-gray-400">
             No takes found for this filter.

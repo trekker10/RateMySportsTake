@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import type { Take, Expert } from "@/types/database";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { expertUrl } from "@/lib/expert-url";
+import { followTake, unfollowTake } from "@/app/actions/takeFollows";
 
 type TakeWithExpert = Take & {
   experts?: Pick<Expert, "name" | "expert_id" | "slug" | "outlet" | "avatar_url"> | null;
@@ -18,6 +19,9 @@ interface TakeCardProps {
   onSave?: (takeId: string, saved: boolean) => void;
   showResolutionDate?: boolean;
   largeByline?: boolean;
+  showFollow?: boolean;
+  isFollowing?: boolean;
+  isLoggedIn?: boolean;
 }
 
 function verdictInfo(status: string): { label: string; bg: string; color: string; border?: string } {
@@ -66,13 +70,29 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false, largeByline = false }: TakeCardProps) {
+export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false, largeByline = false, showFollow = false, isFollowing: initialIsFollowing = false, isLoggedIn = false }: TakeCardProps) {
   const [open, setOpen] = useState(false);
+  const [following, setFollowing] = useState(initialIsFollowing);
+  const [followPending, setFollowPending] = useState(false);
+
+  const handleFollow = useCallback(async () => {
+    if (!isLoggedIn) { window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`; return; }
+    const next = !following;
+    setFollowing(next);
+    setFollowPending(true);
+    try {
+      next ? await followTake(take.take_id) : await unfollowTake(take.take_id);
+    } catch {
+      setFollowing(!next);
+    } finally {
+      setFollowPending(false);
+    }
+  }, [following, isLoggedIn, take.take_id]);
 
   const v          = verdictInfo(take.outcome_status);
   const chipLetter = gradeChipLetter(take.grade);
   const chipColor  = gradeColor(take.grade);
-  const isPending  = take.outcome_status === "pending";
+  const isPending  = take.outcome_status === "pending" || !take.outcome_status;
   const expert     = take.experts;
   const analysis   = (take as any).outcome_notes ?? (take as any).grade_notes;
 
@@ -260,6 +280,27 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           font-size: 22px; letter-spacing: -.02em; color: #15201a; line-height: 1;
         }
         .tfc-dates-value.resolves { color: #e2241a; }
+
+        /* follow button */
+        .tfc-btn-follow {
+          flex: none;
+          display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+          padding: 10px 14px;
+          font-family: 'JetBrains Mono', monospace; font-size: 11px;
+          font-weight: 800; letter-spacing: .11em; text-transform: uppercase;
+          background: #ffffff; color: #15201a;
+          border: 2px solid #15201a;
+          box-shadow: 4px 4px 0 rgba(21,32,26,.18);
+          border-radius: 0; cursor: pointer;
+          transition: transform .1s ease, box-shadow .1s ease, background .14s, color .14s;
+          white-space: nowrap;
+        }
+        .tfc-btn-follow:hover:not(:disabled) { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #15201a; }
+        .tfc-btn-follow:active:not(:disabled) { transform: translate(2px,2px); box-shadow: 0 0 0 #15201a; }
+        .tfc-btn-follow.following { background: #15201a; color: #ffffff; }
+        .tfc-btn-follow.following:hover:not(:disabled) { box-shadow: 6px 6px 0 #e2241a; }
+        .tfc-btn-follow:disabled { opacity: .6; cursor: not-allowed; }
+        @media (max-width: 560px) { .tfc-btn-follow { flex: 1 1 100%; } }
       `}</style>
 
       <article className={`tfc-card${open ? " open" : ""}`}>
@@ -362,6 +403,21 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
 
         {/* ── Actions ── */}
         <div className="tfc-actions">
+          {showFollow && (
+            <button
+              className={`tfc-btn-follow${following ? " following" : ""}`}
+              onClick={handleFollow}
+              disabled={followPending}
+              aria-pressed={following}
+              aria-label={isPending ? "Follow this take for its result" : "Follow this take"}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill={following ? "#ffffff" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+              </svg>
+              {following ? "FOLLOWING" : isPending ? "FOLLOW FOR RESULT" : "FOLLOW"}
+            </button>
+          )}
           {showSave && (
             <button
               className={`tfc-btn tfc-btn-save${isSaved ? " saved" : ""}`}

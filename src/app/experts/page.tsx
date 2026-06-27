@@ -79,9 +79,12 @@ export default async function ExpertsPage({
     accolades: computeAccolades(e.expert_id, e.overall_rating, allExpertSnaps, recentTakes ?? []),
   }));
 
+  const { data: { user } } = await supabase.auth.getUser();
+
   // ── Takes query (only when view=takes) ────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let takesRows: any[] | null = null;
+  let followedTakeIds: string[] = [];
   if (activeView === "takes" && expertIds.length > 0) {
     let takesQuery = supabase
       .from("takes")
@@ -93,8 +96,14 @@ export default async function ExpertsPage({
     if (activeSport !== "ALL SPORTS") takesQuery = takesQuery.ilike("sport", `%${activeSport}%`);
     if (q) takesQuery = takesQuery.or(`raw_text.ilike.%${q}%,summary.ilike.%${q}%`);
 
-    const { data } = await takesQuery;
+    const [{ data }, followsResult] = await Promise.all([
+      takesQuery,
+      user
+        ? supabase.from("take_follows").select("take_id").eq("user_id", user.id)
+        : Promise.resolve({ data: [] }),
+    ]);
     takesRows = data;
+    followedTakeIds = (followsResult.data ?? []).map((r: { take_id: string }) => r.take_id);
   }
 
   // ── URL helpers ───────────────────────────────────────────────────────────
@@ -295,7 +304,7 @@ export default async function ExpertsPage({
       {activeView === "takes" && (
         <div>
           {takesRows && takesRows.length > 0 ? (
-            <TakesFeed takes={takesRows} />
+            <TakesFeed takes={takesRows} isLoggedIn={!!user} followedTakeIds={followedTakeIds} />
           ) : (
             <div className="border-2 border-gray-900 px-4 py-12 text-center italic text-gray-400 bg-white">
               {expertIds.length === 0

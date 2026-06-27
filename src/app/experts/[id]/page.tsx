@@ -115,6 +115,7 @@ export default async function ExpertProfilePage({
     { data: wlData },
     { data: showRow },
     { data: reelTakes },
+    { data: takeFollowsData },
   ] = await Promise.all([
     takesQuery,
     countQuery,
@@ -129,7 +130,12 @@ export default async function ExpertProfilePage({
       ? supabase.from("shows").select("logo_url, network, name").or(`network.ilike.${expert.outlet},name.ilike.${expert.outlet}`).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("takes").select("take_id, date_made, raw_text, outcome_status, grade, outcome_notes").eq("expert_id", expertId).order("date_made", { ascending: false }),
+    user
+      ? supabase.from("take_follows").select("take_id").eq("user_id", user.id)
+      : Promise.resolve({ data: [] }),
   ]);
+
+  const followedTakeIds = (takeFollowsData ?? []).map((r: { take_id: string }) => r.take_id);
 
   // Highlight Reel — derive from full unfiltered take list
   const allReelTakes = reelTakes ?? [];
@@ -605,6 +611,8 @@ export default async function ExpertProfilePage({
                   gradeMin={gradeRange?.min ?? null}
                   gradeMax={gradeRange?.max ?? null}
                   activeGrade={activeGrade}
+                  isLoggedIn={!!user}
+                  followedTakeIds={followedTakeIds}
                 />
               </>
             )}

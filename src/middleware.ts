@@ -1,7 +1,15 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  // Server action POSTs carry a Next-Action header.
+  // Passing them through updateSession can cause the middleware to return
+  // a response with the wrong Content-Type, triggering
+  // "An unexpected response was received from the server" on the client.
+  if (request.headers.has("next-action")) {
+    return NextResponse.next();
+  }
+
   return await updateSession(request);
 }
 

@@ -259,7 +259,7 @@ export default function UsersTable({ users }: { users: User[] }) {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "visible" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", border: "2px solid #15201a" }}>
           <thead>
             <tr style={{ background: "#15201a" }}>

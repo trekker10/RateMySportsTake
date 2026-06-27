@@ -16,6 +16,15 @@ const STATUS_OPTIONS = [
   { label: "PENDING", value: "pending" },
 ];
 
+type SortKey = "date_made_desc" | "date_made_asc" | "resolution_asc" | "resolution_desc";
+
+const SORT_OPTIONS: { label: string; value: SortKey }[] = [
+  { label: "TAKE DATE: NEWEST",      value: "date_made_desc" },
+  { label: "TAKE DATE: OLDEST",      value: "date_made_asc" },
+  { label: "RESOLVES: SOONEST",      value: "resolution_asc" },
+  { label: "RESOLVES: FURTHEST OUT", value: "resolution_desc" },
+];
+
 function normalizeSport(sport: string | null | undefined): string {
   if (!sport) return "Unknown";
   return sport.replace(/^\d{4}(?:-\d{2,4})?\s+/i, "");
@@ -95,12 +104,72 @@ function MultiSelect({
   );
 }
 
+function SortSelect({ value, onChange }: { value: SortKey; onChange: (v: SortKey) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const active = value !== "date_made_desc";
+  const label = SORT_OPTIONS.find((o) => o.value === value)?.label ?? "SORT BY";
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+          fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase",
+          padding: "7px 12px", border: `1.5px solid ${active ? "#15201a" : "#d1d5db"}`,
+          background: active ? "#15201a" : "#fff", color: active ? "#fff" : "#15201a",
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+        }}
+      >
+        {active ? label : "SORT BY"} ▾
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 40,
+          background: "#fff", border: "1.5px solid #15201a", minWidth: 210,
+          boxShadow: "4px 4px 0 #15201a",
+        }}>
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", background: value === opt.value ? "#f5f1e8" : "#fff",
+                border: "none", cursor: "pointer", textAlign: "left",
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
+                letterSpacing: ".12em", textTransform: "uppercase",
+                fontWeight: value === opt.value ? 700 : 400,
+                color: "#15201a", borderBottom: "1px solid #f0ede7",
+              }}
+            >
+              {value === opt.value && <span style={{ color: "#e2241a", fontSize: 9 }}>●</span>}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds = [], followedTakes = [] }: DashboardFeedProps) {
   const [savedIds] = useState<Set<string>>(new Set(initialSavedIds));
   const [showFollowedOnly, setShowFollowedOnly] = useState(false);
   const [analystFilter, setAnalystFilter] = useState<Set<string>>(new Set());
   const [sportFilter, setSportFilter] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<SortKey>("date_made_desc");
 
   // Source list depends on followed toggle
   const source = showFollowedOnly ? followedTakes : takes;
@@ -128,6 +197,14 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
       if (!match) return false;
     }
     return true;
+  }).sort((a, b) => {
+    if (sortKey === "date_made_asc") return new Date(a.date_made).getTime() - new Date(b.date_made).getTime();
+    if (sortKey === "date_made_desc") return new Date(b.date_made).getTime() - new Date(a.date_made).getTime();
+    // For resolution sorts, push nulls to the end
+    const aRes = a.time_horizon_date ? new Date(a.time_horizon_date).getTime() : Infinity;
+    const bRes = b.time_horizon_date ? new Date(b.time_horizon_date).getTime() : Infinity;
+    if (sortKey === "resolution_asc") return aRes - bRes;
+    return bRes - aRes;
   });
 
   const hasFilters = analystFilter.size > 0 || sportFilter.size > 0 || statusFilter.size > 0 || showFollowedOnly;
@@ -168,6 +245,7 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
         <MultiSelect label="ANALYST" options={analystOptions} selected={analystFilter} onChange={setAnalystFilter} />
         <MultiSelect label="SPORT"   options={sportOptions}   selected={sportFilter}   onChange={setSportFilter} />
         <MultiSelect label="STATUS"  options={STATUS_OPTIONS} selected={statusFilter}  onChange={setStatusFilter} />
+        <SortSelect value={sortKey} onChange={setSortKey} />
         {hasFilters && (
           <button
             onClick={clearAll}

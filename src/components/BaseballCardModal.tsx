@@ -147,7 +147,7 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
               <div style={{
                 fontFamily: "'Archivo Black', sans-serif",
                 fontWeight: 900,
-                fontSize: small ? 56 : 72,
+                fontSize: small ? 48 : 61,
                 color: INK, marginTop: 10,
                 letterSpacing: "-.04em", whiteSpace: "nowrap",
               }}>{value}</div>

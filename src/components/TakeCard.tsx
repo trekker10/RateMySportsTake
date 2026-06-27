@@ -281,6 +281,19 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         }
         .tfc-dates-value.resolves { color: #e2241a; }
 
+        @media (max-width: 600px) {
+          .tfc-card { padding: 14px 14px 14px; }
+          .tfc-day { font-size: 34px; }
+          .tfc-chip b { font-size: 14px; }
+          .tfc-quote { font-size: 13px; padding: 12px; }
+          .tfc-toggle { font-size: 9px; padding: 10px 12px; }
+          .tfc-panel { font-size: 12px; }
+          .tfc-dates-value { font-size: 16px; }
+          .tfc-actions { flex-wrap: wrap; }
+          .tfc-btn { font-size: 9px; padding: 9px 6px; letter-spacing: 0.1em; }
+          .tfc-btn-follow { flex: 1 1 100%; font-size: 9px; padding: 9px 10px; letter-spacing: 0.1em; }
+        }
+
         /* follow button */
         .tfc-btn-follow {
           flex: none;

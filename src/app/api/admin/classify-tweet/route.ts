@@ -54,13 +54,38 @@ Respond ONLY with valid JSON, no markdown, no preamble:
   "take_type": "prediction" | "opinion" | "narrative" | "criticism" | "praise" | "stat_claim",
   "take_subtype": "prediction" | "recommendation" | "evaluation" | "start_sit" | "waiver" | "trade_advice" | "draft_ranking" | "matchup_take",
   "subjects": ["list", "of", "players", "or", "teams", "mentioned"],
-  "difficulty_score": 1-10,
+  "boldness_score": 1-100,
   "confidence_language": "guarantee" | "strong" | "moderate" | "hedged",
   "time_horizon": "immediate" | "this_season" | "this_year" | "multi_year" | "career" | "unresolvable" | null,
   "flags": ["bold_call", "hot_take", "contrarian", "vague", "unfalsifiable", "recency_bias", "guaranteed"]
 }
 
-difficulty_score: 1=obvious/safe, 10=extremely bold/specific
+boldness_score (1-100): Measures how far this take deviates from public consensus and expected outcomes — NOT just how assertive the language is. A take that confidently predicts the obvious favorite is low boldness even if stated with certainty. A take backing a clear underdog is high boldness even if hedged.
+
+Use this scale:
+  1-15:   Extreme chalk — predicting the overwhelming favorite or near-certain outcome
+           (e.g. "Chiefs will make the playoffs", "#1 seed advances to round 2", "LeBron will score tonight")
+  16-30:  Mild lean — slight favorite, most analysts would agree, low controversy
+           (e.g. "Eagles will have a winning season", "Curry will shoot 40%+ from three")
+  31-45:  Moderate contrarian — goes against the slight favorite or mild consensus
+           (e.g. "Jets will make the playoffs", "this WR will outperform his ADP by one tier")
+  46-60:  Clear contrarian — backing a meaningful underdog or against clear expert consensus
+           (e.g. "USA will beat England at the World Cup", "this rookie QB starts by week 8")
+  61-75:  Bold — significant underdog, most analysts strongly disagree
+           (e.g. "Browns win the AFC North", "this player is a bust at pick 15")
+  76-90:  Very bold — heavy underdog or flies in the face of nearly all expert opinion
+           (e.g. "Jets win the Super Bowl", "this consensus top-5 pick busts completely")
+  91-100: Extreme — massive underdog or claim that contradicts almost all available evidence
+           (e.g. "0-16 team makes the playoffs", "generational talent is a career bust")
+
+IMPORTANT scoring rules:
+- Base boldness on the EXPECTED outcome at the time of the tweet, not hindsight
+- A guarantee of the obvious ("Mahomes will throw for 4000 yards") = 5-10, not 80
+- A hedged prediction of a real underdog ("I think the Browns could make a run") = 55-65, not 15
+- Career/legacy takes about established stars should anchor to their consensus reputation
+- For player value takes (fantasy, draft), anchor to ADP tier deviation — one tier off = 30-45, two tiers = 55-70, complete fade of a consensus top-5 pick = 80+
+- When subjects or teams are mentioned and you have general knowledge of their current standing, use it to calibrate
+
 IMPORTANT: If has_clear_claim is false OR resolution_condition is "unresolvable", always set is_take to false.`;
 
 // ── Fantasy classifier system prompt (mirrors pipeline.py FANTASY_CLASSIFY_SYSTEM) ──

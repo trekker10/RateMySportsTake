@@ -147,6 +147,7 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
         { label: "TakeScore Admin",      href: "/admin/takescore",            icon: <IconScore /> },
         { label: "Fantasy TakeScore",    href: "/admin/fantasy-take-score",   icon: <IconFootball /> },
         { label: "Eval Lab",             href: "/admin/eval-lab",             icon: <IconEval /> },
+        { label: "Boldness Check",       href: "/admin/boldness-check",       icon: <IconScore /> },
       ],
     },
     {

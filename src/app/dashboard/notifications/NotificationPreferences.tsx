@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { saveNotificationPreferences } from "./actions";
 import { subscribeUserToPush } from "@/lib/push";
 import { createClient } from "@/lib/supabase/client";
@@ -32,28 +32,70 @@ interface Props {
   prefs: { official: boolean; analyst_updates: boolean; take_updates: boolean };
 }
 
+type PermState = "checking" | "unsupported" | "granted" | "denied" | "prompt";
+
 export default function NotificationPreferences({ userId, isSubscribed, prefs: initialPrefs }: Props) {
   const [subscribed, setSubscribed] = useState(isSubscribed);
   const [subscribing, setSubscribing] = useState(false);
   const [prefs, setPrefs] = useState(initialPrefs);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [permDenied, setPermDenied] = useState(false);
+  const [permState, setPermState] = useState<PermState>("checking");
 
-  async function handleEnablePush() {
+  // Check current browser permission state on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // iOS Safari requires PWA install for push — check for serviceWorker support
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setPermState("unsupported");
+      return;
+    }
+
+    const current = Notification.permission;
+    if (current === "granted") {
+      setPermState("granted");
+      // If permission is already granted but not subscribed, auto-subscribe
+      if (!isSubscribed) {
+        doSubscribe();
+      }
+    } else if (current === "denied") {
+      setPermState("denied");
+    } else {
+      setPermState("prompt");
+    }
+  }, []);
+
+  async function doSubscribe() {
     setSubscribing(true);
     try {
       const supabase = createClient();
       const result = await subscribeUserToPush(userId, supabase);
       if (result.ok) {
         setSubscribed(true);
-        // Default all prefs to true on first subscribe
+        setPermState("granted");
         setPrefs({ official: true, analyst_updates: true, take_updates: true });
+        // Auto-save defaults
+        await saveNotificationPreferences({ official: true, analyst_updates: true, take_updates: true });
+      }
+    } finally {
+      setSubscribing(false);
+    }
+  }
+
+  async function handleEnablePush() {
+    setSubscribing(true);
+    try {
+      // Request permission first
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        setPermState("granted");
+        await doSubscribe();
       } else {
-        setPermDenied(true);
+        setPermState("denied");
       }
     } catch {
-      setPermDenied(true);
+      setPermState("denied");
     } finally {
       setSubscribing(false);
     }
@@ -73,6 +115,79 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
     setSaved(false);
   }
 
+  function renderPushGate() {
+    if (subscribed) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28, paddingBottom: 28, borderBottom: "2px solid #e5e7eb" }}>
+          <span style={{ fontSize: 18 }}>✅</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: ".1em", color: "#0a7a3b" }}>
+            PUSH NOTIFICATIONS ENABLED
+          </span>
+        </div>
+      );
+    }
+
+    if (permState === "checking") return null;
+
+    if (permState === "unsupported") {
+      return (
+        <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: "2px solid #e5e7eb" }}>
+          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 15, color: "#15201a", marginBottom: 8 }}>
+            Enable push notifications
+          </div>
+          <p style={{ fontSize: 13, color: "#8a8a82", lineHeight: 1.5, marginBottom: 0 }}>
+            On iPhone, add this site to your Home Screen first: tap the share icon → <strong>Add to Home Screen</strong>. Then open the app from your Home Screen and come back here.
+          </p>
+        </div>
+      );
+    }
+
+    if (permState === "denied") {
+      return (
+        <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: "2px solid #e5e7eb" }}>
+          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 15, color: "#15201a", marginBottom: 8 }}>
+            Notifications are blocked
+          </div>
+          <p style={{ fontSize: 13, color: "#8a8a82", lineHeight: 1.5, marginBottom: 12 }}>
+            You've previously blocked notifications for this site. To enable them:
+          </p>
+          <ol style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.8, paddingLeft: 18, marginBottom: 0 }}>
+            <li><strong>iPhone:</strong> Settings → [your browser] → Notifications → Allow</li>
+            <li><strong>Android/Chrome:</strong> tap the lock icon in the address bar → Notifications → Allow</li>
+            <li>Then reload this page.</li>
+          </ol>
+        </div>
+      );
+    }
+
+    // "prompt" state — show the enable button
+    return (
+      <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: "2px solid #e5e7eb" }}>
+        <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 15, color: "#15201a", marginBottom: 6 }}>
+          Enable push notifications
+        </div>
+        <p style={{ fontSize: 13, color: "#8a8a82", marginBottom: 16, lineHeight: 1.5 }}>
+          Tap below — your browser will ask for permission, then you&apos;re all set.
+        </p>
+        <button
+          onClick={handleEnablePush}
+          disabled={subscribing}
+          style={{
+            fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+            fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase",
+            padding: "10px 20px", border: "2px solid #15201a",
+            background: "#15201a", color: "#fff",
+            cursor: subscribing ? "not-allowed" : "pointer",
+            opacity: subscribing ? 0.6 : 1,
+            boxShadow: "3px 3px 0 rgba(21,32,26,.2)",
+          }}
+        >
+          {subscribing ? "Setting up…" : "Enable push notifications"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <style>{`
@@ -87,7 +202,6 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
       `}</style>
 
       <div style={{ maxWidth: 600, padding: "0 0 60px" }}>
-        {/* Back link */}
         <a href="/dashboard" style={{
           fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".14em",
           textTransform: "uppercase", color: "#8a8a82", fontWeight: 700,
@@ -104,47 +218,8 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
         </p>
 
         <div className="np-card">
-          {/* Push subscription gate */}
-          {!subscribed ? (
-            <div style={{ marginBottom: 32, paddingBottom: 32, borderBottom: "2px solid #e5e7eb" }}>
-              <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 16, color: "#15201a", marginBottom: 6 }}>
-                Enable push notifications
-              </div>
-              <p style={{ fontSize: 13, color: "#8a8a82", marginBottom: 16, lineHeight: 1.5 }}>
-                Your browser needs permission to send you notifications. This is required for any of the options below.
-              </p>
-              {permDenied ? (
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#e2241a", fontWeight: 700, letterSpacing: ".08em" }}>
-                  Permission denied — enable notifications in your browser settings and reload.
-                </p>
-              ) : (
-                <button
-                  onClick={handleEnablePush}
-                  disabled={subscribing}
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
-                    fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase",
-                    padding: "10px 20px", border: "2px solid #15201a",
-                    background: "#15201a", color: "#fff",
-                    cursor: subscribing ? "not-allowed" : "pointer",
-                    opacity: subscribing ? 0.6 : 1,
-                    boxShadow: "3px 3px 0 rgba(21,32,26,.2)",
-                  }}
-                >
-                  {subscribing ? "Requesting permission…" : "Enable push notifications"}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28, paddingBottom: 28, borderBottom: "2px solid #e5e7eb" }}>
-              <span style={{ fontSize: 18 }}>✅</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: ".1em", color: "#0a7a3b" }}>
-                PUSH NOTIFICATIONS ENABLED
-              </span>
-            </div>
-          )}
+          {renderPushGate()}
 
-          {/* Pref toggles */}
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {PREFS.map((p, i) => (
               <div
@@ -165,11 +240,7 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
                   <div style={{ fontSize: 13, color: "#8a8a82", marginTop: 2 }}>{p.sub}</div>
                 </div>
                 <label className="np-toggle">
-                  <input
-                    type="checkbox"
-                    checked={prefs[p.key]}
-                    onChange={() => toggle(p.key)}
-                  />
+                  <input type="checkbox" checked={prefs[p.key]} onChange={() => toggle(p.key)} />
                   <span className="np-track" />
                   <span className="np-thumb" />
                 </label>
@@ -177,7 +248,6 @@ export default function NotificationPreferences({ userId, isSubscribed, prefs: i
             ))}
           </div>
 
-          {/* Save */}
           {subscribed && (
             <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 14 }}>
               <button

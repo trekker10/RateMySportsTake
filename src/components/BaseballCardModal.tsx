@@ -109,8 +109,8 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
         }}>
           <div>
-            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontStyle: "italic", fontSize: 54, lineHeight: .82, letterSpacing: "-.03em" }}>{first}</div>
-            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontStyle: "italic", fontSize: 54, lineHeight: .82, letterSpacing: "-.03em", color: "#fff", marginTop: 4 }}>{last}</div>
+            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontStyle: "italic", fontWeight: 900, fontSize: 72, lineHeight: .82, letterSpacing: "-.03em" }}>{first}</div>
+            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontStyle: "italic", fontWeight: 900, fontSize: 72, lineHeight: .82, letterSpacing: "-.03em", color: "#fff", marginTop: 4 }}>{last}</div>
           </div>
 
           {/* Network logo roundel */}
@@ -146,7 +146,8 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, letterSpacing: ".1em", color: "#857d68" }}>{label}</div>
               <div style={{
                 fontFamily: "'Archivo Black', sans-serif",
-                fontSize: small ? 40 : 52,
+                fontWeight: 900,
+                fontSize: small ? 56 : 72,
                 color: INK, marginTop: 10,
                 letterSpacing: "-.04em", whiteSpace: "nowrap",
               }}>{value}</div>

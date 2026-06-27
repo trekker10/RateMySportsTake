@@ -7,6 +7,7 @@ import { saveTake, unsaveTake } from "@/app/actions/saves";
 interface DashboardFeedProps {
   takes: any[];
   initialSavedIds: string[];
+  savedTakes?: any[];
 }
 
 const STATUS_OPTIONS = [
@@ -94,24 +95,28 @@ function MultiSelect({
   );
 }
 
-export default function DashboardFeed({ takes, initialSavedIds }: DashboardFeedProps) {
+export default function DashboardFeed({ takes, initialSavedIds, savedTakes = [] }: DashboardFeedProps) {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set(initialSavedIds));
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [analystFilter, setAnalystFilter] = useState<Set<string>>(new Set());
   const [sportFilter, setSportFilter] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set());
 
-  // Derive analyst options from takes
+  // Source list depends on saved toggle
+  const source = showSavedOnly ? savedTakes : takes;
+
+  // Derive analyst options from source
   const analystOptions = Array.from(
-    new Map(takes.map((t) => [t.experts?.expert_id, { label: t.experts?.name ?? "Unknown", value: t.experts?.expert_id ?? "" }])).values()
+    new Map(source.map((t) => [t.experts?.expert_id, { label: t.experts?.name ?? "Unknown", value: t.experts?.expert_id ?? "" }])).values()
   ).filter((o) => o.value);
 
   // Derive sport options
-  const sportOptions = Array.from(new Set(takes.map((t) => normalizeSport(t.sport)).filter(Boolean)))
+  const sportOptions = Array.from(new Set(source.map((t) => normalizeSport(t.sport)).filter(Boolean)))
     .sort()
     .map((s) => ({ label: s, value: s }));
 
   // Filter logic: AND across categories, OR within
-  const filtered = takes.filter((t) => {
+  const filtered = source.filter((t) => {
     if (analystFilter.size > 0 && !analystFilter.has(t.experts?.expert_id ?? "")) return false;
     if (sportFilter.size > 0 && !sportFilter.has(normalizeSport(t.sport))) return false;
     if (statusFilter.size > 0) {
@@ -131,6 +136,7 @@ export default function DashboardFeed({ takes, initialSavedIds }: DashboardFeedP
     setAnalystFilter(new Set());
     setSportFilter(new Set());
     setStatusFilter(new Set());
+    setShowSavedOnly(false);
   }
 
   const handleSave = useCallback(async (takeId: string, save: boolean) => {
@@ -165,10 +171,23 @@ export default function DashboardFeed({ takes, initialSavedIds }: DashboardFeedP
       </div>
 
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+        <button
+          onClick={() => { setShowSavedOnly((v) => !v); setAnalystFilter(new Set()); setSportFilter(new Set()); setStatusFilter(new Set()); }}
+          style={{
+            fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+            fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase",
+            padding: "7px 12px", border: `1.5px solid ${showSavedOnly ? "#15201a" : "#d1d5db"}`,
+            background: showSavedOnly ? "#15201a" : "#fff",
+            color: showSavedOnly ? "#fff" : "#15201a",
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          {showSavedOnly ? "★" : "☆"} SAVED TAKES{savedTakes.length > 0 ? ` (${savedTakes.length})` : ""}
+        </button>
         <MultiSelect label="ANALYST" options={analystOptions} selected={analystFilter} onChange={setAnalystFilter} />
         <MultiSelect label="SPORT"   options={sportOptions}   selected={sportFilter}   onChange={setSportFilter} />
         <MultiSelect label="STATUS"  options={STATUS_OPTIONS} selected={statusFilter}  onChange={setStatusFilter} />
-        {hasFilters && (
+        {(hasFilters || showSavedOnly) && (
           <button
             onClick={clearAll}
             style={{

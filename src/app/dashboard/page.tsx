@@ -59,6 +59,19 @@ export default async function DashboardPage() {
 
   const takes = takesRaw ?? [];
   const savedIds = (savedRaw ?? []).map((r) => r.take_id);
+
+  // Fetch full take data for saves from non-followed analysts
+  const nonFollowedSaveIds = savedIds.filter((id) => !takes.some((t) => t.take_id === id));
+  const { data: extraSavedRaw } = nonFollowedSaveIds.length > 0
+    ? await supabase
+        .from("takes")
+        .select("*, experts(name, expert_id, slug, outlet, avatar_url)")
+        .in("take_id", nonFollowedSaveIds)
+    : { data: [] };
+  const savedTakes = [
+    ...takes.filter((t) => savedIds.includes(t.take_id)),
+    ...(extraSavedRaw ?? []),
+  ].sort((a, b) => new Date(b.date_made).getTime() - new Date(a.date_made).getTime());
   const pendingTakes = pendingRaw ?? [];
 
   // Stats
@@ -183,7 +196,7 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <DashboardFeed takes={takes} initialSavedIds={savedIds} />
+              <DashboardFeed takes={takes} initialSavedIds={savedIds} savedTakes={savedTakes} />
             )}
           </div>
 

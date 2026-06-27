@@ -29,3 +29,23 @@ export async function sendPushNotification(
   }
   return { ok: true };
 }
+
+export async function sendPushToAll(
+  title: string,
+  body: string
+): Promise<{ ok: boolean; sent?: number; failed?: number; error?: string }> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) return { ok: false, error: "Unauthorized" };
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ratemysportstake.com";
+
+  const res = await fetch(`${baseUrl}/api/admin-push-bulk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, body, secret: process.env.ADMIN_PUSH_SECRET }),
+  });
+
+  if (!res.ok) return { ok: false, error: await res.text() };
+  const json = await res.json();
+  return { ok: true, sent: json.sent, failed: json.failed };
+}

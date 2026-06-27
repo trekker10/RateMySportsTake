@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { sendPushNotification } from "./actions";
+import { sendPushNotification, sendPushToAll } from "./actions";
 
 const NOTIFICATIONS = [
   {
@@ -137,6 +137,51 @@ const INTENT_LABELS: Record<string, string> = {
   both: "Everything",
 };
 
+function SendAllButton({ subCount }: { subCount: number }) {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
+
+  const welcome = NOTIFICATIONS[0];
+
+  async function handleSendAll() {
+    if (!confirm(`Send "${welcome.label}" notification to all ${subCount} subscribers?`)) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const r = await sendPushToAll(welcome.title, welcome.body);
+      if (r.ok) setResult({ sent: r.sent ?? 0, failed: r.failed ?? 0 });
+    } finally {
+      setSending(false);
+      setTimeout(() => setResult(null), 5000);
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <button
+        onClick={handleSendAll}
+        disabled={sending || subCount === 0}
+        style={{
+          fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+          fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase",
+          padding: "8px 16px", border: "2px solid #e2241a",
+          background: "#e2241a", color: "#fff",
+          cursor: sending || subCount === 0 ? "not-allowed" : "pointer",
+          opacity: subCount === 0 ? 0.4 : 1,
+          boxShadow: "3px 3px 0 rgba(226,36,26,.3)",
+        }}
+      >
+        {sending ? "SENDING…" : `SEND WELCOME TO ALL (${subCount})`}
+      </button>
+      {result && (
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#0a7a3b", fontWeight: 700 }}>
+          ✓ {result.sent} sent{result.failed > 0 ? `, ${result.failed} failed` : ""}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function UsersTable({ users }: { users: User[] }) {
   const [search, setSearch] = useState("");
   const [sportFilter, setSportFilter] = useState("");
@@ -165,9 +210,10 @@ export default function UsersTable({ users }: { users: User[] }) {
         <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 26, color: "#15201a", letterSpacing: "-.02em", marginBottom: 4 }}>
           Users
         </h1>
-        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8a8a82", letterSpacing: ".1em" }}>
+        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8a8a82", letterSpacing: ".1em", marginBottom: 12 }}>
           {users.length} TOTAL · {subCount} PUSH SUBSCRIBERS
         </p>
+        <SendAllButton subCount={subCount} />
       </div>
 
       {/* Filters */}

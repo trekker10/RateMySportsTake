@@ -7,15 +7,15 @@ import { redirect } from "next/navigation";
 export async function signIn(
   _: unknown,
   formData: FormData
-): Promise<{ error: string } | void> {
+): Promise<{ error?: string; redirectTo?: string }> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({
     email: formData.get("email") as string,
     password: formData.get("password") as string,
   });
   if (error) return { error: error.message };
-  const next = formData.get("next") as string | null;
-  redirect(next ?? "/");
+  const next = (formData.get("next") as string | null) || "/";
+  return { redirectTo: next };
 }
 
 export async function signUp(

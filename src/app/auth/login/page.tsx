@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import { signIn } from "@/app/auth/actions";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -10,6 +10,12 @@ function LoginForm() {
   const next = searchParams.get("next") ?? "";
   const [state, action, isPending] = useActionState(signIn, undefined);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (state?.redirectTo) {
+      window.location.href = state.redirectTo;
+    }
+  }, [state?.redirectTo]);
 
   return (
     <>

@@ -107,13 +107,30 @@ export default async function DashboardPage() {
       {/* ── Greeting band ── */}
       <div style={{ background: "#fff", borderBottom: "3px solid #15201a" }}>
         <div className="max-w-5xl mx-auto" style={{ padding: "28px 24px 0" }}>
-          <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontWeight: 900, fontSize: 34, letterSpacing: "-.03em", color: "#15201a", lineHeight: 1 }}>
-            Welcome back,{" "}
-            <span style={{ color: "#e2241a" }}>{handle}.</span>
-          </h1>
-          <p style={{ fontStyle: "italic", fontSize: 16, color: "#8a8a82", marginTop: 6 }}>
-            Here&apos;s what your analysts have been saying.
-          </p>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontWeight: 900, fontSize: 34, letterSpacing: "-.03em", color: "#15201a", lineHeight: 1 }}>
+                Welcome back,{" "}
+                <span style={{ color: "#e2241a" }}>{handle}.</span>
+              </h1>
+              <p style={{ fontStyle: "italic", fontSize: 16, color: "#8a8a82", marginTop: 6 }}>
+                Here&apos;s what your analysts have been saying.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/notifications"
+              style={{
+                fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase",
+                padding: "8px 14px", border: "1.5px solid #15201a",
+                color: "#15201a", background: "#fff", textDecoration: "none",
+                display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              🔔 Manage Notifications
+            </Link>
+          </div>
 
           {/* Stat strip */}
           <div style={{ display: "flex", gap: 12, overflowX: "auto", padding: "20px 0", scrollbarWidth: "none" }}>

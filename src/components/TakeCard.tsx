@@ -246,7 +246,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         .tfc-panel { padding: 14px 16px; font-size: 14px; line-height: 1.6; color: #3a4239; }
 
         /* buttons */
-        .tfc-actions { display: flex; gap: 8px; }
+        .tfc-actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .tfc-btn {
           flex: 1; padding: 10px 0; text-align: center;
           font-family: 'JetBrains Mono', monospace; font-size: 11px;
@@ -294,9 +294,9 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           .tfc-panel { font-size: 12px; padding: 10px 12px; }
           .tfc-dates-value { font-size: 15px; }
           .tfc-dates-cell { padding: 6px 10px; }
-          .tfc-actions { flex-wrap: nowrap; gap: 5px; }
+          .tfc-actions { gap: 5px; }
           .tfc-btn { font-size: 8.5px; padding: 9px 4px; letter-spacing: 0.08em; }
-          .tfc-btn-follow { flex: 1; font-size: 8.5px; padding: 9px 6px; letter-spacing: 0.08em; gap: 5px; }
+          .tfc-btn-follow { flex: 1 1 100%; font-size: 8.5px; padding: 9px 6px; letter-spacing: 0.08em; gap: 5px; }
           .tfc-btn-follow svg { width: 13px; height: 13px; }
           .tfc-expert-name { font-size: 12px; }
         }

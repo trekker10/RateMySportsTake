@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const CARD_W = 720;
 const CARD_H = 1008;
@@ -163,6 +163,48 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
 export default function BaseballCardModal(props: BaseballCardProps) {
   const [open, setOpen]   = useState(false);
   const [scale, setScale] = useState(0.5);
+  const [copying, setCopying] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  async function captureCard() {
+    const html2canvas = (await import("html2canvas")).default;
+    const canvas = await html2canvas(cardRef.current!, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      width: CARD_W,
+      height: CARD_H,
+    });
+    return canvas;
+  }
+
+  async function handleCopy() {
+    setCopying(true);
+    try {
+      const canvas = await captureCard();
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        setCopying(false);
+      }, "image/png");
+    } catch {
+      setCopying(false);
+    }
+  }
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const canvas = await captureCard();
+      const link = document.createElement("a");
+      link.download = `${props.first}-${props.last}-rmst.png`.toLowerCase().replace(/\s+/g, "-");
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   function fitCard() {
     const s = Math.min(0.62, (window.innerHeight - 200) / CARD_H, (window.innerWidth - 72) / CARD_W);
@@ -243,9 +285,43 @@ export default function BaseballCardModal(props: BaseballCardProps) {
               </div>
             </div>
 
-            <p style={{ fontStyle: "italic", fontSize: 15, color: "rgba(245,241,232,.65)", textAlign: "center" }}>
-              Screenshot to share on X / Instagram / iMessage
-            </p>
+            {/* Hidden full-res card for capture */}
+            <div ref={cardRef} style={{ position: "fixed", left: -9999, top: 0, width: CARD_W, height: CARD_H, pointerEvents: "none", zIndex: -1 }}>
+              <BaseballCard {...props} />
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ width: "100%", background: "#fff", padding: "20px 24px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                <button
+                  onClick={handleCopy}
+                  disabled={copying}
+                  style={{
+                    flex: 1, padding: "14px", background: "#15201a", color: "#fff",
+                    border: "2px solid #15201a", fontFamily: "'JetBrains Mono', monospace",
+                    fontWeight: 700, fontSize: 12, letterSpacing: ".14em", textTransform: "uppercase",
+                    cursor: copying ? "not-allowed" : "pointer", opacity: copying ? 0.6 : 1,
+                  }}
+                >
+                  {copying ? "COPYING…" : "COPY IMAGE"}
+                </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  style={{
+                    flex: 1, padding: "14px", background: "#fff", color: "#15201a",
+                    border: "2px solid #15201a", fontFamily: "'JetBrains Mono', monospace",
+                    fontWeight: 700, fontSize: 12, letterSpacing: ".14em", textTransform: "uppercase",
+                    cursor: downloading ? "not-allowed" : "pointer", opacity: downloading ? 0.6 : 1,
+                  }}
+                >
+                  {downloading ? "SAVING…" : "DOWNLOAD PNG"}
+                </button>
+              </div>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".1em", color: "#b0aca4", textAlign: "center", textTransform: "uppercase" }}>
+                Copy image · paste directly to X / Instagram / iMessage
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -308,7 +308,26 @@ export default function TakeLogSection({
         .tc-btn-follow.following{background:var(--ink);color:#fff;}
         .tc-btn-follow.following:hover:not(:disabled){box-shadow:6px 6px 0 var(--accent);}
         .tc-btn-follow:disabled{opacity:.6;cursor:not-allowed;}
-        @media(max-width:560px){.tc-btn-follow{flex:1 1 100%;}}
+
+        /* ── mobile ── */
+        .tc-actions{flex-wrap:wrap;}
+        @media(max-width:600px){
+          .take-card{padding:14px 14px 14px;}
+          .tc-day{font-size:26px;}
+          .tc-mo{font-size:10px;}
+          .grade-chip{width:38px;height:38px;}
+          .grade-chip b{font-size:18px;}
+          .verdict{font-size:10px;padding:5px 10px;}
+          .tc-arrows{font-size:16px;}
+          .tc-quote{font-size:15px;padding:14px 16px;}
+          .tc-toggle{font-size:10px;letter-spacing:.1em;padding:11px 14px;}
+          .what{font-size:14px;}
+          .pending-note{font-size:13px;padding:12px 14px;}
+          .tc-actions{gap:7px;margin-top:14px;}
+          .tc-btn{font-size:10px;padding:11px 6px;letter-spacing:.08em;}
+          .tc-btn-follow{flex:1 1 100%;font-size:10px;padding:11px 10px;letter-spacing:.08em;gap:6px;}
+          .tc-btn-follow svg{width:14px;height:14px;}
+        }
       `}</style>
 
       <div>

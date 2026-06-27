@@ -1,16 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import AuthButton from "@/components/AuthButton";
 import { getFlag } from "@/app/actions/flags";
 import "./globals.css";
 
+export const viewport: Viewport = {
+  themeColor: "#f5f1e8",
+};
+
 export const metadata: Metadata = {
   title: "RateMySportsTake",
   description: "We rate the takes so you don't have to.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "RMST", statusBarStyle: "default" },
   icons: {
-    icon: "/RMST_circular_logo.png",
-    apple: "/apple-touch-icon.png",
-    shortcut: "/RMST_circular_logo.png",
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: "/icons/favicon-32.png",
   },
   openGraph: {
     title: "RateMySportsTake",

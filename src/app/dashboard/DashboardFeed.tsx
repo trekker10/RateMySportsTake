@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import TakeCard from "@/components/TakeCard";
-import { saveTake, unsaveTake } from "@/app/actions/saves";
 
 interface DashboardFeedProps {
   takes: any[];
   initialSavedIds: string[];
-  savedTakes?: any[];
+  followedTakeIds?: string[];
+  followedTakes?: any[];
 }
 
 const STATUS_OPTIONS = [
@@ -95,15 +95,15 @@ function MultiSelect({
   );
 }
 
-export default function DashboardFeed({ takes, initialSavedIds, savedTakes = [] }: DashboardFeedProps) {
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set(initialSavedIds));
-  const [showSavedOnly, setShowSavedOnly] = useState(false);
+export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds = [], followedTakes = [] }: DashboardFeedProps) {
+  const [savedIds] = useState<Set<string>>(new Set(initialSavedIds));
+  const [showFollowedOnly, setShowFollowedOnly] = useState(false);
   const [analystFilter, setAnalystFilter] = useState<Set<string>>(new Set());
   const [sportFilter, setSportFilter] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set());
 
-  // Source list depends on saved toggle
-  const source = showSavedOnly ? savedTakes : takes;
+  // Source list depends on followed toggle
+  const source = showFollowedOnly ? followedTakes : takes;
 
   // Derive analyst options from source
   const analystOptions = Array.from(
@@ -130,33 +130,14 @@ export default function DashboardFeed({ takes, initialSavedIds, savedTakes = [] 
     return true;
   });
 
-  const hasFilters = analystFilter.size > 0 || sportFilter.size > 0 || statusFilter.size > 0;
+  const hasFilters = analystFilter.size > 0 || sportFilter.size > 0 || statusFilter.size > 0 || showFollowedOnly;
 
   function clearAll() {
     setAnalystFilter(new Set());
     setSportFilter(new Set());
     setStatusFilter(new Set());
-    setShowSavedOnly(false);
+    setShowFollowedOnly(false);
   }
-
-  const handleSave = useCallback(async (takeId: string, save: boolean) => {
-    // Optimistic update
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      save ? next.add(takeId) : next.delete(takeId);
-      return next;
-    });
-    try {
-      save ? await saveTake(takeId) : await unsaveTake(takeId);
-    } catch {
-      // Revert on error
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        save ? next.delete(takeId) : next.add(takeId);
-        return next;
-      });
-    }
-  }, []);
 
   return (
     <div>
@@ -172,22 +153,22 @@ export default function DashboardFeed({ takes, initialSavedIds, savedTakes = [] 
 
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         <button
-          onClick={() => { setShowSavedOnly((v) => !v); setAnalystFilter(new Set()); setSportFilter(new Set()); setStatusFilter(new Set()); }}
+          onClick={() => { setShowFollowedOnly((v) => !v); setAnalystFilter(new Set()); setSportFilter(new Set()); setStatusFilter(new Set()); }}
           style={{
             fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
             fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase",
-            padding: "7px 12px", border: `1.5px solid ${showSavedOnly ? "#15201a" : "#d1d5db"}`,
-            background: showSavedOnly ? "#15201a" : "#fff",
-            color: showSavedOnly ? "#fff" : "#15201a",
+            padding: "7px 12px", border: `1.5px solid ${showFollowedOnly ? "#15201a" : "#d1d5db"}`,
+            background: showFollowedOnly ? "#15201a" : "#fff",
+            color: showFollowedOnly ? "#fff" : "#15201a",
             cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
           }}
         >
-          {showSavedOnly ? "★" : "☆"} SAVED TAKES{savedTakes.length > 0 ? ` (${savedTakes.length})` : ""}
+          🔔 FOLLOWED TAKES{followedTakes.length > 0 ? ` (${followedTakes.length})` : ""}
         </button>
         <MultiSelect label="ANALYST" options={analystOptions} selected={analystFilter} onChange={setAnalystFilter} />
         <MultiSelect label="SPORT"   options={sportOptions}   selected={sportFilter}   onChange={setSportFilter} />
         <MultiSelect label="STATUS"  options={STATUS_OPTIONS} selected={statusFilter}  onChange={setStatusFilter} />
-        {(hasFilters || showSavedOnly) && (
+        {hasFilters && (
           <button
             onClick={clearAll}
             style={{
@@ -238,11 +219,11 @@ export default function DashboardFeed({ takes, initialSavedIds, savedTakes = [] 
                 <TakeCard
                   take={take}
                   showExpert
-                  showSave
+                  showFollow
                   showResolutionDate
                   largeByline
-                  isSaved={savedIds.has(take.take_id)}
-                  onSave={handleSave}
+                  isLoggedIn
+                  isFollowing={followedTakeIds.includes(take.take_id)}
                 />
               </div>
             );

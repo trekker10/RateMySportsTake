@@ -36,8 +36,8 @@ export default async function DashboardPage() {
 
   const expertIds = followedExperts.map((e) => e.expert_id);
 
-  // Takes feed + saved IDs (parallel)
-  const [{ data: takesRaw }, { data: savedRaw }, { data: pendingRaw }] = await Promise.all([
+  // Takes feed + saved IDs + followed take IDs (parallel)
+  const [{ data: takesRaw }, { data: savedRaw }, { data: pendingRaw }, { data: takeFollowsRaw }] = await Promise.all([
     expertIds.length > 0
       ? supabase
           .from("takes")
@@ -55,22 +55,24 @@ export default async function DashboardPage() {
           .in("expert_id", expertIds)
           .eq("outcome_status", "pending")
       : Promise.resolve({ data: [] }),
+    supabase.from("take_follows").select("take_id").eq("user_id", user.id),
   ]);
 
   const takes = takesRaw ?? [];
   const savedIds = (savedRaw ?? []).map((r) => r.take_id);
+  const followedTakeIds = (takeFollowsRaw ?? []).map((r: { take_id: string }) => r.take_id);
 
-  // Fetch full take data for saves from non-followed analysts
-  const nonFollowedSaveIds = savedIds.filter((id) => !takes.some((t) => t.take_id === id));
-  const { data: extraSavedRaw } = nonFollowedSaveIds.length > 0
+  // Fetch full take data for followed takes from non-followed analysts
+  const nonFollowedFollowIds = followedTakeIds.filter((id) => !takes.some((t) => t.take_id === id));
+  const { data: extraFollowedRaw } = nonFollowedFollowIds.length > 0
     ? await supabase
         .from("takes")
         .select("*, experts(name, expert_id, slug, outlet, avatar_url)")
-        .in("take_id", nonFollowedSaveIds)
+        .in("take_id", nonFollowedFollowIds)
     : { data: [] };
-  const savedTakes = [
-    ...takes.filter((t) => savedIds.includes(t.take_id)),
-    ...(extraSavedRaw ?? []),
+  const followedTakes = [
+    ...takes.filter((t) => followedTakeIds.includes(t.take_id)),
+    ...(extraFollowedRaw ?? []),
   ].sort((a, b) => new Date(b.date_made).getTime() - new Date(a.date_made).getTime());
   const pendingTakes = pendingRaw ?? [];
 
@@ -196,7 +198,7 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <DashboardFeed takes={takes} initialSavedIds={savedIds} savedTakes={savedTakes} />
+              <DashboardFeed takes={takes} initialSavedIds={savedIds} followedTakeIds={followedTakeIds} followedTakes={followedTakes} />
             )}
           </div>
 

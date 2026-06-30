@@ -144,8 +144,8 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         }
         .tfc-expert-name {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 13px; text-transform: uppercase;
-          letter-spacing: -0.01em; color: #15201a;
+          font-size: 15px; font-weight: 900; text-transform: uppercase;
+          letter-spacing: -0.02em; color: #15201a;
           text-decoration: none;
         }
         .tfc-expert-name:hover { text-decoration: underline; }

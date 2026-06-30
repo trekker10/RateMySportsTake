@@ -248,11 +248,12 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         /* buttons */
         .tfc-actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .tfc-btn {
-          flex: 1; padding: 10px 0; text-align: center;
+          flex: 1; padding: 10px 6px; text-align: center;
           font-family: 'JetBrains Mono', monospace; font-size: 11px;
           letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;
           border-radius: 0; border: none; cursor: pointer;
           text-decoration: none; display: block;
+          white-space: normal; line-height: 1.25;
           transition: opacity .15s;
         }
         .tfc-btn:hover { opacity: 0.85; }

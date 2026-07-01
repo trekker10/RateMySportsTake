@@ -90,8 +90,7 @@ export default async function ExpertsPage({
       .from("takes")
       .select("*, experts(name, expert_id, slug, outlet, avatar_url)")
       .in("expert_id", expertIds)
-      .order("date_made", { ascending: false })
-      .limit(50);
+      .order("date_made", { ascending: false });
 
     if (activeSport !== "ALL SPORTS") takesQuery = takesQuery.ilike("sport", `%${activeSport}%`);
     if (q) takesQuery = takesQuery.or(`raw_text.ilike.%${q}%,summary.ilike.%${q}%`);

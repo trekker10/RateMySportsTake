@@ -86,6 +86,17 @@ async function TodayTicker() {
             border-left:3px solid #fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;letter-spacing:.12em;}
           .ticker-cta .arw{font-family:'Archivo Black',sans-serif;font-size:16px;transition:transform .15s ease;}
           .ticker:hover .ticker-cta .arw{transform:translateX(4px);}
+          @media(max-width:600px){
+            .ticker-badge{gap:8px;padding:0 14px;}
+            .live-dot{width:10px;height:10px;}
+            .ticker-badge .lb{font-size:13px;}
+            .ticker-badge .lb small{font-size:8px;}
+            .ticker-count{gap:7px;padding:0 14px;}
+            .ticker-count b{font-size:27px;}
+            .ticker-count span{font-size:10.5px;letter-spacing:.10em;}
+            .ticker-cta{gap:6px;padding:0 14px;font-size:10.5px;}
+            .ticker-cta .arw{font-size:13px;}
+          }
         `}</style>
         <Link className="ticker" href="/experts?view=takes" aria-label={`${n} new ${label} today — see all`}>
           <div className="ticker-badge">

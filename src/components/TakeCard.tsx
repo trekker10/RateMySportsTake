@@ -311,14 +311,14 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
       <article className={`tfc-card${open ? " open" : ""}`}>
 
         {/* ── Analyst header (only in feed view) ── */}
-        {showExpert && expert && (
+        {showExpert && expert ? (
           <div className="tfc-expert">
             <div className="tfc-avatar" style={largeByline ? { width: 57, height: 57, fontSize: 16 } : {}}>
               {expert.avatar_url
                 ? <img src={expert.avatar_url} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : initials(expert.name)}
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <Link href={expertUrl(expert)} className="tfc-expert-name" style={largeByline ? { fontSize: 22, fontWeight: 900 } : {}}>{expert.name}</Link>
               {expert.outlet && <p className="tfc-expert-meta">{expert.outlet}</p>}
               <div className="tfc-track">
@@ -328,24 +328,37 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
                 </span>
               </div>
             </div>
+            {/* Grade + verdict in the header, right side */}
+            <div className="tfc-verdict-wrap">
+              <div className="tfc-chip" style={{ color: chipLetter ? chipColor : "#8b9088", borderColor: chipLetter ? chipColor : "#d1d5db" }}>
+                <b>{chipLetter ?? "—"}</b>
+                <small>GRADE</small>
+              </div>
+              <span
+                className="tfc-verdict"
+                style={{ backgroundColor: v.bg, color: v.color, border: v.border ?? "none" }}
+              >
+                {v.label}
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* No expert header — keep grade+verdict in their own row */
+          <div className="tfc-top">
+            <div className="tfc-verdict-wrap">
+              <div className="tfc-chip" style={{ color: chipLetter ? chipColor : "#8b9088", borderColor: chipLetter ? chipColor : "#d1d5db" }}>
+                <b>{chipLetter ?? "—"}</b>
+                <small>GRADE</small>
+              </div>
+              <span
+                className="tfc-verdict"
+                style={{ backgroundColor: v.bg, color: v.color, border: v.border ?? "none" }}
+              >
+                {v.label}
+              </span>
+            </div>
           </div>
         )}
-
-        {/* ── Top row: grade chip + verdict stacked at right ── */}
-        <div className="tfc-top">
-          <div className="tfc-verdict-wrap">
-            <div className="tfc-chip" style={{ color: chipLetter ? chipColor : "#8b9088", borderColor: chipLetter ? chipColor : "#d1d5db" }}>
-              <b>{chipLetter ?? "—"}</b>
-              <small>GRADE</small>
-            </div>
-            <span
-              className="tfc-verdict"
-              style={{ backgroundColor: v.bg, color: v.color, border: v.border ?? "none" }}
-            >
-              {v.label}
-            </span>
-          </div>
-        </div>
 
         {/* ── Filed / Resolves dates ── */}
         {showResolutionDate && (

@@ -137,27 +137,27 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           border-bottom: 1px solid #e5e7eb;
         }
         .tfc-avatar {
-          width: 38px; height: 38px; border-radius: 50%;
+          width: 48px; height: 48px; border-radius: 50%;
           background: #e5e7eb; display: flex; align-items: center;
-          justify-content: center; font-size: 12px; font-weight: 700;
+          justify-content: center; font-size: 14px; font-weight: 700;
           color: #4b5563; flex-shrink: 0; overflow: hidden;
         }
         .tfc-expert-name {
           font-family: 'Archivo Black', sans-serif;
-          font-size: 15px; font-weight: 900; text-transform: uppercase;
+          font-size: 19px; font-weight: 900; text-transform: uppercase;
           letter-spacing: -0.02em; color: #15201a;
           text-decoration: none;
         }
         .tfc-expert-name:hover { text-decoration: underline; }
         .tfc-expert-meta {
           font-family: 'JetBrains Mono', monospace;
-          font-size: 9px; letter-spacing: 0.12em;
+          font-size: 10px; letter-spacing: 0.12em;
           text-transform: uppercase; color: #9ca3af;
           margin-top: 1px;
         }
         .tfc-track {
           display: flex; flex-direction: column; gap: 2px; margin-top: 3px;
-          font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em;
+          font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
           text-transform: uppercase;
         }
         .tfc-track-made { color: #8a8a82; }

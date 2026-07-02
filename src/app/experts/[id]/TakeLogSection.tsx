@@ -72,7 +72,7 @@ export default function TakeLogSection({
                 key={take.take_id}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 take={takeWithExpert as any}
-                showExpert={false}
+                showExpert={true}
                 showFollow
                 isLoggedIn={isLoggedIn}
                 isFollowing={followedTakeIds.includes(take.take_id)}

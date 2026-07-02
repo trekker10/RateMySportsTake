@@ -57,7 +57,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <span className="font-black text-xl tracking-tight text-gray-900" style={{ letterSpacing: "-0.04em" }}>
                 RATE<span style={{ color: "#e2241a" }}>/</span>MY<span style={{ color: "#e2241a" }}>/</span>SPORTS<span style={{ color: "#e2241a" }}>/</span>TAKE
               </span>
-              <span className="text-sm italic text-gray-500 hidden sm:block">We rate the takes so you don&apos;t have to.</span>
             </a>
             <div className="flex items-center gap-6">
               <nav className="hidden sm:flex gap-6 font-mono text-xs tracking-widest uppercase">

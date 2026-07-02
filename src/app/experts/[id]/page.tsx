@@ -604,6 +604,13 @@ export default async function ExpertProfilePage({
                 </div>
                 <TakeLogSection
                   key={`${verdict}-${activeGrade ?? ""}`}
+                  expert={{
+                    expert_id:  expert.expert_id,
+                    name:       expert.name,
+                    slug:       expert.slug ?? null,
+                    outlet:     expert.outlet ?? null,
+                    avatar_url: expert.avatar_url ?? null,
+                  }}
                   expertId={expertId}
                   initialTakes={(takes ?? []) as import("@/app/actions/takes").ProfileTake[]}
                   totalTakes={filteredCount ?? 0}

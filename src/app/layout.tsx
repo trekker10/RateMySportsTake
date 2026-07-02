@@ -62,6 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="flex items-center gap-6">
               <nav className="hidden sm:flex gap-6 font-mono text-xs tracking-widest uppercase">
                 <a href="/experts" className="hover:opacity-80 transition-opacity font-black" style={{ color: "#e2241a" }}>Analysts</a>
+                <a href="/experts?view=takes" className="hover:opacity-80 transition-opacity font-black" style={{ color: "#e2241a" }}>Takes</a>
                 <a href="/fantasy" className="hover:opacity-80 transition-opacity font-black" style={{ color: "#15803d" }}>Fantasy</a>
                 {showSubmit && (
                   <a href="/submit" className="text-gray-600 hover:text-gray-900 transition-colors">Submit</a>

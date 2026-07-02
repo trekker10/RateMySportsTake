@@ -156,33 +156,19 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           margin-top: 1px;
         }
         .tfc-track {
-          display: flex; align-items: center; gap: 7px; margin-top: 3px;
+          display: flex; flex-direction: column; gap: 2px; margin-top: 3px;
           font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em;
-          text-transform: uppercase; flex-wrap: wrap;
+          text-transform: uppercase;
         }
         .tfc-track-made { color: #8a8a82; }
-        .tfc-track-arrow { color: #8a8a82; }
         .tfc-track-resolved { color: #0a7a3b; font-weight: 700; }
         .tfc-track-pending  { color: #8a8a82; font-weight: 600; }
 
-        /* top row: date + grade + verdict */
+        /* top row: grade + verdict stacked at right */
         .tfc-top {
           display: flex; align-items: flex-start;
-          justify-content: space-between; gap: 12px;
+          justify-content: flex-end; gap: 12px;
           margin-bottom: 16px;
-        }
-        .tfc-meta { display: flex; align-items: center; gap: 12px; }
-
-        /* stacked date */
-        .tfc-date { display: flex; flex-direction: column; align-items: center; line-height: 1; }
-        .tfc-mo {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px; letter-spacing: 0.12em;
-          text-transform: uppercase; color: #8b9088;
-        }
-        .tfc-day {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: 48px; font-weight: 900; color: #161a17; line-height: 1;
         }
 
         /* grade chip */
@@ -202,8 +188,8 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           text-transform: uppercase; margin-top: 2px; color: #9ca3af;
         }
 
-        /* verdict */
-        .tfc-verdict-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+        /* verdict stacked under grade chip */
+        .tfc-verdict-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
         .tfc-verdict {
           font-family: 'JetBrains Mono', monospace;
           font-size: 10px; letter-spacing: 0.14em; font-weight: 700;
@@ -284,8 +270,6 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
 
         @media (max-width: 600px) {
           .tfc-card { padding: 12px 12px 12px; }
-          .tfc-day { font-size: 30px; }
-          .tfc-mo { font-size: 9px; }
           .tfc-chip { min-width: 38px; padding: 3px 6px; }
           .tfc-chip b { font-size: 13px; }
           .tfc-chip small { font-size: 7px; }
@@ -339,7 +323,6 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
               {expert.outlet && <p className="tfc-expert-meta">{expert.outlet}</p>}
               <div className="tfc-track">
                 <span className="tfc-track-made">TAKE MADE {madeFmt}</span>
-                <span className="tfc-track-arrow">→</span>
                 <span className={isResolved ? "tfc-track-resolved" : "tfc-track-pending"}>
                   {trackSecondLabel}
                 </span>
@@ -348,19 +331,13 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           </div>
         )}
 
-        {/* ── Top row: date + grade chip + verdict ── */}
+        {/* ── Top row: grade chip + verdict stacked at right ── */}
         <div className="tfc-top">
-          <div className="tfc-meta">
-            <div className="tfc-date">
-              <span className="tfc-mo">{mo}</span>
-              <span className="tfc-day">{day}</span>
-            </div>
+          <div className="tfc-verdict-wrap">
             <div className="tfc-chip" style={{ color: chipLetter ? chipColor : "#8b9088", borderColor: chipLetter ? chipColor : "#d1d5db" }}>
               <b>{chipLetter ?? "—"}</b>
               <small>GRADE</small>
             </div>
-          </div>
-          <div className="tfc-verdict-wrap">
             <span
               className="tfc-verdict"
               style={{ backgroundColor: v.bg, color: v.color, border: v.border ?? "none" }}

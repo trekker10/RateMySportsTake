@@ -87,7 +87,7 @@ export default async function ExpertProfilePage({
 
   let takesQuery = supabase
     .from("takes")
-    .select("take_id, date_made, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
+    .select("take_id, date_made, time_horizon_date, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
     .eq("expert_id", expertId)
     .order("date_made", { ascending: false })
     .limit(4);

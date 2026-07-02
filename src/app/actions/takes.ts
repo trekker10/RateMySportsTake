@@ -8,6 +8,7 @@ import type { SourceType } from "@/types/database";
 export interface ProfileTake {
   take_id: string;
   date_made: string;
+  time_horizon_date: string | null;
   raw_text: string;
   summary: string | null;
   outcome_status: string;
@@ -28,7 +29,7 @@ export async function getExpertTakesPage(
 
   let q = supabase
     .from("takes")
-    .select("take_id, date_made, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
+    .select("take_id, date_made, time_horizon_date, raw_text, summary, outcome_status, outcome_notes, grade_notes, grade")
     .eq("expert_id", expertId)
     .order("date_made", { ascending: false })
     .range(offset, offset + limit - 1);

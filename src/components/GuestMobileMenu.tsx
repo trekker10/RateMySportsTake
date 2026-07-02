@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 
 const NAV_LINKS = [
-  { label: "Analysts", href: "/experts", color: "#e2241a" },
-  { label: "Fantasy",  href: "/fantasy", color: "#15803d" },
+  { label: "Analysts", href: "/experts",       color: "#e2241a" },
+  { label: "Takes",    href: "/experts?view=takes", color: "#e2241a" },
+  { label: "Fantasy",  href: "/fantasy",       color: "#15803d" },
 ];
 
 export default function GuestMobileMenu() {

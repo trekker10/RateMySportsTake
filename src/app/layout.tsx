@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
+import { unstable_noStore as noStore } from "next/cache";
 import AuthButton from "@/components/AuthButton";
 import { getFlag } from "@/app/actions/flags";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +48,7 @@ export const metadata: Metadata = {
 };
 
 async function TodayTicker() {
+  noStore(); // always fetch live — never serve a cached count
   try {
     const supabase = await createClient();
     const todayStart = new Date();

@@ -100,6 +100,14 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
   const displayText = cleanTakeText(rawDisplay);
   const isParaphrase = !take.raw_text?.trim() && !!take.summary;
 
+  // Freshness ribbon
+  const filedAt = new Date(take.date_made ?? take.date_submitted);
+  const hoursAgo = (Date.now() - filedAt.getTime()) / 36e5;
+  const fresh: 'today' | 'week' | null =
+    hoursAgo < 0 ? null :
+    hoursAgo <= 24 ? 'today' :
+    hoursAgo <= 168 ? 'week' : null;
+
   const d   = new Date(take.date_made);
   const mo  = d.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
   const day = d.getDate();
@@ -121,14 +129,28 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           border: 1.5px solid #e2ddd4;
           border-radius: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-          overflow: hidden;
+          overflow: visible;
           padding: 22px 24px 20px;
           display: flex;
           flex-direction: column;
           transition: transform .12s ease, box-shadow .12s ease;
+          position: relative;
         }
         .tfc-card:hover { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #15201a; }
         .tfc-card.open  { transform: translate(-3px,-3px); box-shadow: 7px 7px 0 #15201a; }
+        .tfc-card.has-ribbon { padding-top: 36px; }
+
+        /* freshness ribbon */
+        .ribbon {
+          position: absolute; top: 0; left: 24px; transform: translateY(-50%); z-index: 3;
+          display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
+          font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 12px;
+          letter-spacing: .15em;
+          border: 2px solid #15201a; padding: 9px 15px;
+          box-shadow: 3px 3px 0 #15201a;
+        }
+        .ribbon.today { background: #e08a00; color: #fff; }
+        .ribbon.week  { background: #1f6feb; color: #fff; }
 
         /* analyst header */
         .tfc-expert {
@@ -308,7 +330,14 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         @media (max-width: 560px) { .tfc-btn-follow { flex: 1 1 100%; } }
       `}</style>
 
-      <article className={`tfc-card${open ? " open" : ""}`}>
+      <article className={`tfc-card${open ? " open" : ""}${fresh ? " has-ribbon" : ""}`}>
+
+        {/* ── Freshness ribbon ── */}
+        {fresh && (
+          <div className={`ribbon ${fresh}`}>
+            {fresh === 'today' ? 'NEW TODAY' : 'NEW THIS WEEK'}
+          </div>
+        )}
 
         {/* ── Analyst header (only in feed view) ── */}
         {showExpert && expert ? (

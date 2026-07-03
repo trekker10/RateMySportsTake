@@ -51,12 +51,13 @@ async function TodayTicker() {
   noStore();
   try {
     const supabase = await createClient();
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const today = new Date().toISOString().split("T")[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
     const { count } = await supabase
       .from("takes")
       .select("take_id", { count: "exact", head: true })
-      .gte("date_submitted", todayStart.toISOString());
+      .gte("date_submitted", today)
+      .lt("date_submitted", tomorrow);
     return <TodayTickerBar count={count ?? 0} />;
   } catch {
     return null;

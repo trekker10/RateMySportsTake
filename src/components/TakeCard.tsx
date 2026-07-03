@@ -100,17 +100,23 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
   const displayText = cleanTakeText(rawDisplay);
   const isParaphrase = !take.raw_text?.trim() && !!take.summary;
 
-  // Freshness ribbon
-  const filedAt = new Date(take.date_made ?? take.date_submitted);
-  const hoursAgo = (Date.now() - filedAt.getTime()) / 36e5;
-  const fresh: 'today' | 'week' | null =
-    hoursAgo < 0 ? null :
-    hoursAgo <= 24 ? 'today' :
-    hoursAgo <= 168 ? 'week' : null;
+  // date_made is stored as an ET date string (YYYY-MM-DD) — parse directly, no TZ conversion
+  const datePart = take.date_made.slice(0, 10); // "2026-07-01"
+  const [, , ddStr] = datePart.split("-");
+  const day = parseInt(ddStr, 10);
+  // Use noon UTC to safely get the month name without any boundary risk
+  const mo = new Date(datePart + "T12:00:00Z")
+    .toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }).toUpperCase();
 
-  const d   = new Date(take.date_made);
-  const mo  = d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }).toUpperCase();
-  const day = d.getUTCDate();
+  // Freshness ribbon — compare date_made (ET) against today's ET date
+  const etToday = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // "2026-07-03"
+  const madeDate = new Date(datePart + "T12:00:00Z");
+  const todayDate = new Date(etToday + "T12:00:00Z");
+  const daysAgo = (todayDate.getTime() - madeDate.getTime()) / 864e5;
+  const fresh: 'today' | 'week' | null =
+    daysAgo < 0 ? null :
+    daysAgo < 1 ? 'today' :
+    daysAgo < 7 ? 'week' : null;
 
   const fmtDate = (iso: string) => {
     const dt = new Date(iso);

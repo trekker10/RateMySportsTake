@@ -5,6 +5,7 @@ import AuthButton from "@/components/AuthButton";
 import { getFlag } from "@/app/actions/flags";
 import { createClient } from "@/lib/supabase/server";
 import TodayTickerBar from "@/components/TodayTickerBar";
+import { easternDayBoundsUtc } from "@/lib/date-utils";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -51,13 +52,12 @@ async function TodayTicker() {
   noStore();
   try {
     const supabase = await createClient();
-    const today = new Date().toISOString().split("T")[0];
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+    const { start, end } = easternDayBoundsUtc();
     const { count } = await supabase
       .from("takes")
       .select("take_id", { count: "exact", head: true })
-      .gte("date_submitted", today)
-      .lt("date_submitted", tomorrow);
+      .gte("date_submitted", start)
+      .lt("date_submitted", end);
     return <TodayTickerBar count={count ?? 0} />;
   } catch {
     return null;

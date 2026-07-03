@@ -1,6 +1,7 @@
 import { getFeatureFlags } from "@/app/actions/flags";
 import { createAdminClient } from "@/lib/supabase/admin";
 import AdminPanel from "./AdminPanel";
+import { easternDayBoundsUtc } from "@/lib/date-utils";
 
 export default async function AdminPage() {
   const [flags, stats] = await Promise.all([
@@ -13,11 +14,7 @@ export default async function AdminPage() {
 
 async function fetchDashboardStats() {
   const supabase = createAdminClient();
-  const todayDate = new Date();
-  const today = todayDate.toISOString().split("T")[0];
-  const tomorrowDate = new Date(todayDate);
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrow = tomorrowDate.toISOString().split("T")[0];
+  const { start: today, end: tomorrow } = easternDayBoundsUtc();
 
   const [
     { count: analystToday },

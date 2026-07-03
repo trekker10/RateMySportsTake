@@ -109,12 +109,12 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
     hoursAgo <= 168 ? 'week' : null;
 
   const d   = new Date(take.date_made);
-  const mo  = d.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
-  const day = d.getDate();
+  const mo  = d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }).toUpperCase();
+  const day = d.getUTCDate();
 
   const fmtDate = (iso: string) => {
     const dt = new Date(iso);
-    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase();
+    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).toUpperCase();
   };
   const madeFmt = `${mo} ${day}`;
   const isResolved = take.outcome_status !== "pending";

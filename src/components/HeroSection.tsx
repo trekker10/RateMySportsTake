@@ -45,7 +45,7 @@ export default function HeroSection() {
       <p className="mt-6 max-sm:mt-7 text-xl max-sm:text-[19px] max-sm:leading-[1.5] text-gray-500 max-w-xl max-sm:max-w-[34ch]">
         {isGurus
           ? "Fantasy football gurus make bold calls, AI keeps receipts, AI grades them."
-          : "Popular sports analysts make takes, AI keeps receipts, AI grades them."}
+          : "Popular sports analysts make takes, we grade them, you share receipts."}
       </p>
 
       {/* Search bar */}

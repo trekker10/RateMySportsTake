@@ -115,8 +115,8 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
   const daysAgo = (todayDate.getTime() - madeDate.getTime()) / 864e5;
   const fresh: 'today' | 'week' | null =
     daysAgo < 0 ? null :
-    daysAgo < 1 ? 'today' :
-    daysAgo < 7 ? 'week' : null;
+    daysAgo < 2 ? 'today' :   // today or yesterday
+    daysAgo < 8 ? 'week' : null; // 2–7 days ago
 
   const fmtDate = (iso: string) => {
     const dt = new Date(iso);

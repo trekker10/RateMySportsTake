@@ -137,11 +137,6 @@ export default async function ExpertsPage({
           TOP ANALYSTS{" "}
           <span style={{ color: RED }}>· {activeView === "takes" ? "TAKES" : "LEADERBOARD"}</span>
         </h1>
-        <p className="mt-1 italic text-gray-500">
-          {experts?.length ?? 0} analyst{experts?.length !== 1 ? "s" : ""}
-          {activeSport !== "ALL SPORTS" ? ` in ${activeSport}` : ""}
-          {q ? ` matching "${q}"` : " tracked · ranked by TakeScore"}
-        </p>
       </div>
 
       {/* ── View toggle row ── */}

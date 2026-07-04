@@ -144,29 +144,8 @@ export default async function ExpertsPage({
         </p>
       </div>
 
-      {/* ── Sport filter + view toggle row ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-        {/* Sport chips */}
-        <div className="flex flex-wrap gap-1.5">
-          {SPORTS.map((s) => {
-            const isActive = s === activeSport;
-            return (
-              <Link
-                key={s}
-                href={sportHref(s)}
-                className={`px-3 py-1 font-mono text-[11px] tracking-wider border-2 transition-colors ${
-                  isActive
-                    ? "text-white border-gray-900"
-                    : "bg-white text-gray-500 border-gray-300 hover:border-gray-600 hover:text-gray-800"
-                }`}
-                style={isActive ? { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" } : {}}
-              >
-                {s}
-              </Link>
-            );
-          })}
-        </div>
-
+      {/* ── View toggle row ── */}
+      <div className="flex items-center justify-end flex-wrap gap-3 mb-4">
         {/* LEADERBOARD / TAKES toggle */}
         <div className="flex border-2 border-gray-900 overflow-hidden shrink-0">
           <Link

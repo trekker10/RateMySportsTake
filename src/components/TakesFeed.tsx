@@ -323,9 +323,6 @@ export default function TakesFeed({ takes, isLoggedIn = false, followedTakeIds =
         }}>
           {filtered.length} take{filtered.length !== 1 ? "s" : ""}
         </span>
-        <div style={{ marginLeft: "auto" }}>
-          <PageSizeSelect value={pageSize} onChange={handlePageSize} />
-        </div>
       </div>
 
       {/* Grid */}
@@ -354,18 +351,19 @@ export default function TakesFeed({ takes, isLoggedIn = false, followedTakeIds =
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination + page size */}
       <Pagination page={safePage} totalPages={totalPages} onPage={setPage} />
 
-      {/* Page info */}
       {filtered.length > 0 && (
-        <p style={{
-          textAlign: "center", marginTop: 12,
-          fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
-          letterSpacing: "0.12em", textTransform: "uppercase", color: "#9ca3af",
-        }}>
-          Page {safePage} of {totalPages} · showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} of {filtered.length}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
+          <p style={{
+            fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+            letterSpacing: "0.12em", textTransform: "uppercase", color: "#9ca3af", margin: 0,
+          }}>
+            Page {safePage} of {totalPages} · showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} of {filtered.length}
+          </p>
+          <PageSizeSelect value={pageSize} onChange={handlePageSize} />
+        </div>
       )}
     </div>
   );

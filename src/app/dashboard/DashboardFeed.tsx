@@ -270,7 +270,7 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
           No takes match these filters.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((take) => {
             // Countdown row for pending takes grading soon (≤7 days)
             const isPending = !take.outcome_status || take.outcome_status === "pending";
@@ -281,7 +281,7 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
             const gradingSoon = isPending && daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
 
             return (
-              <div key={take.take_id}>
+              <div key={take.take_id} style={{ paddingTop: 12 }}>
                 {gradingSoon && (
                   <div style={{
                     background: "#fff5f5", border: "1.5px solid #e2241a", borderBottom: "none",

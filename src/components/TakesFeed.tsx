@@ -328,9 +328,8 @@ export default function TakesFeed({ takes, isLoggedIn = false, followedTakeIds =
       {/* Grid */}
       {paginated.length > 0 ? (
         <div
-          className="takes-feed-grid"
+          className="takes-feed-grid mt-[25px] sm:mt-[10px]"
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "34px", alignItems: "start" }}
-          className="mt-[25px] sm:mt-[10px]"
         >
           {paginated.map((take) => (
             <TakeCard

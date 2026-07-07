@@ -281,12 +281,13 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
             const gradingSoon = isPending && daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
 
             return (
-              <div key={take.take_id} style={{ paddingTop: 12 }}>
+              <div key={take.take_id}>
                 {gradingSoon && (
                   <div style={{
                     background: "#fff5f5", border: "1.5px solid #e2241a", borderBottom: "none",
                     padding: "8px 16px", display: "flex", alignItems: "center", gap: 10,
                     fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".14em",
+                    marginTop: 14,
                   }}>
                     <span style={{ color: "#e2241a", fontWeight: 700 }}>
                       {daysLeft === 0 ? "TODAY" : `${daysLeft}D`}
@@ -294,15 +295,18 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
                     <span style={{ color: "#8a8a82" }}>GRADES SOON</span>
                   </div>
                 )}
-                <TakeCard
-                  take={take}
-                  showExpert
-                  showFollow
-                  showResolutionDate
-                  largeByline
-                  isLoggedIn
-                  isFollowing={followedTakeIds.includes(take.take_id)}
-                />
+                {/* paddingTop gives the ribbon room to float above the card border */}
+                <div style={{ paddingTop: gradingSoon ? 0 : 14 }}>
+                  <TakeCard
+                    take={take}
+                    showExpert
+                    showFollow
+                    showResolutionDate
+                    largeByline
+                    isLoggedIn
+                    isFollowing={followedTakeIds.includes(take.take_id)}
+                  />
+                </div>
               </div>
             );
           })}

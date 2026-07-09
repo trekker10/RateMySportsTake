@@ -1,17 +1,15 @@
 import { getFeatureFlags } from "@/app/actions/flags";
-import { getCrowdSettings } from "@/app/actions/crowdSettings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import AdminPanel from "./AdminPanel";
 import { easternDayBoundsUtc } from "@/lib/date-utils";
 
 export default async function AdminPage() {
-  const [flags, stats, crowdSettings] = await Promise.all([
+  const [flags, stats] = await Promise.all([
     getFeatureFlags(),
     fetchDashboardStats(),
-    getCrowdSettings(),
   ]);
 
-  return <AdminPanel initialFlags={flags} stats={stats} crowdSettings={crowdSettings} />;
+  return <AdminPanel initialFlags={flags} stats={stats} />;
 }
 
 async function fetchDashboardStats() {

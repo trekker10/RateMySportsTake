@@ -110,6 +110,19 @@ function IconFootball() {
   );
 }
 
+function IconCrowd() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <path d="M17 20c0-2.5-2.2-4-5-4s-5 1.5-5 4"/>
+      <circle cx="12" cy="10" r="3"/>
+      <path d="M22 20c0-2-1.7-3.5-4-3.5"/>
+      <circle cx="19" cy="8" r="2.5"/>
+      <path d="M2 20c0-2 1.7-3.5 4-3.5"/>
+      <circle cx="5" cy="8" r="2.5"/>
+    </svg>
+  );
+}
+
 function IconEval() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -148,6 +161,7 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
         { label: "Fantasy TakeScore",    href: "/admin/fantasy-take-score",   icon: <IconFootball /> },
         { label: "Eval Lab",             href: "/admin/eval-lab",             icon: <IconEval /> },
         { label: "Boldness Check",       href: "/admin/boldness-check",       icon: <IconScore /> },
+        { label: "Crowd Forecast",       href: "/admin/crowd-forecast",       icon: <IconCrowd /> },
       ],
     },
     {

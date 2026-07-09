@@ -24,11 +24,17 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
   const [data, setData]       = useState<ForecastData | null>(initial ?? null);
   const [pending, setPending] = useState(false);
   const [showLoginMsg, setShowLoginMsg] = useState(false);
+  // minVotes lives in its own state so it's never accidentally wiped by
+  // optimistic updates or POST reconciliation (POST doesn't return minVotes).
+  const [minVotes, setMinVotes] = useState<number>(initial?.minVotes ?? DEFAULT_MIN_VOTES);
 
   useEffect(() => {
     fetch(`/api/takes/${takeId}/forecast`)
       .then((r) => r.json())
-      .then(setData)
+      .then((fresh) => {
+        if (fresh.minVotes != null) setMinVotes(fresh.minVotes);
+        setData(fresh);
+      })
       .catch(() => {});
   }, [takeId]);
 
@@ -71,10 +77,10 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
 
   if (!data) return null;
 
-  const { well, poorly, myVote, graded, verdict, minVotes = DEFAULT_MIN_VOTES } = data;
-  const total   = well + poorly;
-  const pctWell = total > 0 ? Math.round(well / total * 100) : 50;
-  const pctPoor = 100 - pctWell;
+  const { well, poorly, myVote, graded, verdict } = data;
+  const total     = well + poorly;
+  const pctWell   = total > 0 ? Math.round(well / total * 100) : 50;
+  const pctPoor   = 100 - pctWell;
   const hasEnough = total >= minVotes;
 
   // "CROWD CALLED IT" logic

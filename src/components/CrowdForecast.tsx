@@ -345,7 +345,10 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
         {/* Closed: crowd result line */}
         {graded && hasEnough && (
           <div className={`fc-result ${majority === "well" ? "fc-result-well" : "fc-result-poorly"}`}>
-            {calledIt ? "✓ CROWD CALLED IT" : "✗ CROWD WHIFFED"}
+            {calledIt
+              ? majority === "well" ? "✓ CROWD CALLED IT" : "✓ CROWD CALLED THE MISS"
+              : "✗ CROWD WHIFFED"
+            }
           </div>
         )}
       </div>

@@ -454,7 +454,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         )}
 
         {/* ── Actions ── */}
-        <div className="tfc-actions">
+        <div className="tfc-actions" style={{ marginTop: 14 }}>
           {showFollow && (
             <button
               className={`tfc-btn-follow${following ? " following" : ""}`}

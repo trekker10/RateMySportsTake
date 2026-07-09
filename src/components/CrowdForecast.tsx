@@ -60,7 +60,10 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
       });
       const fresh = await res.json();
       if (res.ok) {
-        setData((d) => ({ ...d!, myVote: fresh.myVote, graded: fresh.graded }));
+        // Don't trust well/poorly or myVote from POST — the DB read in the same
+        // request can lag behind the just-written row (Supabase pooler read-after-write).
+        // Optimistic values are already correct. Only take graded (different table, no lag).
+        setData((d) => ({ ...d!, graded: fresh.graded }));
       } else {
         setData(prev);
       }

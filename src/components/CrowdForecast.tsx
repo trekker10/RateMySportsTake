@@ -22,6 +22,7 @@ const MIN_VOTES = 5; // show percentages only above this threshold
 export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
   const [data, setData]       = useState<ForecastData | null>(initial ?? null);
   const [pending, setPending] = useState(false);
+  const [showLoginMsg, setShowLoginMsg] = useState(false);
 
   useEffect(() => {
     fetch(`/api/takes/${takeId}/forecast`)
@@ -32,7 +33,8 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
 
   const cast = useCallback(async (vote: "well" | "poorly") => {
     if (!isLoggedIn) {
-      window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+      setShowLoginMsg(true);
+      setTimeout(() => setShowLoginMsg(false), 3500);
       return;
     }
     if (!data || data.graded || pending) return;
@@ -127,6 +129,18 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
           margin-top: 8px; font-family: 'JetBrains Mono', monospace;
           font-size: 10px; letter-spacing: .1em; color: #9a9a93; text-align: center; text-transform: uppercase;
         }
+        .fc-login-msg {
+          margin-top: 11px; padding: 10px 14px;
+          background: #15201a; color: #fff;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+          border-radius: 6px; text-align: center;
+          animation: fc-fadein .18s ease;
+        }
+        .fc-login-msg a {
+          color: #53AF0F; text-decoration: underline; font-weight: 700;
+        }
+        @keyframes fc-fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
         .fc-btns {
           display: flex; gap: 11px; margin-top: 13px;
         }
@@ -192,24 +206,35 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
 
         {/* Open: vote buttons */}
         {!graded && (
-          <div className="fc-btns">
-            <button
-              className={`fc-btn fc-btn-well${myVote === "well" ? " on" : ""}`}
-              onClick={() => cast("well")}
-              disabled={pending}
-              aria-pressed={myVote === "well"}
-            >
-              ▲ AGES WELL
-            </button>
-            <button
-              className={`fc-btn fc-btn-poor${myVote === "poorly" ? " on" : ""}`}
-              onClick={() => cast("poorly")}
-              disabled={pending}
-              aria-pressed={myVote === "poorly"}
-            >
-              ▼ AGES POORLY
-            </button>
-          </div>
+          <>
+            <div className="fc-btns">
+              <button
+                className={`fc-btn fc-btn-well${myVote === "well" ? " on" : ""}`}
+                onClick={() => cast("well")}
+                disabled={pending}
+                aria-pressed={myVote === "well"}
+              >
+                ▲ AGES WELL
+              </button>
+              <button
+                className={`fc-btn fc-btn-poor${myVote === "poorly" ? " on" : ""}`}
+                onClick={() => cast("poorly")}
+                disabled={pending}
+                aria-pressed={myVote === "poorly"}
+              >
+                ▼ AGES POORLY
+              </button>
+            </div>
+            {showLoginMsg && (
+              <div className="fc-login-msg">
+                Please{" "}
+                <a href={`/auth/login?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/")}`}>log in</a>
+                {" "}or{" "}
+                <a href="/auth/signup">create an account</a>
+                {" "}to vote.
+              </div>
+            )}
+          </>
         )}
 
         {/* Closed: result line */}

@@ -66,8 +66,15 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
         body:    JSON.stringify({ vote }),
       });
       const fresh = await res.json();
-      if (res.ok) setData((d) => ({ ...d!, ...fresh }));
-      else        setData(prev); // rollback
+      if (res.ok) {
+        // Only take myVote + graded from the server — don't overwrite well/poorly
+        // because the DB read in the POST can lag behind the just-inserted row
+        // (Supabase connection pooler read-after-write), causing a false total drop.
+        // The optimistic count is already correct; it will sync on the next GET.
+        setData((d) => ({ ...d!, myVote: fresh.myVote, graded: fresh.graded }));
+      } else {
+        setData(prev); // rollback on error
+      }
     } catch {
       setData(prev);
     } finally {

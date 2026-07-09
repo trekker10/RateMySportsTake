@@ -14,12 +14,13 @@ interface ForecastData {
 interface Props {
   takeId:     string;
   isLoggedIn: boolean;
+  isAdmin?:   boolean;
   initial?:   ForecastData;
 }
 
 const DEFAULT_MIN_VOTES = 5;
 
-export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
+export default function CrowdForecast({ takeId, isLoggedIn, isAdmin = false, initial }: Props) {
   const [data, setData]             = useState<ForecastData | null>(initial ?? null);
   const [pending, setPending]       = useState(false);
   const [showLoginMsg, setShowLoginMsg] = useState(false);
@@ -45,10 +46,15 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
     setData((d) => {
       if (!d) return d;
       let { well, poorly, myVote } = d;
-      if (myVote === "well")   well--;
-      if (myVote === "poorly") poorly--;
-      if (myVote !== vote) { vote === "well" ? well++ : poorly++; myVote = vote; }
-      else                  { myVote = null; }
+      if (isAdmin) {
+        // Admin: just increment, no toggle/undo logic
+        vote === "well" ? well++ : poorly++;
+      } else {
+        if (myVote === "well")   well--;
+        if (myVote === "poorly") poorly--;
+        if (myVote !== vote) { vote === "well" ? well++ : poorly++; myVote = vote; }
+        else                  { myVote = null; }
+      }
       return { ...d, well, poorly, myVote };
     });
 
@@ -86,6 +92,12 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
     }
     if (!data || data.graded || pending) return;
 
+    // Admins: no locking, no confirmation — just vote freely
+    if (isAdmin) {
+      cast(vote);
+      return;
+    }
+
     // Already voted this side → open change-vote confirmation
     if (data.myVote === vote) {
       setConfirmChange(true);
@@ -97,7 +109,7 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
 
     // No vote yet → cast it
     cast(vote);
-  }, [cast, data, isLoggedIn, pending]);
+  }, [cast, data, isAdmin, isLoggedIn, pending]);
 
   // User confirmed they want to change their vote
   const handleConfirmChange = useCallback(async () => {
@@ -113,7 +125,7 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
   const pctWell   = total > 0 ? Math.round(well / total * 100) : 50;
   const pctPoor   = 100 - pctWell;
   const hasEnough = total >= minVotes;
-  const hasVoted  = !!myVote;
+  const hasVoted  = !!myVote && !isAdmin;
 
   const majority = well >= poorly ? "well" : "poorly";
   const aged     = verdict === "right" ? "well" : "poorly";

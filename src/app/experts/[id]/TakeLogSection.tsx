@@ -24,6 +24,7 @@ interface Props {
   gradeMax: number | null;
   activeGrade: string | null;
   isLoggedIn?: boolean;
+  isAdmin?: boolean;
   followedTakeIds?: string[];
 }
 
@@ -36,6 +37,7 @@ export default function TakeLogSection({
   gradeMin,
   gradeMax,
   isLoggedIn = false,
+  isAdmin = false,
   followedTakeIds = [],
 }: Props) {
   const [takes, setTakes] = useState<ProfileTake[]>(initialTakes);
@@ -75,6 +77,7 @@ export default function TakeLogSection({
                 showExpert={true}
                 showFollow
                 isLoggedIn={isLoggedIn}
+                isAdmin={isAdmin}
                 isFollowing={followedTakeIds.includes(take.take_id)}
               />
             );

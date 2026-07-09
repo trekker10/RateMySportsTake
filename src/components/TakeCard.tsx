@@ -25,6 +25,7 @@ interface TakeCardProps {
   showFollow?: boolean;
   isFollowing?: boolean;
   isLoggedIn?: boolean;
+  isAdmin?: boolean;
 }
 
 function verdictInfo(status: string): { label: string; bg: string; color: string; border?: string } {
@@ -73,7 +74,7 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false, largeByline = false, showFollow = false, isFollowing: initialIsFollowing = false, isLoggedIn = false }: TakeCardProps) {
+export default function TakeCard({ take, showExpert = false, showSave = false, isSaved = false, onSave, showResolutionDate = false, largeByline = false, showFollow = false, isFollowing: initialIsFollowing = false, isLoggedIn = false, isAdmin = false }: TakeCardProps) {
   const [open, setOpen] = useState(false);
   const [following, setFollowing] = useState(initialIsFollowing);
   const [followPending, setFollowPending] = useState(false);
@@ -432,7 +433,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
         </div>
 
         {/* ── Crowd Forecast ── */}
-        <CrowdForecast takeId={take.take_id} isLoggedIn={isLoggedIn} />
+        <CrowdForecast takeId={take.take_id} isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
 
         {/* ── What Happened toggle (graded takes only) ── */}
         {!isPending && (

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCrowdSettings } from "@/app/actions/crowdSettings";
+import { checkIsAdmin } from "@/lib/auth";
 
 type Params = { params: Promise<{ takeId: string }> };
 
@@ -75,7 +77,23 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Voting is closed for graded takes" }, { status: 409 });
   }
 
-  // check existing vote
+  const isAdmin = await checkIsAdmin();
+
+  if (isAdmin) {
+    // Admins can vote multiple times — insert each as a fresh anonymous row
+    // using the service-role client so the unique-per-user constraint is bypassed.
+    const adminDb = createAdminClient();
+    const { error } = await adminDb
+      .from("take_votes")
+      .insert({ take_id: takeId, user_id: crypto.randomUUID(), vote });
+    if (error) {
+      console.error("[forecast POST] admin insert error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ graded: false });
+  }
+
+  // ── Regular user: one vote per take ──────────────────────────────────────
   const { data: existing, error: fetchError } = await supabase
     .from("take_votes")
     .select("vote_id, vote")

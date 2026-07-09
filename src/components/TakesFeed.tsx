@@ -7,6 +7,7 @@ interface TakesFeedProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   takes: any[];
   isLoggedIn?: boolean;
+  isAdmin?: boolean;
   followedTakeIds?: string[];
 }
 
@@ -229,7 +230,7 @@ function Pagination({
   );
 }
 
-export default function TakesFeed({ takes, isLoggedIn = false, followedTakeIds = [] }: TakesFeedProps) {
+export default function TakesFeed({ takes, isLoggedIn = false, isAdmin = false, followedTakeIds = [] }: TakesFeedProps) {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [selectedVerdicts, setSelectedVerdicts] = useState<string[]>([]);
   const [search, setSearch] = useState("");
@@ -338,6 +339,7 @@ export default function TakesFeed({ takes, isLoggedIn = false, followedTakeIds =
               showExpert
               showFollow
               isLoggedIn={isLoggedIn}
+              isAdmin={isAdmin}
               isFollowing={followedTakeIds.includes(take.take_id)}
             />
           ))}

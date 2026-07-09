@@ -619,6 +619,7 @@ export default async function ExpertProfilePage({
                   gradeMax={gradeRange?.max ?? null}
                   activeGrade={activeGrade}
                   isLoggedIn={!!user}
+                  isAdmin={(process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim().toLowerCase()).includes(user?.email?.toLowerCase() ?? "")}
                   followedTakeIds={followedTakeIds}
                 />
               </>

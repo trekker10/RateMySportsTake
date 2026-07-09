@@ -123,6 +123,15 @@ function IconCrowd() {
   );
 }
 
+function IconMail() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <rect x="2" y="4" width="20" height="16" rx="2"/>
+      <path d="M2 7l10 7 10-7"/>
+    </svg>
+  );
+}
+
 function IconEval() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -177,6 +186,12 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
       heading: "Settings",
       items: [
         { label: "Feature Flags", href: "/admin", icon: <IconFlag /> },
+      ],
+    },
+    {
+      heading: "Communications",
+      items: [
+        { label: "Email", href: "/admin/email", icon: <IconMail /> },
       ],
     },
   ];

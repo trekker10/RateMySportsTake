@@ -240,8 +240,8 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
           font-size: 15px; letter-spacing: -.01em;
           display: flex; align-items: center; gap: 8px;
         }
-        .fc-result-called { color: #53AF0F; }
-        .fc-result-whiff  { color: #e5342a; }
+        .fc-result-well   { color: #53AF0F; }
+        .fc-result-poorly { color: #e5342a; }
         @media (max-width: 600px) {
           .fc-btn { font-size: 10px; padding: 10px 6px; }
           .fc-pct { font-size: 10px; }
@@ -344,7 +344,7 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
 
         {/* Closed: crowd result line */}
         {graded && hasEnough && (
-          <div className={`fc-result ${calledIt ? "fc-result-called" : "fc-result-whiff"}`}>
+          <div className={`fc-result ${majority === "well" ? "fc-result-well" : "fc-result-poorly"}`}>
             {calledIt ? "✓ CROWD CALLED IT" : "✗ CROWD WHIFFED"}
           </div>
         )}

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Take, Expert } from "@/types/database";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { expertUrl } from "@/lib/expert-url";
 import { followTake, unfollowTake } from "@/app/actions/takeFollows";
+
+const CrowdForecast = dynamic(() => import("@/components/CrowdForecast"), { ssr: false });
 
 type TakeWithExpert = Take & {
   experts?: Pick<Expert, "name" | "expert_id" | "slug" | "outlet" | "avatar_url"> | null;
@@ -428,24 +431,27 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           </Link>
         </div>
 
-        {/* ── What Happened toggle ── */}
-        <div className="tfc-disclose">
-          <button
-            className={`tfc-toggle${open ? " open" : ""}`}
-            aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
-          >
-            <span>{isPending ? "AWAITING RESULT" : "WHAT HAPPENED"}</span>
-            <span className={`tfc-chev${open ? " flipped" : ""}`}>▼</span>
-          </button>
-          {open && (
-            <div className="tfc-panel">
-              {isPending
-                ? "Not graded yet — this take gets a grade once the result is decided."
-                : (analysis ?? "No analysis recorded yet.")}
-            </div>
-          )}
-        </div>
+        {/* ── Crowd Forecast ── */}
+        <CrowdForecast takeId={take.take_id} isLoggedIn={isLoggedIn} />
+
+        {/* ── What Happened toggle (graded takes only) ── */}
+        {!isPending && (
+          <div className="tfc-disclose">
+            <button
+              className={`tfc-toggle${open ? " open" : ""}`}
+              aria-expanded={open}
+              onClick={() => setOpen((o) => !o)}
+            >
+              <span>WHAT HAPPENED</span>
+              <span className={`tfc-chev${open ? " flipped" : ""}`}>▼</span>
+            </button>
+            {open && (
+              <div className="tfc-panel">
+                {analysis ?? "No analysis recorded yet."}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Actions ── */}
         <div className="tfc-actions">
@@ -461,7 +467,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
               </svg>
-              {following ? "FOLLOWING" : isPending ? "FOLLOW FOR RESULT" : "FOLLOW"}
+              {following ? "FOLLOWING" : "FOLLOW"}
             </button>
           )}
           {showSave && (

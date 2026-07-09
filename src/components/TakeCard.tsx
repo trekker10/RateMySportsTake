@@ -436,7 +436,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
 
         {/* ── What Happened toggle (graded takes only) ── */}
         {!isPending && (
-          <div className="tfc-disclose">
+          <div className="tfc-disclose" style={{ marginTop: 14 }}>
             <button
               className={`tfc-toggle${open ? " open" : ""}`}
               aria-expanded={open}

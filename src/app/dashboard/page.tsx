@@ -36,8 +36,8 @@ export default async function DashboardPage() {
 
   const expertIds = followedExperts.map((e) => e.expert_id);
 
-  // Takes feed + saved IDs + followed take IDs (parallel)
-  const [{ data: takesRaw }, { data: savedRaw }, { data: pendingRaw }, { data: takeFollowsRaw }] = await Promise.all([
+  // Takes feed + saved IDs + followed take IDs + forecast votes (parallel)
+  const [{ data: takesRaw }, { data: savedRaw }, { data: pendingRaw }, { data: takeFollowsRaw }, { data: forecastVotesRaw }] = await Promise.all([
     expertIds.length > 0
       ? supabase
           .from("takes")
@@ -56,6 +56,12 @@ export default async function DashboardPage() {
           .eq("outcome_status", "pending")
       : Promise.resolve({ data: [] }),
     supabase.from("take_follows").select("take_id").eq("user_id", user.id),
+    // User's crowd-forecast votes on graded takes (for accuracy record)
+    supabase
+      .from("take_votes")
+      .select("vote, takes!inner(outcome_status)")
+      .eq("user_id", user.id)
+      .in("takes.outcome_status", ["confirmed_true", "confirmed_false", "partially_true"]),
   ]);
 
   const takes = takesRaw ?? [];
@@ -83,11 +89,6 @@ export default async function DashboardPage() {
     const days = Math.ceil((new Date(t.time_horizon_date).getTime() - now) / 86_400_000);
     return days >= 0 && days <= 7;
   }).length;
-  const grading30 = pendingTakes.filter((t) => {
-    if (!t.time_horizon_date) return false;
-    const days = Math.ceil((new Date(t.time_horizon_date).getTime() - now) / 86_400_000);
-    return days >= 0 && days <= 30;
-  }).length;
 
   // Per-analyst upcoming30 count
   const upcoming30ByExpert: Record<string, number> = {};
@@ -109,12 +110,20 @@ export default async function DashboardPage() {
     .filter((t) => savedIds.includes(t.take_id))
     .slice(0, 3);
 
-  const stats = [
-    { label: "GRADING SOON",       value: gradingSoon,          highlight: true },
-    { label: "GRADING IN <30 DAYS", value: grading30,           highlight: false },
-    { label: "ANALYSTS FOLLOWING", value: followedExperts.length, highlight: false },
-    { label: "TAKES SAVED",        value: savedIds.length,      highlight: false },
-  ];
+  // Forecast record: count user votes vs actual outcomes
+  const forecastVotes = forecastVotesRaw ?? [];
+  let forecastWins = 0;
+  let forecastLosses = 0;
+  for (const v of forecastVotes) {
+    const outcome = (v.takes as any)?.outcome_status as string | undefined;
+    if (!outcome) continue;
+    const correct =
+      (v.vote === "well"   && outcome === "confirmed_true") ||
+      (v.vote === "poorly" && (outcome === "confirmed_false" || outcome === "partially_true"));
+    correct ? forecastWins++ : forecastLosses++;
+  }
+  const forecastTotal = forecastWins + forecastLosses;
+  const forecastPct   = forecastTotal > 0 ? Math.round((forecastWins / forecastTotal) * 100) : null;
 
   return (
     <div className="w-screen relative left-1/2 -translate-x-1/2 -mt-10" style={{ minHeight: "100vh", backgroundColor: "#ebedf0" }}>
@@ -148,25 +157,52 @@ export default async function DashboardPage() {
           </div>
 
           {/* Stat strip */}
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", padding: "20px 0", scrollbarWidth: "none" }}>
-            {stats.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  minWidth: 118, flexShrink: 0,
-                  padding: "12px 16px",
-                  border: "2px solid #15201a",
-                  background: s.highlight ? "#15201a" : "#eceef1",
-                }}
-              >
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: s.highlight ? "rgba(255,255,255,.6)" : "#8a8a82", marginBottom: 6 }}>
-                  {s.label}
+          <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "20px 0", scrollbarWidth: "none" }}>
+
+            {/* Box 1 — Your Forecast Record */}
+            <div style={{ flexShrink: 0, padding: "12px 24px 12px 16px", border: "2px solid #15201a", background: "#eceef1" }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#8a8a82", marginBottom: 6, whiteSpace: "nowrap" }}>
+                YOUR FORECAST RECORD
+              </p>
+              {forecastPct !== null ? (
+                <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+                  <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 30, letterSpacing: "-.03em", lineHeight: 0.9, color: "#0a7a3b" }}>
+                    {forecastPct}%
+                  </span>
+                  <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 26, letterSpacing: "-.02em", lineHeight: 1, color: "#8a8a82" }}>
+                    {forecastWins}–{forecastLosses}
+                  </span>
+                </div>
+              ) : (
+                <p style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 22, letterSpacing: "-.03em", lineHeight: 0.9, color: "#8a8a82" }}>
+                  —
                 </p>
-                <p style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 30, letterSpacing: "-.03em", lineHeight: 1, color: s.highlight ? "#e2241a" : "#15201a" }}>
-                  {s.value}
-                </p>
+              )}
+            </div>
+
+            {/* Box 2 — Take Tracking */}
+            <div style={{ flexShrink: 0, padding: "12px 16px", border: "2px solid #15201a", background: "#eceef1" }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#8a8a82", marginBottom: 8, whiteSpace: "nowrap" }}>
+                TAKE TRACKING
+              </p>
+              <div style={{ display: "flex", gap: 20 }}>
+                {[
+                  { label: "TAKES SAVED",       value: savedIds.length,        accent: false },
+                  { label: "GRADING SOON",       value: gradingSoon,            accent: true  },
+                  { label: "ANALYSTS FOLLOWED",  value: followedExperts.length, accent: false },
+                ].map((s) => (
+                  <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 30, letterSpacing: "-.03em", lineHeight: 0.9, color: s.accent ? "#e2241a" : "#15201a" }}>
+                      {s.value}
+                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: ".1em", textTransform: "uppercase", color: "#8a8a82", marginTop: 5, whiteSpace: "nowrap" }}>
+                      {s.label}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
           </div>
         </div>
       </div>

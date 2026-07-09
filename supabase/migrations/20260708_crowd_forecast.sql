@@ -4,8 +4,8 @@ create table take_votes (
   vote_id         uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users(id) on delete cascade,
 
-  take_id         text references takes(take_id) on delete cascade,
-  fantasy_take_id text references fantasy_takes(fantasy_take_id) on delete cascade,
+  take_id         uuid references takes(take_id) on delete cascade,
+  fantasy_take_id uuid references fantasy_takes(fantasy_take_id) on delete cascade,
 
   vote            text not null check (vote in ('well', 'poorly')),
   vote_outcome    text check (vote_outcome in ('correct', 'incorrect')),

@@ -56,8 +56,8 @@ export async function gradeSingleTake(
     .single();
 
   if (!take) return { success: false, error: "Take not found" };
-  if (!take.summary || !take.grading_criteria) {
-    return { success: false, error: "Take hasn't been AI rated yet" };
+  if (!take.grading_criteria) {
+    return { success: false, error: "Take has no grading criteria — edit the take to add criteria before grading." };
   }
 
   try {
@@ -65,7 +65,7 @@ export async function gradeSingleTake(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expertName: (take.experts as any)?.name ?? "Unknown",
       rawText: take.raw_text,
-      summary: take.summary,
+      summary: take.summary ?? take.raw_text, // fall back to raw text if summary not yet generated
       gradingCriteria: take.grading_criteria,
       dateMade: take.date_made,
       timeHorizonDate: take.time_horizon_date ?? new Date().toISOString().split("T")[0],

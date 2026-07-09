@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = await req.json().catch(() => ({}));
 
   // Only allow known fields
-  const allowed = ["name", "status", "category", "subject", "preview_text", "from_name", "default_segment", "body_json"];
+  const allowed = ["name", "status", "category", "subject", "preview_text", "from_name", "default_segment", "segment_type", "segment_params", "body_json"];
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const key of allowed) {
     if (key in body) patch[key] = body[key];

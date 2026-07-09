@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,24 +21,47 @@ interface EmailTemplate {
   preview_text: string;
   from_name: string;
   default_segment: string;
+  segment_type: SegmentType;
+  segment_params: Record<string, string>;
   body_json: BodyJson;
   updated_at: string;
 }
 
+interface ExpertStub {
+  id: string;
+  name: string;
+  slug: string | null;
+}
+
 type Tab = "templates" | "scheduled" | "triggers" | "history";
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "ACTIVE",
-  paused: "PAUSED",
-  draft: "DRAFT",
-};
+// ── Segment definitions ────────────────────────────────────────────────────────
 
+type SegmentType = "all_active" | "new_signups" | "inactive_30" | "analyst_followers" | "saved_backed";
+
+interface SegmentDef {
+  type: SegmentType;
+  label: string;
+  description: string;
+  needsExpert: boolean;
+}
+
+const SEGMENTS: SegmentDef[] = [
+  { type: "all_active",         label: "All active users",              description: "Everyone with an account",                 needsExpert: false },
+  { type: "new_signups",        label: "New signups",                   description: "Signed up in the last 7 days",             needsExpert: false },
+  { type: "inactive_30",        label: "Inactive 30+ days",             description: "No activity in the past 30 days",          needsExpert: false },
+  { type: "analyst_followers",  label: "Followers of analyst",          description: "Users following a specific analyst",       needsExpert: true  },
+  { type: "saved_backed",       label: "Users who saved/backed a take", description: "Bookmarked or followed at least one take", needsExpert: false },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const STATUS_LABELS: Record<string, string> = { active: "ACTIVE", paused: "PAUSED", draft: "DRAFT" };
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   active:  { bg: "#dcfce7", color: "#15803d" },
   paused:  { bg: "#fef9c3", color: "#a16207" },
   draft:   { bg: "#f3f4f6", color: "#6b7280" },
 };
-
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   onboarding: { bg: "#dbeafe", color: "#1d4ed8" },
   trigger:    { bg: "#fee2e2", color: "#b91c1c" },
@@ -48,10 +71,10 @@ const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
-  const mins  = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  const weeks = Math.floor(days / 7);
+  const mins   = Math.floor(diff / 60000);
+  const hours  = Math.floor(diff / 3600000);
+  const days   = Math.floor(diff / 86400000);
+  const weeks  = Math.floor(days / 7);
   const months = Math.floor(days / 30);
   if (mins < 2)    return "just now";
   if (mins < 60)   return `${mins}m ago`;
@@ -59,6 +82,126 @@ function timeAgo(iso: string) {
   if (days < 7)    return `${days}d ago`;
   if (weeks < 5)   return `${weeks}w ago`;
   return `${months}mo ago`;
+}
+
+function fmtCount(n: number | null): string {
+  if (n === null) return "…";
+  return n.toLocaleString("en-US");
+}
+
+// ── Segment picker with live count ────────────────────────────────────────────
+
+function SegmentPicker({
+  segmentType,
+  segmentParams,
+  experts,
+  onChange,
+}: {
+  segmentType: SegmentType;
+  segmentParams: Record<string, string>;
+  experts: ExpertStub[];
+  onChange: (type: SegmentType, params: Record<string, string>) => void;
+}) {
+  const [count, setCount]       = useState<number | null>(null);
+  const [loading, setLoading]   = useState(false);
+
+  const fetchCount = useCallback(async (type: SegmentType, params: Record<string, string>) => {
+    if (type === "analyst_followers" && !params.expert_id) {
+      setCount(null);
+      return;
+    }
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams({ type });
+      if (params.expert_id) qs.set("expert_id", params.expert_id);
+      const res = await fetch(`/api/admin/email/segments/count?${qs}`);
+      const json = await res.json();
+      setCount(res.ok ? json.count : null);
+    } catch {
+      setCount(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch count whenever segment type or params change
+  useEffect(() => {
+    fetchCount(segmentType, segmentParams);
+  }, [segmentType, segmentParams, fetchCount]);
+
+  const def = SEGMENTS.find((s) => s.type === segmentType);
+  const inputStyle: React.CSSProperties = {
+    width: "100%", boxSizing: "border-box",
+    border: "1px solid #d1d5db", borderRadius: 6,
+    padding: "8px 10px", fontSize: 13, fontFamily: "inherit",
+    color: "#111827", outline: "none", background: "#fff",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Segment type dropdown */}
+      <select
+        value={segmentType}
+        onChange={(e) => {
+          const t = e.target.value as SegmentType;
+          onChange(t, {});
+        }}
+        style={{ ...inputStyle, cursor: "pointer" }}
+      >
+        {SEGMENTS.map((s) => (
+          <option key={s.type} value={s.type}>{s.label}</option>
+        ))}
+      </select>
+
+      {/* Analyst sub-picker */}
+      {def?.needsExpert && (
+        <select
+          value={segmentParams.expert_id ?? ""}
+          onChange={(e) => onChange(segmentType, { expert_id: e.target.value })}
+          style={{ ...inputStyle, cursor: "pointer", fontSize: 12 }}
+        >
+          <option value="">— Select analyst —</option>
+          {experts.map((e) => (
+            <option key={e.id} value={e.id}>{e.name}</option>
+          ))}
+        </select>
+      )}
+
+      {/* Live recipient count */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6,
+        padding: "7px 10px", borderRadius: 6,
+        background: count !== null ? "#f0fdf4" : "#f9fafb",
+        border: `1px solid ${count !== null ? "#86efac" : "#e5e7eb"}`,
+        fontSize: 12,
+      }}>
+        <span style={{ fontSize: 14 }}>👥</span>
+        {loading ? (
+          <span style={{ color: "#9ca3af" }}>Counting…</span>
+        ) : count !== null ? (
+          <>
+            <span style={{ fontWeight: 700, color: "#15803d" }}>{fmtCount(count)}</span>
+            <span style={{ color: "#6b7280" }}>recipients</span>
+          </>
+        ) : (
+          <span style={{ color: "#9ca3af" }}>
+            {def?.needsExpert ? "Select an analyst to see count" : "Could not load count"}
+          </span>
+        )}
+        <button
+          onClick={() => fetchCount(segmentType, segmentParams)}
+          title="Refresh count"
+          style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 13, padding: 0 }}
+        >
+          ↺
+        </button>
+      </div>
+
+      {def && (
+        <p style={{ margin: 0, fontSize: 11, color: "#9ca3af", lineHeight: 1.4 }}>{def.description}</p>
+      )}
+    </div>
+  );
 }
 
 // ── Live email preview pane ────────────────────────────────────────────────────
@@ -101,10 +244,8 @@ function EmailPreview({ template }: { template: EmailTemplate }) {
               <a
                 href={bj.cta_url ?? "#"}
                 style={{
-                  display: "inline-block",
-                  background: "#e2241a", color: "#fff",
-                  fontFamily: "'Arial Black', Arial, sans-serif",
-                  fontWeight: 900, fontSize: 11,
+                  display: "inline-block", background: "#e2241a", color: "#fff",
+                  fontFamily: "'Arial Black', Arial, sans-serif", fontWeight: 900, fontSize: 11,
                   letterSpacing: "0.12em", textTransform: "uppercase" as const,
                   padding: "12px 22px", textDecoration: "none",
                 }}
@@ -130,6 +271,7 @@ function EmailPreview({ template }: { template: EmailTemplate }) {
 
 interface SettingsPanelProps {
   template: EmailTemplate;
+  experts: ExpertStub[];
   onChange: (patch: Partial<EmailTemplate>) => void;
   onSave: () => Promise<void>;
   onTestSend: () => Promise<void>;
@@ -139,7 +281,7 @@ interface SettingsPanelProps {
   dirty: boolean;
 }
 
-function SettingsPanel({ template, onChange, onSave, onTestSend, saving, testing, testResult, dirty }: SettingsPanelProps) {
+function SettingsPanel({ template, experts, onChange, onSave, onTestSend, saving, testing, testResult, dirty }: SettingsPanelProps) {
   const inputStyle: React.CSSProperties = {
     width: "100%", boxSizing: "border-box",
     border: "1px solid #d1d5db", borderRadius: 6,
@@ -148,14 +290,13 @@ function SettingsPanel({ template, onChange, onSave, onTestSend, saving, testing
     outline: "none", background: "#fff",
   };
   const labelStyle: React.CSSProperties = {
-    display: "block", fontSize: 10,
-    fontWeight: 700, letterSpacing: "0.12em",
-    textTransform: "uppercase", color: "#6b7280",
-    marginBottom: 4,
+    display: "block", fontSize: 10, fontWeight: 700,
+    letterSpacing: "0.12em", textTransform: "uppercase",
+    color: "#6b7280", marginBottom: 4,
   };
 
   return (
-    <div style={{ borderLeft: "1px solid #e5e7eb", padding: "20px 20px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
+    <div style={{ borderLeft: "1px solid #e5e7eb", padding: "20px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
       <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#6b7280" }}>
         EMAIL SETTINGS
       </p>
@@ -205,14 +346,14 @@ function SettingsPanel({ template, onChange, onSave, onTestSend, saving, testing
         />
       </div>
 
+      {/* Real segment picker */}
       <div>
-        <label style={labelStyle}>Default Segment</label>
-        <input
-          type="text"
-          value={template.default_segment}
-          onChange={(e) => onChange({ default_segment: e.target.value })}
-          style={inputStyle}
-          placeholder="e.g. All new signups"
+        <label style={labelStyle}>Audience Segment</label>
+        <SegmentPicker
+          segmentType={template.segment_type ?? "all_active"}
+          segmentParams={template.segment_params ?? {}}
+          experts={experts}
+          onChange={(type, params) => onChange({ segment_type: type, segment_params: params })}
         />
       </div>
 
@@ -286,64 +427,32 @@ function BodyEditor({ template, onChange }: { template: EmailTemplate; onChange:
 
       <div>
         <label style={labelStyle}>Template Name</label>
-        <input
-          type="text"
-          value={template.name}
-          onChange={(e) => onChange({ name: e.target.value })}
-          style={inputStyle}
-        />
+        <input type="text" value={template.name} onChange={(e) => onChange({ name: e.target.value })} style={inputStyle} />
       </div>
 
       <div>
         <label style={labelStyle}>Hero Image URL <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
-        <input
-          type="url"
-          value={bj.hero_image_url ?? ""}
-          onChange={(e) => patchBody({ hero_image_url: e.target.value })}
-          placeholder="https://…"
-          style={inputStyle}
-        />
+        <input type="url" value={bj.hero_image_url ?? ""} onChange={(e) => patchBody({ hero_image_url: e.target.value })} placeholder="https://…" style={inputStyle} />
       </div>
 
       <div>
         <label style={labelStyle}>Heading</label>
-        <input
-          type="text"
-          value={bj.heading ?? ""}
-          onChange={(e) => patchBody({ heading: e.target.value })}
-          style={inputStyle}
-        />
+        <input type="text" value={bj.heading ?? ""} onChange={(e) => patchBody({ heading: e.target.value })} style={inputStyle} />
       </div>
 
       <div>
         <label style={labelStyle}>Body Text</label>
-        <textarea
-          value={bj.body ?? ""}
-          onChange={(e) => patchBody({ body: e.target.value })}
-          rows={4}
-          style={{ ...inputStyle, resize: "vertical" }}
-        />
+        <textarea value={bj.body ?? ""} onChange={(e) => patchBody({ body: e.target.value })} rows={4} style={{ ...inputStyle, resize: "vertical" }} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <label style={labelStyle}>CTA Button Text</label>
-          <input
-            type="text"
-            value={bj.cta_text ?? ""}
-            onChange={(e) => patchBody({ cta_text: e.target.value })}
-            style={inputStyle}
-          />
+          <input type="text" value={bj.cta_text ?? ""} onChange={(e) => patchBody({ cta_text: e.target.value })} style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>CTA URL</label>
-          <input
-            type="url"
-            value={bj.cta_url ?? ""}
-            onChange={(e) => patchBody({ cta_url: e.target.value })}
-            placeholder="https://…"
-            style={inputStyle}
-          />
+          <input type="url" value={bj.cta_url ?? ""} onChange={(e) => patchBody({ cta_url: e.target.value })} placeholder="https://…" style={inputStyle} />
         </div>
       </div>
     </div>
@@ -352,16 +461,21 @@ function BodyEditor({ template, onChange }: { template: EmailTemplate; onChange:
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function EmailAdmin({ initialTemplates }: { initialTemplates: EmailTemplate[] }) {
-  const [tab, setTab] = useState<Tab>("templates");
+interface Props {
+  initialTemplates: EmailTemplate[];
+  experts: ExpertStub[];
+}
+
+export default function EmailAdmin({ initialTemplates, experts }: Props) {
+  const [tab, setTab]             = useState<Tab>("templates");
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [selectedId, setSelectedId] = useState<string | null>(initialTemplates[0]?.id ?? null);
-  const [edits, setEdits] = useState<Partial<EmailTemplate>>({});
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
+  const [edits, setEdits]         = useState<Partial<EmailTemplate>>({});
+  const [saving, setSaving]       = useState(false);
+  const [testing, setTesting]     = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState("");
+  const [creating, setCreating]   = useState(false);
+  const [newName, setNewName]     = useState("");
 
   const selected = selectedId ? templates.find((t) => t.id === selectedId) ?? null : null;
   const merged: EmailTemplate | null = selected ? { ...selected, ...edits } : null;
@@ -374,13 +488,14 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
   }
 
   function patch(p: Partial<EmailTemplate>) {
-    setEdits((prev) => ({ ...prev, ...p }));
-    // If body_json patched, merge correctly
     if (p.body_json && selected) {
       setEdits((prev) => ({
         ...prev,
+        ...p,
         body_json: { ...(selected.body_json ?? {}), ...(prev.body_json ?? {}), ...p.body_json },
       }));
+    } else {
+      setEdits((prev) => ({ ...prev, ...p }));
     }
   }
 
@@ -407,16 +522,14 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
     if (!selected) return;
     setTesting(true);
     setTestResult(null);
-    // Save first if dirty so the test reflects current state
     if (dirty) await save();
     try {
       const res = await fetch(`/api/admin/email/templates/${selected.id}/test`, { method: "POST" });
       const json = await res.json();
-      if (res.ok) {
-        setTestResult({ ok: true, msg: `✓ Test email sent to ${json.sentTo}` });
-      } else {
-        setTestResult({ ok: false, msg: `✗ ${json.error ?? "Send failed"}` });
-      }
+      setTestResult(res.ok
+        ? { ok: true,  msg: `✓ Test email sent to ${json.sentTo}` }
+        : { ok: false, msg: `✗ ${json.error ?? "Send failed"}` }
+      );
     } catch {
       setTestResult({ ok: false, msg: "✗ Network error" });
     } finally {
@@ -427,19 +540,15 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
 
   async function createTemplate() {
     if (!newName.trim()) return;
-    setCreating(true);
+    setCreating(true); // reuse as "submitting" flag
     try {
       const res = await fetch("/api/admin/email/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newName.trim(),
-          status: "draft",
-          category: "manual",
-          subject: "",
-          preview_text: "",
-          from_name: "RMST Team",
-          default_segment: "",
+          name: newName.trim(), status: "draft", category: "manual",
+          subject: "", preview_text: "", from_name: "RMST Team",
+          default_segment: "", segment_type: "all_active", segment_params: {},
           body_json: { hero_image_url: "", heading: "", body: "", cta_text: "VISIT SITE", cta_url: "https://ratemysportstake.com" },
         }),
       });
@@ -449,18 +558,21 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
         setSelectedId(created.id);
         setEdits({});
         setNewName("");
+        setCreating(false);
       }
-    } finally {
+    } catch {
       setCreating(false);
     }
   }
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: "templates",  label: "Templates"  },
-    { key: "scheduled",  label: "Scheduled"  },
-    { key: "triggers",   label: "Triggers"   },
-    { key: "history",    label: "History"    },
+    { key: "templates", label: "Templates"  },
+    { key: "scheduled", label: "Scheduled"  },
+    { key: "triggers",  label: "Triggers"   },
+    { key: "history",   label: "History"    },
   ];
+
+  const [showNewInput, setShowNewInput] = useState(false);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 96px)", minHeight: 600 }}>
@@ -472,7 +584,7 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #e5e7eb", marginBottom: 0 }}>
+      <div style={{ display: "flex", borderBottom: "2px solid #e5e7eb", marginBottom: 0 }}>
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -492,14 +604,14 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
 
       {/* ── TEMPLATES TAB ── */}
       {tab === "templates" && (
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "270px 1fr 260px", overflow: "hidden", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "270px 1fr 280px", overflow: "hidden", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
 
           {/* Left: template list */}
           <div style={{ borderRight: "1px solid #e5e7eb", overflowY: "auto", display: "flex", flexDirection: "column" }}>
             <div style={{ flex: 1 }}>
               {templates.map((t) => {
-                const catColor  = CATEGORY_COLORS[t.category]  ?? CATEGORY_COLORS.manual;
-                const isActive  = t.id === selectedId;
+                const catColor = CATEGORY_COLORS[t.category] ?? CATEGORY_COLORS.manual;
+                const isActive = t.id === selectedId;
                 return (
                   <button
                     key={t.id}
@@ -507,16 +619,15 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
                     style={{
                       width: "100%", textAlign: "left", padding: "14px 16px",
                       border: "none", borderBottom: "1px solid #f3f4f6",
-                      background: isActive ? "#f0fdf4" : "#fff",
-                      cursor: "pointer",
+                      background: isActive ? "#f0fdf4" : "#fff", cursor: "pointer",
                       borderLeft: isActive ? "3px solid #15803d" : "3px solid transparent",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <span style={{ fontWeight: 700, fontSize: 13, color: "#111827" }}>{t.name}</span>
                       <span style={{
-                        fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
-                        textTransform: "uppercase", padding: "2px 7px", borderRadius: 99,
+                        fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+                        padding: "2px 7px", borderRadius: 99,
                         background: catColor.bg, color: catColor.color,
                       }}>
                         {t.category.toUpperCase()}
@@ -532,27 +643,28 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
 
             {/* + New template */}
             <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 14px" }}>
-              {creating ? (
+              {showNewInput ? (
                 <div style={{ display: "flex", gap: 8 }}>
                   <input
                     autoFocus
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") createTemplate(); if (e.key === "Escape") setCreating(false); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") createTemplate(); if (e.key === "Escape") { setShowNewInput(false); setNewName(""); }}}
                     placeholder="Template name…"
                     style={{ flex: 1, border: "1px solid #d1d5db", borderRadius: 5, padding: "6px 10px", fontSize: 12 }}
                   />
                   <button
                     onClick={createTemplate}
-                    style={{ padding: "6px 10px", background: "#111827", color: "#fff", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    disabled={creating}
+                    style={{ padding: "6px 10px", background: "#111827", color: "#fff", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: creating ? 0.6 : 1 }}
                   >
                     Add
                   </button>
                 </div>
               ) : (
                 <button
-                  onClick={() => setCreating(true)}
+                  onClick={() => setShowNewInput(true)}
                   style={{ width: "100%", padding: "8px", background: "none", border: "1.5px dashed #d1d5db", borderRadius: 6, color: "#6b7280", fontSize: 12, cursor: "pointer", fontWeight: 500 }}
                 >
                   + New template
@@ -561,7 +673,7 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
             </div>
           </div>
 
-          {/* Center: preview */}
+          {/* Center: preview + body editor */}
           <div style={{ overflowY: "auto", background: "#f3f4f6" }}>
             {merged ? (
               <>
@@ -569,8 +681,7 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
                   <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af" }}>EDITING</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{merged.name}</span>
                   <span style={{
-                    marginLeft: "auto", fontSize: 9, fontWeight: 700,
-                    letterSpacing: "0.1em", textTransform: "uppercase",
+                    marginLeft: "auto", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
                     padding: "2px 8px", borderRadius: 99,
                     background: STATUS_COLORS[merged.status]?.bg ?? "#f3f4f6",
                     color: STATUS_COLORS[merged.status]?.color ?? "#6b7280",
@@ -592,6 +703,7 @@ export default function EmailAdmin({ initialTemplates }: { initialTemplates: Ema
           {merged ? (
             <SettingsPanel
               template={merged}
+              experts={experts}
               onChange={patch}
               onSave={save}
               onTestSend={sendTest}

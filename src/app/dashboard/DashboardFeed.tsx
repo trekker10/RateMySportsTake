@@ -8,7 +8,6 @@ interface DashboardFeedProps {
   initialSavedIds: string[];
   followedTakeIds?: string[];
   followedTakes?: any[];
-  isAdmin?: boolean;
 }
 
 const STATUS_OPTIONS = [
@@ -164,7 +163,7 @@ function SortSelect({ value, onChange }: { value: SortKey; onChange: (v: SortKey
   );
 }
 
-export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds = [], followedTakes = [], isAdmin = false }: DashboardFeedProps) {
+export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds = [], followedTakes = [] }: DashboardFeedProps) {
   const [savedIds] = useState<Set<string>>(new Set(initialSavedIds));
   const [showFollowedOnly, setShowFollowedOnly] = useState(false);
   const [analystFilter, setAnalystFilter] = useState<Set<string>>(new Set());
@@ -305,7 +304,6 @@ export default function DashboardFeed({ takes, initialSavedIds, followedTakeIds 
                     showResolutionDate
                     largeByline
                     isLoggedIn
-                    isAdmin={isAdmin}
                     isFollowing={followedTakeIds.includes(take.take_id)}
                   />
                 </div>

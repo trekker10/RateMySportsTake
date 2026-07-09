@@ -198,7 +198,7 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <DashboardFeed takes={takes} initialSavedIds={savedIds} followedTakeIds={followedTakeIds} followedTakes={followedTakes} isAdmin={(process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim().toLowerCase()).includes(user.email?.toLowerCase() ?? "")} />
+              <DashboardFeed takes={takes} initialSavedIds={savedIds} followedTakeIds={followedTakeIds} followedTakes={followedTakes} />
             )}
           </div>
 

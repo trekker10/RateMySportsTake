@@ -30,3 +30,15 @@ export async function setCrowdSetting(key: string, value: string): Promise<void>
     .from("app_settings")
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
+
+export async function setVoteBoost(takeId: string, well: number, poorly: number): Promise<void> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("takes")
+    .update({ vote_boost_well: well, vote_boost_poorly: poorly })
+    .eq("take_id", takeId);
+  if (error) throw new Error(error.message);
+}

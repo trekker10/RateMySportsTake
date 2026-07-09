@@ -80,7 +80,6 @@ export default async function ExpertsPage({
   }));
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isAdmin = user ? (process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim().toLowerCase()).includes(user.email?.toLowerCase() ?? "") : false;
 
   // ── Takes query (only when view=takes) ────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -278,7 +277,7 @@ export default async function ExpertsPage({
       {activeView === "takes" && (
         <div>
           {takesRows && takesRows.length > 0 ? (
-            <TakesFeed takes={takesRows} isLoggedIn={!!user} isAdmin={isAdmin} followedTakeIds={followedTakeIds} />
+            <TakesFeed takes={takesRows} isLoggedIn={!!user} followedTakeIds={followedTakeIds} />
           ) : (
             <div className="border-2 border-gray-900 px-4 py-12 text-center italic text-gray-400 bg-white">
               {expertIds.length === 0

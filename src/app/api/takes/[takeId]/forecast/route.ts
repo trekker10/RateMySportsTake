@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getCrowdSettings } from "@/app/actions/crowdSettings";
-import { checkIsAdmin } from "@/lib/auth";
 
 type Params = { params: Promise<{ takeId: string }> };
 
@@ -17,8 +15,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .select("vote")
     .eq("take_id", takeId);
 
-  const well   = votes?.filter((v) => v.vote === "well").length  ?? 0;
-  const poorly = votes?.filter((v) => v.vote === "poorly").length ?? 0;
+  const realWell   = votes?.filter((v) => v.vote === "well").length  ?? 0;
+  const realPoorly = votes?.filter((v) => v.vote === "poorly").length ?? 0;
 
   // current user's vote (if logged in)
   let myVote: "well" | "poorly" | null = null;
@@ -33,12 +31,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
     myVote = (mine?.vote as "well" | "poorly") ?? null;
   }
 
-  // take grading status
+  // take grading status + boost values
   const { data: take } = await supabase
     .from("takes")
-    .select("outcome_status")
+    .select("outcome_status, vote_boost_well, vote_boost_poorly")
     .eq("take_id", takeId)
     .maybeSingle();
+
+  // Add admin-seeded boosts to real vote counts
+  const well   = realWell   + (take?.vote_boost_well   ?? 0);
+  const poorly = realPoorly + (take?.vote_boost_poorly ?? 0);
 
   const graded  = take?.outcome_status === "confirmed_true" || take?.outcome_status === "confirmed_false" || take?.outcome_status === "partially_true";
   const verdict = take?.outcome_status === "confirmed_true" ? "right"
@@ -77,23 +79,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Voting is closed for graded takes" }, { status: 409 });
   }
 
-  const isAdmin = await checkIsAdmin();
-
-  if (isAdmin) {
-    // Admins can vote multiple times — insert each as a fresh anonymous row
-    // using the service-role client so the unique-per-user constraint is bypassed.
-    const adminDb = createAdminClient();
-    const { error } = await adminDb
-      .from("take_votes")
-      .insert({ take_id: takeId, user_id: crypto.randomUUID(), vote });
-    if (error) {
-      console.error("[forecast POST] admin insert error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json({ graded: false });
-  }
-
-  // ── Regular user: one vote per take ──────────────────────────────────────
+  // ── One vote per take per user ───────────────────────────────────────────
   const { data: existing, error: fetchError } = await supabase
     .from("take_votes")
     .select("vote_id, vote")

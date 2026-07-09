@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 
 interface ForecastData {
-  well:    number;
-  poorly:  number;
-  myVote:  "well" | "poorly" | null;
-  graded:  boolean;
+  well:     number;
+  poorly:   number;
+  myVote:   "well" | "poorly" | null;
+  graded:   boolean;
   verdict?: "right" | "wrong";
+  minVotes?: number;
 }
 
 interface Props {
@@ -17,7 +18,7 @@ interface Props {
   initial?:   ForecastData;
 }
 
-const MIN_VOTES = 5; // show percentages only above this threshold
+const DEFAULT_MIN_VOTES = 5; // fallback until server value loads
 
 export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
   const [data, setData]       = useState<ForecastData | null>(initial ?? null);
@@ -70,11 +71,11 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
 
   if (!data) return null;
 
-  const { well, poorly, myVote, graded, verdict } = data;
+  const { well, poorly, myVote, graded, verdict, minVotes = DEFAULT_MIN_VOTES } = data;
   const total   = well + poorly;
   const pctWell = total > 0 ? Math.round(well / total * 100) : 50;
   const pctPoor = 100 - pctWell;
-  const hasEnough = total >= MIN_VOTES;
+  const hasEnough = total >= minVotes;
 
   // "CROWD CALLED IT" logic
   const majority  = well >= poorly ? "well" : "poorly";
@@ -200,7 +201,7 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
           </>
         ) : (
           <div className="fc-no-votes">
-            {total === 0 ? "Be the first to forecast" : `${total} vote${total !== 1 ? "s" : ""} so far — ${MIN_VOTES - total} more to reveal`}
+            {total === 0 ? "Be the first to forecast" : `${total} vote${total !== 1 ? "s" : ""} so far — ${minVotes - total} more to reveal`}
           </div>
         )}
 

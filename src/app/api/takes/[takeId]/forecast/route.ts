@@ -76,30 +76,47 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // check existing vote
-  const { data: existing } = await supabase
+  const { data: existing, error: fetchError } = await supabase
     .from("take_votes")
     .select("vote_id, vote")
     .eq("take_id", takeId)
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!existing) {
-    // insert
-    await supabase.from("take_votes").insert({ take_id: takeId, user_id: user.id, vote });
-  } else if (existing.vote === vote) {
-    // same side → undo (delete)
-    await supabase.from("take_votes").delete().eq("vote_id", existing.vote_id);
-  } else {
-    // switch sides → update
-    await supabase.from("take_votes").update({ vote, updated_at: new Date().toISOString() }).eq("vote_id", existing.vote_id);
+  if (fetchError) {
+    console.error("[forecast POST] fetch existing vote error:", fetchError);
+    return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  // return fresh tally
-  const { data: votes } = await supabase.from("take_votes").select("vote").eq("take_id", takeId);
-  const well   = votes?.filter((v) => v.vote === "well").length  ?? 0;
-  const poorly = votes?.filter((v) => v.vote === "poorly").length ?? 0;
-  const { data: mine } = await supabase.from("take_votes").select("vote").eq("take_id", takeId).eq("user_id", user.id).maybeSingle();
-  const myVote = (mine?.vote as "well" | "poorly") ?? null;
+  if (!existing) {
+    const { error } = await supabase
+      .from("take_votes")
+      .insert({ take_id: takeId, user_id: user.id, vote });
+    if (error) {
+      console.error("[forecast POST] insert error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  } else if (existing.vote === vote) {
+    // same side → undo (delete)
+    const { error } = await supabase
+      .from("take_votes")
+      .delete()
+      .eq("vote_id", existing.vote_id);
+    if (error) {
+      console.error("[forecast POST] delete error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  } else {
+    // switch sides → update
+    const { error } = await supabase
+      .from("take_votes")
+      .update({ vote, updated_at: new Date().toISOString() })
+      .eq("vote_id", existing.vote_id);
+    if (error) {
+      console.error("[forecast POST] update error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
 
-  return NextResponse.json({ well, poorly, myVote, graded: false });
+  return NextResponse.json({ graded: false });
 }

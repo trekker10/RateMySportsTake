@@ -24,6 +24,7 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
   const [pending, setPending]       = useState(false);
   const [showLoginMsg, setShowLoginMsg] = useState(false);
   const [confirmChange, setConfirmChange] = useState(false);
+  const [voteError, setVoteError]   = useState<string | null>(null);
   const [minVotes, setMinVotes]     = useState<number>(initial?.minVotes ?? DEFAULT_MIN_VOTES);
 
   useEffect(() => {
@@ -60,15 +61,17 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
       });
       const fresh = await res.json();
       if (res.ok) {
-        // Don't trust well/poorly or myVote from POST — the DB read in the same
-        // request can lag behind the just-written row (Supabase pooler read-after-write).
-        // Optimistic values are already correct. Only take graded (different table, no lag).
         setData((d) => ({ ...d!, graded: fresh.graded }));
+        setVoteError(null);
       } else {
         setData(prev);
+        setVoteError(fresh?.error ?? "Failed to save vote — please try again.");
+        setTimeout(() => setVoteError(null), 4000);
       }
     } catch {
       setData(prev);
+      setVoteError("Network error — please try again.");
+      setTimeout(() => setVoteError(null), 4000);
     } finally {
       setPending(false);
     }
@@ -329,6 +332,11 @@ export default function CrowdForecast({ takeId, isLoggedIn, initial }: Props) {
                 {" "}or{" "}
                 <a href="/auth/signup">create an account</a>
                 {" "}to vote.
+              </div>
+            )}
+            {voteError && (
+              <div className="fc-login-msg" style={{ background: "#7f1d1d" }}>
+                ⚠ {voteError}
               </div>
             )}
           </>

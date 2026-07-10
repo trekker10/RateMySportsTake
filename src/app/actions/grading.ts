@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { gradeTake } from "@/lib/ai/grade-take";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { recalculateTakeScore } from "@/app/actions/takescore";
+import { sendTriggeredEmail } from "@/lib/email/triggers";
 
 export interface PendingTake {
   take_id: string;
@@ -101,6 +102,11 @@ export async function gradeSingleTake(
 
     // Recalculate expert's TakeScore so impact_score is also updated
     await recalculateTakeScore(take.expert_id);
+
+    // Fire "take graded" trigger email to users who saved/backed this take (non-blocking)
+    sendTriggeredEmail("take_graded", { takeId, expertId: take.expert_id }).catch((err) =>
+      console.error("[trigger] take_graded email failed:", err)
+    );
 
     return { success: true };
   } catch (err) {

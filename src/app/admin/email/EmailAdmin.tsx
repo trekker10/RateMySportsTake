@@ -33,6 +33,17 @@ interface ExpertStub {
   slug: string | null;
 }
 
+interface EmailTrigger {
+  id: string;
+  event_type: string;
+  label: string;
+  description: string;
+  template_id: string | null;
+  is_enabled: boolean;
+  updated_at: string;
+  email_templates: { id: string; name: string } | null;
+}
+
 interface EmailSchedule {
   id: string;
   template_id: string;
@@ -506,9 +517,10 @@ interface Props {
   initialTemplates: EmailTemplate[];
   experts: ExpertStub[];
   initialSchedules: EmailSchedule[];
+  initialTriggers: EmailTrigger[];
 }
 
-export default function EmailAdmin({ initialTemplates, experts, initialSchedules }: Props) {
+export default function EmailAdmin({ initialTemplates, experts, initialSchedules, initialTriggers }: Props) {
   const [tab, setTab]             = useState<Tab>("templates");
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [selectedId, setSelectedId] = useState<string | null>(initialTemplates[0]?.id ?? null);
@@ -531,6 +543,9 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
   const [schedFormSaving, setSchedFormSaving]         = useState(false);
   const [triggeringId, setTriggeringId]               = useState<string | null>(null);
   const schedFormRef = useRef<HTMLDivElement>(null);
+
+  // ── Trigger state ───────────────────────────────────────────────────────────
+  const [triggers, setTriggers] = useState<EmailTrigger[]>(initialTriggers);
 
   const selected = selectedId ? templates.find((t) => t.id === selectedId) ?? null : null;
   const merged: EmailTemplate | null = selected ? { ...selected, ...edits } : null;
@@ -688,6 +703,20 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
       }
     } finally {
       setTriggeringId(null);
+    }
+  }
+
+  // ── Trigger actions ─────────────────────────────────────────────────────────
+
+  async function patchTrigger(id: string, patch: Partial<Pick<EmailTrigger, "template_id" | "is_enabled">>) {
+    const res = await fetch(`/api/admin/email/triggers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setTriggers((prev) => prev.map((t) => t.id === id ? updated : t));
     }
   }
 
@@ -1084,15 +1113,148 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
         </div>
       )}
 
-      {/* ── STUB TABS ── */}
-      {(tab === "triggers" || tab === "history") && (
+      {/* ── TRIGGERS TAB ── */}
+      {tab === "triggers" && (
+        <div style={{ flex: 1, overflowY: "auto", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
+          {/* Header */}
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+            <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+              Trigger emails fire automatically when an event happens. Assign a template and toggle to enable.
+            </p>
+          </div>
+
+          {/* Trigger rows */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {triggers.length === 0 ? (
+              <div style={{ padding: "60px 20px", textAlign: "center", color: "#9ca3af" }}>
+                <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>Run the Phase 4 migration to seed trigger rows</p>
+              </div>
+            ) : triggers.map((trigger, i) => {
+              const audienceLabel = trigger.event_type === "new_take_drop"
+                ? "Followers of the analyst"
+                : "Users who saved/backed the take";
+
+              return (
+                <div
+                  key={trigger.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 220px 220px 80px",
+                    alignItems: "center",
+                    gap: 16,
+                    padding: "20px 24px",
+                    borderBottom: i < triggers.length - 1 ? "1px solid #f3f4f6" : "none",
+                    background: trigger.is_enabled ? "#fafffe" : "#fff",
+                  }}
+                >
+                  {/* Event info */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+                        padding: "2px 7px", borderRadius: 99,
+                        background: trigger.event_type === "new_take_drop" ? "#dbeafe" : "#ede9fe",
+                        color:      trigger.event_type === "new_take_drop" ? "#1d4ed8" : "#6d28d9",
+                      }}>
+                        {trigger.event_type === "new_take_drop" ? "TAKE POSTED" : "TAKE GRADED"}
+                      </span>
+                      {trigger.is_enabled && (
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 99, background: "#dcfce7", color: "#15803d" }}>
+                          LIVE
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 14, color: "#111827" }}>{trigger.label}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>{trigger.description}</p>
+                  </div>
+
+                  {/* Template picker */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af", marginBottom: 5 }}>
+                      Template
+                    </label>
+                    <select
+                      value={trigger.template_id ?? ""}
+                      onChange={(e) => patchTrigger(trigger.id, { template_id: e.target.value || null as unknown as string })}
+                      style={{
+                        width: "100%", boxSizing: "border-box",
+                        border: "1px solid #d1d5db", borderRadius: 6,
+                        padding: "8px 10px", fontSize: 13, fontFamily: "inherit",
+                        color: trigger.template_id ? "#111827" : "#9ca3af",
+                        outline: "none", background: "#fff", cursor: "pointer",
+                      }}
+                    >
+                      <option value="">— None —</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Audience (fixed per event type) */}
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af", marginBottom: 5 }}>
+                      Audience
+                    </label>
+                    <div style={{
+                      padding: "8px 10px", borderRadius: 6, fontSize: 13,
+                      border: "1px solid #e5e7eb", background: "#f9fafb", color: "#374151",
+                    }}>
+                      {audienceLabel}
+                    </div>
+                  </div>
+
+                  {/* On/Off toggle */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af" }}>
+                      {trigger.is_enabled ? "ON" : "OFF"}
+                    </label>
+                    <button
+                      onClick={() => patchTrigger(trigger.id, { is_enabled: !trigger.is_enabled })}
+                      disabled={!trigger.template_id && !trigger.is_enabled}
+                      title={!trigger.template_id && !trigger.is_enabled ? "Assign a template first" : trigger.is_enabled ? "Disable" : "Enable"}
+                      style={{
+                        width: 44, height: 24, borderRadius: 12, border: "none",
+                        cursor: (!trigger.template_id && !trigger.is_enabled) ? "not-allowed" : "pointer",
+                        background: trigger.is_enabled ? "#15803d" : "#d1d5db",
+                        position: "relative", transition: "background 0.2s",
+                        padding: 0, opacity: (!trigger.template_id && !trigger.is_enabled) ? 0.4 : 1,
+                      }}
+                    >
+                      <span style={{
+                        position: "absolute", top: 3,
+                        left: trigger.is_enabled ? 22 : 3,
+                        width: 18, height: 18, borderRadius: "50%",
+                        background: "#fff", transition: "left 0.2s",
+                        display: "block",
+                      }} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Info box */}
+          <div style={{ margin: "20px 24px", padding: "14px 16px", borderRadius: 8, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
+            <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "#0369a1" }}>HOW TRIGGERS WORK</p>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "#0c4a6e", lineHeight: 1.7 }}>
+              <li><strong>New Take Drop</strong> fires when an analyst submits a take via the admin form. Bulk imports do not fire this trigger.</li>
+              <li><strong>Take Graded</strong> fires when the AI grader resolves a take's outcome. It sends to users who saved or backed that specific take.</li>
+              <li>Triggers run in the background and do not block the admin action that fired them.</li>
+              <li>All sends are logged in the History tab.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* ── HISTORY STUB ── */}
+      {tab === "history" && (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
           <div style={{ textAlign: "center", color: "#9ca3af" }}>
             <p style={{ margin: "0 0 6px", fontSize: 22 }}>🚧</p>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" }}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)} — coming in a later phase
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: 13 }}>Triggers and History are planned for Phase 4 and 5.</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" }}>History — coming in Phase 5</p>
+            <p style={{ margin: "6px 0 0", fontSize: 13 }}>Send logs from email_send_log will appear here.</p>
           </div>
         </div>
       )}

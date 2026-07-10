@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rateTake } from "@/lib/ai/rate-take";
 import { redirect } from "next/navigation";
 import type { SourceType } from "@/types/database";
+import { sendTriggeredEmail } from "@/lib/email/triggers";
 
 export interface ProfileTake {
   take_id: string;
@@ -179,6 +180,11 @@ export async function submitTake(formData: FormData) {
   if (takeError || !take) {
     throw new Error(`Failed to insert take: ${takeError?.message}`);
   }
+
+  // Fire "new take drop" trigger email to followers of this analyst (non-blocking)
+  sendTriggeredEmail("new_take_drop", { expertId }).catch((err) =>
+    console.error("[trigger] new_take_drop email failed:", err)
+  );
 
   redirect(`/takes/${take.take_id}`);
 }

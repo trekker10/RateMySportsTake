@@ -139,6 +139,15 @@ function IconInbox() {
     </svg>
   );
 }
+function IconImage() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/>
+      <path d="M21 15l-5-5L5 21"/>
+    </svg>
+  );
+}
 
 function IconEval() {
   return (
@@ -201,6 +210,12 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
       items: [
         { label: "Email",    href: "/admin/email",    icon: <IconMail /> },
         { label: "Feedback", href: "/admin/feedback", icon: <IconInbox /> },
+      ],
+    },
+    {
+      heading: "Assets",
+      items: [
+        { label: "Images", href: "/admin/assets/images", icon: <IconImage /> },
       ],
     },
   ];

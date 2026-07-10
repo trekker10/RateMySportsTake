@@ -77,10 +77,12 @@ export function RMSTEmailTemplate({
                 {heading}
               </Heading>
             )}
-            {body && (
-              <Text style={{ margin: "0 0 24px", fontSize: 15, lineHeight: 1.6, color: "#3a4239" }}>
-                {body}
-              </Text>
+            {body && body.split("\n").map((line, i) =>
+              line.trim() === "" ? null : (
+                <Text key={i} style={{ margin: "0 0 14px", fontSize: 15, lineHeight: 1.6, color: "#3a4239" }}>
+                  {line}
+                </Text>
+              )
             )}
             {ctaText && ctaUrl && (
               <Button

@@ -300,9 +300,17 @@ function EmailPreview({ template }: { template: EmailTemplate }) {
             </h1>
           )}
           {bj.body && (
-            <p style={{ margin: "0 0 22px", fontSize: 14, lineHeight: 1.65, color: "#3a4239" }}>
-              {bj.body}
-            </p>
+            <div style={{ marginBottom: 22 }}>
+              {bj.body.split("\n").map((line, i) =>
+                line.trim() === "" ? (
+                  <div key={i} style={{ height: "0.75em" }} />
+                ) : (
+                  <p key={i} style={{ margin: "0 0 10px", fontSize: 14, lineHeight: 1.65, color: "#3a4239" }}>
+                    {line}
+                  </p>
+                )
+              )}
+            </div>
           )}
           {bj.cta_text && (
             <div>
@@ -507,7 +515,7 @@ function BodyEditor({ template, onChange }: { template: EmailTemplate; onChange:
 
       <div>
         <label style={labelStyle}>Body Text</label>
-        <textarea value={bj.body ?? ""} onChange={(e) => patchBody({ body: e.target.value })} rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+        <textarea value={bj.body ?? ""} onChange={(e) => patchBody({ body: e.target.value })} rows={8} style={{ ...inputStyle, resize: "vertical" }} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>

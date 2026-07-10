@@ -770,7 +770,7 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
   const [showNewInput, setShowNewInput] = useState(false);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 96px)", minHeight: 600 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 48px)", minHeight: 600 }}>
 
       {/* Page header */}
       <div style={{ marginBottom: 20 }}>

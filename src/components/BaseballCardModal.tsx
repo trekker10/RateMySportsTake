@@ -184,12 +184,14 @@ export default function BaseballCardModal(props: BaseballCardProps) {
     setCopying(true);
     try {
       const canvas = await captureCard();
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        setCopying(false);
-      }, "image/png");
-    } catch {
+      // Wrap toBlob in a Promise so errors are catchable and state is correct
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob returned null"))), "image/png")
+      );
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    } catch (err) {
+      console.error("[baseball card] copy failed:", err);
+    } finally {
       setCopying(false);
     }
   }
@@ -201,7 +203,10 @@ export default function BaseballCardModal(props: BaseballCardProps) {
       const link = document.createElement("a");
       link.download = `${props.first}-${props.last}-rmst.png`.toLowerCase().replace(/\s+/g, "-");
       link.href = canvas.toDataURL("image/png");
+      // Must be in the DOM for Firefox/Safari to honour the click
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } finally {
       setDownloading(false);
     }

@@ -9,6 +9,7 @@ interface TakeStub {
   expertName: string;
   boostWell: number;
   boostPoorly: number;
+  dateSubmitted: string;
 }
 
 interface Props {
@@ -37,50 +38,49 @@ export default function CrowdForecastAdmin({ settings, takes }: Props) {
   const minDirty = parseInt(minVotesDraft, 10) !== minVotes && !isNaN(parseInt(minVotesDraft, 10));
 
   // ── Boost section ─────────────────────────────────────────────────────────
-  const [search, setSearch]             = useState("");
-  const [selected, setSelected]         = useState<TakeStub | null>(null);
-  const [boostWell, setBoostWell]       = useState("");
-  const [boostPoorly, setBoostPoorly]   = useState("");
-  const [savingBoost, setSavingBoost]   = useState(false);
-  const [savedBoost, setSavedBoost]     = useState(false);
-  const [boostError, setBoostError]     = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  // Per-row draft state: takeId → { well, poorly }
+  const [drafts, setDrafts] = useState<Record<string, { well: string; poorly: string }>>(() =>
+    Object.fromEntries(takes.map((t) => [t.take_id, { well: String(t.boostWell), poorly: String(t.boostPoorly) }]))
+  );
+  const [rowSaving, setRowSaving]   = useState<Record<string, boolean>>({});
+  const [rowSaved, setRowSaved]     = useState<Record<string, boolean>>({});
+  const [rowError, setRowError]     = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return takes.slice(0, 20);
+    if (!search.trim()) return takes;
     const q = search.toLowerCase();
-    return takes
-      .filter((t) =>
-        t.summary.toLowerCase().includes(q) ||
-        t.expertName.toLowerCase().includes(q)
-      )
-      .slice(0, 20);
+    return takes.filter((t) =>
+      t.summary.toLowerCase().includes(q) ||
+      t.expertName.toLowerCase().includes(q)
+    );
   }, [search, takes]);
 
-  function selectTake(t: TakeStub) {
-    setSelected(t);
-    setSearch(t.expertName + " — " + t.summary.slice(0, 60));
-    setBoostWell(String(t.boostWell));
-    setBoostPoorly(String(t.boostPoorly));
+  function patchDraft(takeId: string, key: "well" | "poorly", val: string) {
+    setDrafts((prev) => ({ ...prev, [takeId]: { ...prev[takeId], [key]: val } }));
+    setRowSaved((prev) => ({ ...prev, [takeId]: false }));
+    setRowError((prev) => ({ ...prev, [takeId]: "" }));
   }
 
-  async function saveBoost() {
-    if (!selected) return;
-    const w = parseInt(boostWell, 10);
-    const p = parseInt(boostPoorly, 10);
+  async function saveRow(t: TakeStub) {
+    const draft = drafts[t.take_id] ?? { well: "0", poorly: "0" };
+    const w = parseInt(draft.well, 10);
+    const p = parseInt(draft.poorly, 10);
     if (isNaN(w) || isNaN(p) || w < 0 || p < 0) {
-      setBoostError("Enter non-negative integers for both boosts.");
+      setRowError((prev) => ({ ...prev, [t.take_id]: "Must be non-negative integers." }));
       return;
     }
-    setSavingBoost(true);
-    setBoostError(null);
+    setRowSaving((prev) => ({ ...prev, [t.take_id]: true }));
+    setRowError((prev) => ({ ...prev, [t.take_id]: "" }));
     try {
-      await setVoteBoost(selected.take_id, w, p);
-      setSavedBoost(true);
-      setTimeout(() => setSavedBoost(false), 2500);
-    } catch (e: any) {
-      setBoostError(e?.message ?? "Failed to save boost.");
+      await setVoteBoost(t.take_id, w, p);
+      setRowSaved((prev) => ({ ...prev, [t.take_id]: true }));
+      setTimeout(() => setRowSaved((prev) => ({ ...prev, [t.take_id]: false })), 2000);
+    } catch (e: unknown) {
+      setRowError((prev) => ({ ...prev, [t.take_id]: (e as Error)?.message ?? "Failed." }));
     } finally {
-      setSavingBoost(false);
+      setRowSaving((prev) => ({ ...prev, [t.take_id]: false }));
     }
   }
 
@@ -122,88 +122,97 @@ export default function CrowdForecastAdmin({ settings, takes }: Props) {
       </section>
 
       {/* ── Boost votes by take ── */}
-      <section className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-200">
-        <div className="px-6 py-4 bg-gray-50 rounded-t-xl">
-          <p className="font-semibold text-gray-900">Seed Votes by Take</p>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Add synthetic boost votes to a specific take. Real user votes stack on top.
-            These are stored on the take itself — no fake accounts involved.
-          </p>
+      <section className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1">
+            <p className="font-semibold text-gray-900">Seed Votes by Take</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Sorted newest first. Type to filter. Ages Well → green bar · Ages Poorly → red bar.
+            </p>
+          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter by analyst or take…"
+            className="w-full sm:w-64 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
         </div>
 
-        <div className="px-6 py-5 space-y-4">
-          {/* Take search */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search takes</label>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setSelected(null); }}
-              placeholder="Type analyst name or take text…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-            {/* Dropdown */}
-            {search.trim() && !selected && filtered.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                {filtered.map((t) => (
-                  <button
-                    key={t.take_id}
-                    onClick={() => selectTake(t)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                  >
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{t.expertName}</p>
-                    <p className="text-sm text-gray-800 mt-0.5 line-clamp-2">{t.summary}</p>
-                    {(t.boostWell > 0 || t.boostPoorly > 0) && (
-                      <p className="text-xs text-emerald-600 mt-0.5">
-                        Current boost: +{t.boostWell} well / +{t.boostPoorly} poorly
-                      </p>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Column headers */}
+        <div className="grid grid-cols-[1fr_72px_72px_80px] gap-3 px-4 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+          <span>Take</span>
+          <span className="text-center text-emerald-600">Well</span>
+          <span className="text-center text-red-500">Poorly</span>
+          <span />
+        </div>
 
-          {/* Boost inputs */}
-          {selected && (
-            <div className="space-y-3">
-              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                <span className="font-bold">{selected.expertName}</span> — {selected.summary.slice(0, 100)}{selected.summary.length > 100 ? "…" : ""}
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ages Well boost</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={boostWell}
-                    onChange={(e) => setBoostWell(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+        {/* Rows */}
+        <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-6 py-8 text-sm text-gray-400 text-center">No takes match your filter.</p>
+          ) : filtered.map((t) => {
+            const draft   = drafts[t.take_id] ?? { well: "0", poorly: "0" };
+            const saving  = rowSaving[t.take_id] ?? false;
+            const saved   = rowSaved[t.take_id] ?? false;
+            const err     = rowError[t.take_id] ?? "";
+            const hasBoost = (parseInt(draft.well, 10) > 0) || (parseInt(draft.poorly, 10) > 0);
+
+            return (
+              <div key={t.take_id} className="grid grid-cols-[1fr_72px_72px_80px] gap-3 items-center px-4 py-3 hover:bg-gray-50">
+                {/* Take info */}
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">
+                    {t.expertName}
+                    {t.dateSubmitted && (
+                      <span className="ml-2 font-normal normal-case text-gray-300">
+                        {new Date(t.dateSubmitted).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-800 mt-0.5 line-clamp-2 leading-snug">{t.summary}</p>
+                  {err && <p className="text-xs text-red-500 mt-0.5">{err}</p>}
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ages Poorly boost</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={boostPoorly}
-                    onChange={(e) => setBoostPoorly(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
+
+                {/* Well input */}
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.well}
+                  onChange={(e) => patchDraft(t.take_id, "well", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveRow(t)}
+                  className={`w-full border rounded-lg px-2 py-1.5 text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 ${hasBoost ? "border-emerald-300 bg-emerald-50" : "border-gray-300"}`}
+                />
+
+                {/* Poorly input */}
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.poorly}
+                  onChange={(e) => patchDraft(t.take_id, "poorly", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveRow(t)}
+                  className={`w-full border rounded-lg px-2 py-1.5 text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-400 ${hasBoost ? "border-red-200 bg-red-50" : "border-gray-300"}`}
+                />
+
+                {/* Save button */}
+                <button
+                  onClick={() => saveRow(t)}
+                  disabled={saving}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors ${
+                    saved
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40"
+                  }`}
+                >
+                  {saving ? "…" : saved ? "✓ Saved" : "Save"}
+                </button>
               </div>
-              {boostError && (
-                <p className="text-sm text-red-600">{boostError}</p>
-              )}
-              <button
-                onClick={saveBoost}
-                disabled={savingBoost}
-                className="w-full py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold disabled:opacity-40 hover:bg-gray-700 transition-colors"
-              >
-                {savingBoost ? "Saving…" : savedBoost ? "✓ Boost saved!" : "Save boost"}
-              </button>
-            </div>
-          )}
+            );
+          })}
+        </div>
+
+        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
+          {filtered.length} take{filtered.length !== 1 ? "s" : ""} shown · Enter to save · boosts highlighted in green/red
         </div>
       </section>
     </div>

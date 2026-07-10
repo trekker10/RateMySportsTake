@@ -8,12 +8,12 @@ export default async function CrowdForecastAdminPage() {
     createClient(),
   ]);
 
-  // Fetch recent takes for the boost search (most recent 200, pending or graded)
+  // Fetch recent takes sorted by submission date (newest first)
   const { data: takesRaw } = await supabase
     .from("takes")
-    .select("take_id, summary, raw_text, vote_boost_well, vote_boost_poorly, experts(name)")
-    .order("date_made", { ascending: false })
-    .limit(200);
+    .select("take_id, summary, raw_text, vote_boost_well, vote_boost_poorly, date_submitted, experts(name)")
+    .order("date_submitted", { ascending: false })
+    .limit(500);
 
   const takes = (takesRaw ?? []).map((t) => ({
     take_id: t.take_id,
@@ -21,6 +21,7 @@ export default async function CrowdForecastAdminPage() {
     expertName: (t.experts as any)?.name ?? "Unknown",
     boostWell: t.vote_boost_well ?? 0,
     boostPoorly: t.vote_boost_poorly ?? 0,
+    dateSubmitted: t.date_submitted ?? "",
   }));
 
   return <CrowdForecastAdmin settings={settings} takes={takes} />;

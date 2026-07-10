@@ -4,7 +4,7 @@ import EmailAdmin from "./EmailAdmin";
 export default async function EmailAdminPage() {
   const supabase = createAdminClient();
 
-  const [{ data: templates }, { data: experts }] = await Promise.all([
+  const [{ data: templates }, { data: experts }, { data: schedules }] = await Promise.all([
     supabase
       .from("email_templates")
       .select("*")
@@ -14,12 +14,17 @@ export default async function EmailAdminPage() {
       .select("expert_id, name, slug")
       .eq("verified", true)
       .order("name"),
+    supabase
+      .from("email_schedules")
+      .select("*, email_templates(name)")
+      .order("next_send_at", { ascending: true }),
   ]);
 
   return (
     <EmailAdmin
       initialTemplates={templates ?? []}
       experts={(experts ?? []).map((e) => ({ id: e.expert_id, name: e.name, slug: e.slug }))}
+      initialSchedules={schedules ?? []}
     />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +33,19 @@ interface ExpertStub {
   slug: string | null;
 }
 
+interface EmailSchedule {
+  id: string;
+  template_id: string;
+  segment_type: SegmentType;
+  segment_params: Record<string, string>;
+  cadence: string;           // 'once' | 'weekly:monday' | etc.
+  next_send_at: string;      // YYYY-MM-DD
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  email_templates: { name: string } | null;
+}
+
 type Tab = "templates" | "scheduled" | "triggers" | "history";
 
 // ── Segment definitions ────────────────────────────────────────────────────────
@@ -55,6 +68,34 @@ const SEGMENTS: SegmentDef[] = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+// ── Schedule helpers ──────────────────────────────────────────────────────────
+
+const DAY_NAMES = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+
+function cadenceLabel(cadence: string): string {
+  if (cadence === "once") return "One-time";
+  const [, day] = cadence.split(":");
+  if (!day) return cadence;
+  return `Weekly · ${day.charAt(0).toUpperCase() + day.slice(1)}`;
+}
+
+function fmtDate(iso: string): string {
+  // iso is YYYY-MM-DD
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+const SEGMENT_LABELS_DISPLAY: Record<string, string> = {
+  all_active:        "All active users",
+  new_signups:       "New signups",
+  inactive_30:       "Inactive 30+ days",
+  analyst_followers: "Analyst followers",
+  saved_backed:      "Saved/backed a take",
+};
+
+// ── Status labels / colors ────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<string, string> = { active: "ACTIVE", paused: "PAUSED", draft: "DRAFT" };
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -464,9 +505,10 @@ function BodyEditor({ template, onChange }: { template: EmailTemplate; onChange:
 interface Props {
   initialTemplates: EmailTemplate[];
   experts: ExpertStub[];
+  initialSchedules: EmailSchedule[];
 }
 
-export default function EmailAdmin({ initialTemplates, experts }: Props) {
+export default function EmailAdmin({ initialTemplates, experts, initialSchedules }: Props) {
   const [tab, setTab]             = useState<Tab>("templates");
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [selectedId, setSelectedId] = useState<string | null>(initialTemplates[0]?.id ?? null);
@@ -476,6 +518,19 @@ export default function EmailAdmin({ initialTemplates, experts }: Props) {
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [creating, setCreating]   = useState(false);
   const [newName, setNewName]     = useState("");
+
+  // ── Schedule state ──────────────────────────────────────────────────────────
+  const [schedules, setSchedules]           = useState<EmailSchedule[]>(initialSchedules);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [schedFormTemplateId, setSchedFormTemplateId] = useState(initialTemplates[0]?.id ?? "");
+  const [schedFormSegType, setSchedFormSegType]       = useState<SegmentType>("all_active");
+  const [schedFormSegParams, setSchedFormSegParams]   = useState<Record<string, string>>({});
+  const [schedFormCadence, setSchedFormCadence]       = useState("once");
+  const [schedFormDate, setSchedFormDate]             = useState("");
+  const [schedFormDay, setSchedFormDay]               = useState("monday");
+  const [schedFormSaving, setSchedFormSaving]         = useState(false);
+  const [triggeringId, setTriggeringId]               = useState<string | null>(null);
+  const schedFormRef = useRef<HTMLDivElement>(null);
 
   const selected = selectedId ? templates.find((t) => t.id === selectedId) ?? null : null;
   const merged: EmailTemplate | null = selected ? { ...selected, ...edits } : null;
@@ -562,6 +617,77 @@ export default function EmailAdmin({ initialTemplates, experts }: Props) {
       }
     } catch {
       setCreating(false);
+    }
+  }
+
+  // ── Schedule actions ────────────────────────────────────────────────────────
+
+  async function createSchedule() {
+    if (!schedFormTemplateId) return;
+    const cadence = schedFormCadence === "once" ? "once" : `weekly:${schedFormDay}`;
+    const next_send_at = schedFormCadence === "once" ? schedFormDate : schedFormDate || new Date().toISOString().split("T")[0];
+    if (!next_send_at) return;
+    setSchedFormSaving(true);
+    try {
+      const res = await fetch("/api/admin/email/schedules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template_id:   schedFormTemplateId,
+          segment_type:  schedFormSegType,
+          segment_params: schedFormSegParams,
+          cadence,
+          next_send_at,
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setSchedules((prev) => [...prev, created].sort((a, b) => a.next_send_at.localeCompare(b.next_send_at)));
+        setShowScheduleForm(false);
+        setSchedFormDate("");
+        setSchedFormDay("monday");
+        setSchedFormCadence("once");
+        setSchedFormSegType("all_active");
+        setSchedFormSegParams({});
+      }
+    } finally {
+      setSchedFormSaving(false);
+    }
+  }
+
+  async function toggleSchedule(id: string, enabled: boolean) {
+    const res = await fetch(`/api/admin/email/schedules/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_enabled: enabled }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setSchedules((prev) => prev.map((s) => s.id === id ? updated : s));
+    }
+  }
+
+  async function deleteSchedule(id: string) {
+    if (!confirm("Delete this schedule?")) return;
+    const res = await fetch(`/api/admin/email/schedules/${id}`, { method: "DELETE" });
+    if (res.ok) setSchedules((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  async function triggerCronNow() {
+    setTriggeringId("cron");
+    try {
+      const res = await fetch("/api/cron/email", { method: "POST" });
+      const json = await res.json();
+      if (res.ok) {
+        alert(`✓ Cron ran: ${json.fired} schedule(s) fired.`);
+        // Refresh schedules list
+        const r2 = await fetch("/api/admin/email/schedules");
+        if (r2.ok) setSchedules(await r2.json());
+      } else {
+        alert(`✗ ${json.error ?? "Unknown error"}`);
+      }
+    } finally {
+      setTriggeringId(null);
     }
   }
 
@@ -718,15 +844,255 @@ export default function EmailAdmin({ initialTemplates, experts }: Props) {
         </div>
       )}
 
+      {/* ── SCHEDULED TAB ── */}
+      {tab === "scheduled" && (
+        <div style={{ flex: 1, overflowY: "auto", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                Cron runs once daily at 1 PM UTC. Schedules due today or overdue will fire automatically.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={triggerCronNow}
+                disabled={triggeringId === "cron"}
+                style={{
+                  padding: "9px 14px", border: "1px solid #d1d5db", borderRadius: 6,
+                  background: "#f9fafb", fontSize: 12, fontWeight: 700, color: "#374151",
+                  cursor: triggeringId === "cron" ? "default" : "pointer",
+                  letterSpacing: "0.06em", opacity: triggeringId === "cron" ? 0.6 : 1,
+                }}
+              >
+                {triggeringId === "cron" ? "RUNNING…" : "▶ RUN NOW"}
+              </button>
+              <button
+                onClick={() => { setShowScheduleForm(true); setTimeout(() => schedFormRef.current?.scrollIntoView({ behavior: "smooth" }), 50); }}
+                style={{
+                  padding: "9px 14px", border: "none", borderRadius: 6,
+                  background: "#111827", fontSize: 12, fontWeight: 700, color: "#fff",
+                  cursor: "pointer", letterSpacing: "0.06em",
+                }}
+              >
+                + SCHEDULE A SEND
+              </button>
+            </div>
+          </div>
+
+          {/* Schedules table */}
+          {schedules.length === 0 && !showScheduleForm ? (
+            <div style={{ padding: "60px 20px", textAlign: "center", color: "#9ca3af" }}>
+              <p style={{ margin: "0 0 8px", fontSize: 32 }}>📅</p>
+              <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No scheduled sends yet</p>
+              <p style={{ margin: 0, fontSize: 13 }}>Click "+ Schedule a send" to set up your first send.</p>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "#f9fafb" }}>
+                  {["Template", "Audience", "Cadence", "Next Send", "Status", ""].map((h) => (
+                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontWeight: 700, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6b7280", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.map((s) => (
+                  <tr key={s.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "12px 16px", fontWeight: 600, color: "#111827" }}>
+                      {s.email_templates?.name ?? "—"}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "#374151" }}>
+                      {SEGMENT_LABELS_DISPLAY[s.segment_type] ?? s.segment_type}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "#374151" }}>
+                      {cadenceLabel(s.cadence)}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: s.is_enabled ? "#111827" : "#9ca3af", fontVariantNumeric: "tabular-nums" }}>
+                      {fmtDate(s.next_send_at)}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {/* Toggle switch */}
+                      <button
+                        onClick={() => toggleSchedule(s.id, !s.is_enabled)}
+                        title={s.is_enabled ? "Disable" : "Enable"}
+                        style={{
+                          width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer",
+                          background: s.is_enabled ? "#15803d" : "#d1d5db",
+                          position: "relative", transition: "background 0.2s",
+                          padding: 0, flexShrink: 0,
+                        }}
+                      >
+                        <span style={{
+                          position: "absolute", top: 2,
+                          left: s.is_enabled ? 18 : 2,
+                          width: 16, height: 16, borderRadius: "50%",
+                          background: "#fff", transition: "left 0.2s",
+                          display: "block",
+                        }} />
+                      </button>
+                    </td>
+                    <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                      <button
+                        onClick={() => deleteSchedule(s.id)}
+                        title="Delete"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 16, lineHeight: 1, padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* + Schedule a send form */}
+          {showScheduleForm && (
+            <div
+              ref={schedFormRef}
+              style={{
+                margin: 20, border: "1.5px solid #e5e7eb", borderRadius: 10,
+                background: "#f9fafb", padding: 24,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827", letterSpacing: "0.04em" }}>
+                  NEW SCHEDULED SEND
+                </p>
+                <button onClick={() => setShowScheduleForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 20, lineHeight: 1, padding: 0 }}>×</button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {/* Template picker */}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 4 }}>
+                    Template
+                  </label>
+                  <select
+                    value={schedFormTemplateId}
+                    onChange={(e) => setSchedFormTemplateId(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 6, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", background: "#fff", cursor: "pointer" }}
+                  >
+                    <option value="">— Select a template —</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Audience segment */}
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 4 }}>
+                    Audience
+                  </label>
+                  <SegmentPicker
+                    segmentType={schedFormSegType}
+                    segmentParams={schedFormSegParams}
+                    experts={experts}
+                    onChange={(type, params) => { setSchedFormSegType(type); setSchedFormSegParams(params); }}
+                  />
+                </div>
+
+                {/* Cadence */}
+                <div>
+                  <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 4 }}>
+                    Cadence
+                  </label>
+                  <select
+                    value={schedFormCadence}
+                    onChange={(e) => setSchedFormCadence(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 6, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", background: "#fff", cursor: "pointer" }}
+                  >
+                    <option value="once">One-time send</option>
+                    <option value="weekly">Weekly (repeat)</option>
+                  </select>
+                </div>
+
+                {/* Day picker (weekly) or date picker (once) */}
+                {schedFormCadence === "weekly" ? (
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 4 }}>
+                      Day of Week
+                    </label>
+                    <select
+                      value={schedFormDay}
+                      onChange={(e) => setSchedFormDay(e.target.value)}
+                      style={{ width: "100%", boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 6, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", background: "#fff", cursor: "pointer" }}
+                    >
+                      {DAY_NAMES.map((d) => (
+                        <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 4 }}>
+                      Send Date
+                    </label>
+                    <input
+                      type="date"
+                      value={schedFormDate}
+                      onChange={(e) => setSchedFormDate(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      style={{ width: "100%", boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 6, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", background: "#fff" }}
+                    />
+                  </div>
+                )}
+
+                {/* For weekly, also ask for first send date */}
+                {schedFormCadence === "weekly" && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6b7280", marginBottom: 4 }}>
+                      First Send Date <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: 11 }}>(leave blank to auto-pick next {schedFormDay})</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={schedFormDate}
+                      onChange={(e) => setSchedFormDate(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      style={{ width: "100%", boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 6, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", background: "#fff" }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                <button
+                  onClick={createSchedule}
+                  disabled={schedFormSaving || !schedFormTemplateId || (schedFormCadence === "once" && !schedFormDate)}
+                  style={{
+                    padding: "10px 20px", border: "none", borderRadius: 6,
+                    background: schedFormSaving || !schedFormTemplateId || (schedFormCadence === "once" && !schedFormDate) ? "#9ca3af" : "#e2241a",
+                    color: "#fff", fontWeight: 700, fontSize: 12, letterSpacing: "0.08em",
+                    cursor: schedFormSaving ? "default" : "pointer",
+                  }}
+                >
+                  {schedFormSaving ? "SAVING…" : "SCHEDULE SEND"}
+                </button>
+                <button
+                  onClick={() => setShowScheduleForm(false)}
+                  style={{ padding: "10px 16px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, fontWeight: 600, color: "#374151", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── STUB TABS ── */}
-      {tab !== "templates" && (
+      {(tab === "triggers" || tab === "history") && (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
           <div style={{ textAlign: "center", color: "#9ca3af" }}>
             <p style={{ margin: "0 0 6px", fontSize: 22 }}>🚧</p>
             <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" }}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)} — coming in a later phase
             </p>
-            <p style={{ margin: "6px 0 0", fontSize: 13 }}>Phase 1 covers Templates. Scheduled, Triggers, and History are next.</p>
+            <p style={{ margin: "6px 0 0", fontSize: 13 }}>Triggers and History are planned for Phase 4 and 5.</p>
           </div>
         </div>
       )}

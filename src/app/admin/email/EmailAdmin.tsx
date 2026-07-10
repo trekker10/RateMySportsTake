@@ -33,6 +33,19 @@ interface ExpertStub {
   slug: string | null;
 }
 
+interface SendLogRow {
+  id: string;
+  template_id: string | null;
+  schedule_id: string | null;
+  segment_type: string | null;
+  segment_label: string | null;
+  sent_at: string;
+  recipient_count: number;
+  status: "sent" | "failed" | "partial";
+  error_message: string | null;
+  email_templates: { name: string } | null;
+}
+
 interface EmailTrigger {
   id: string;
   event_type: string;
@@ -513,14 +526,18 @@ function BodyEditor({ template, onChange }: { template: EmailTemplate; onChange:
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+const HISTORY_PAGE_SIZE = 25;
+
 interface Props {
   initialTemplates: EmailTemplate[];
   experts: ExpertStub[];
   initialSchedules: EmailSchedule[];
   initialTriggers: EmailTrigger[];
+  initialHistory: SendLogRow[];
+  historyTotal: number;
 }
 
-export default function EmailAdmin({ initialTemplates, experts, initialSchedules, initialTriggers }: Props) {
+export default function EmailAdmin({ initialTemplates, experts, initialSchedules, initialTriggers, initialHistory, historyTotal: initialHistoryTotal }: Props) {
   const [tab, setTab]             = useState<Tab>("templates");
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates);
   const [selectedId, setSelectedId] = useState<string | null>(initialTemplates[0]?.id ?? null);
@@ -546,6 +563,12 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
 
   // ── Trigger state ───────────────────────────────────────────────────────────
   const [triggers, setTriggers] = useState<EmailTrigger[]>(initialTriggers);
+
+  // ── History state ────────────────────────────────────────────────────────────
+  const [historyRows, setHistoryRows]   = useState<SendLogRow[]>(initialHistory);
+  const [historyTotal, setHistoryTotal] = useState(initialHistoryTotal);
+  const [historyPage, setHistoryPage]   = useState(0);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const selected = selectedId ? templates.find((t) => t.id === selectedId) ?? null : null;
   const merged: EmailTemplate | null = selected ? { ...selected, ...edits } : null;
@@ -717,6 +740,23 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
     if (res.ok) {
       const updated = await res.json();
       setTriggers((prev) => prev.map((t) => t.id === id ? updated : t));
+    }
+  }
+
+  // ── History actions ──────────────────────────────────────────────────────────
+
+  async function loadHistoryPage(page: number) {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/admin/email/history?page=${page}`);
+      if (res.ok) {
+        const json = await res.json();
+        setHistoryRows(json.rows);
+        setHistoryTotal(json.total);
+        setHistoryPage(page);
+      }
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -1248,14 +1288,118 @@ export default function EmailAdmin({ initialTemplates, experts, initialSchedules
         </div>
       )}
 
-      {/* ── HISTORY STUB ── */}
+      {/* ── HISTORY TAB ── */}
       {tab === "history" && (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none" }}>
-          <div style={{ textAlign: "center", color: "#9ca3af" }}>
-            <p style={{ margin: "0 0 6px", fontSize: 22 }}>🚧</p>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#374151" }}>History — coming in Phase 5</p>
-            <p style={{ margin: "6px 0 0", fontSize: 13 }}>Send logs from email_send_log will appear here.</p>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#fff", border: "1px solid #e5e7eb", borderTop: "none", overflow: "hidden" }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+            <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+              {historyTotal.toLocaleString()} total send{historyTotal !== 1 ? "s" : ""} logged
+            </p>
+            <button
+              onClick={() => loadHistoryPage(0)}
+              disabled={historyLoading}
+              style={{ padding: "7px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#f9fafb", fontSize: 12, fontWeight: 700, color: "#374151", cursor: historyLoading ? "default" : "pointer", letterSpacing: "0.06em", opacity: historyLoading ? 0.6 : 1 }}
+            >
+              {historyLoading ? "LOADING…" : "↺ REFRESH"}
+            </button>
           </div>
+
+          {/* Table */}
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {historyRows.length === 0 ? (
+              <div style={{ padding: "60px 20px", textAlign: "center", color: "#9ca3af" }}>
+                <p style={{ margin: "0 0 4px", fontSize: 32 }}>📭</p>
+                <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#374151" }}>No sends logged yet</p>
+                <p style={{ margin: 0, fontSize: 13 }}>Send a test email or run the cron to see logs here.</p>
+              </div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                  <tr style={{ background: "#f9fafb" }}>
+                    {["Sent", "Template", "Segment", "Recipients", "Status"].map((h) => (
+                      <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontWeight: 700, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6b7280", borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap" }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyRows.map((row) => {
+                    const statusColor =
+                      row.status === "sent"    ? { bg: "#dcfce7", color: "#15803d" } :
+                      row.status === "failed"  ? { bg: "#fee2e2", color: "#b91c1c" } :
+                                                 { bg: "#fef9c3", color: "#a16207" };
+
+                    const sentDate = new Date(row.sent_at);
+                    const sentFmt  = sentDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                    const sentTime = sentDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+                    return (
+                      <tr key={row.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                          <div style={{ fontWeight: 600, color: "#111827", fontSize: 13 }}>{sentFmt}</div>
+                          <div style={{ fontSize: 11, color: "#9ca3af" }}>{sentTime}</div>
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#374151", maxWidth: 200 }}>
+                          <div style={{ fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {row.email_templates?.name ?? <span style={{ color: "#9ca3af", fontStyle: "italic" }}>Deleted template</span>}
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#374151" }}>
+                          {row.segment_label ?? row.segment_type ?? "—"}
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#374151", fontVariantNumeric: "tabular-nums", textAlign: "right" as const }}>
+                          {row.recipient_count.toLocaleString()}
+                        </td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <div style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
+                            <span style={{
+                              display: "inline-block", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+                              textTransform: "uppercase", padding: "3px 8px", borderRadius: 99,
+                              background: statusColor.bg, color: statusColor.color,
+                            }}>
+                              {row.status.toUpperCase()}
+                            </span>
+                            {row.error_message && (
+                              <span style={{ fontSize: 10, color: "#b91c1c", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={row.error_message}>
+                                {row.error_message}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Pagination footer */}
+          {historyTotal > HISTORY_PAGE_SIZE && (
+            <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderTop: "1px solid #e5e7eb", background: "#f9fafb" }}>
+              <span style={{ fontSize: 12, color: "#6b7280" }}>
+                {historyPage * HISTORY_PAGE_SIZE + 1}–{Math.min((historyPage + 1) * HISTORY_PAGE_SIZE, historyTotal)} of {historyTotal.toLocaleString()}
+              </span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => loadHistoryPage(historyPage - 1)}
+                  disabled={historyPage === 0 || historyLoading}
+                  style={{ padding: "6px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, fontWeight: 600, color: historyPage === 0 ? "#d1d5db" : "#374151", cursor: historyPage === 0 ? "default" : "pointer" }}
+                >
+                  ← Prev
+                </button>
+                <button
+                  onClick={() => loadHistoryPage(historyPage + 1)}
+                  disabled={(historyPage + 1) * HISTORY_PAGE_SIZE >= historyTotal || historyLoading}
+                  style={{ padding: "6px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, fontWeight: 600, color: (historyPage + 1) * HISTORY_PAGE_SIZE >= historyTotal ? "#d1d5db" : "#374151", cursor: (historyPage + 1) * HISTORY_PAGE_SIZE >= historyTotal ? "default" : "pointer" }}
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -12,12 +12,13 @@ export type SegmentType =
   | "analyst_followers"
   | "saved_backed";
 
-export const SEGMENT_LABELS: Record<SegmentType, string> = {
+export const SEGMENT_LABELS: Record<SegmentType | "test", string> = {
   all_active:         "All active users",
   new_signups:        "New signups",
   inactive_30:        "Inactive 30+ days",
   analyst_followers:  "Followers of analyst",
   saved_backed:       "Users who saved/backed a take",
+  test:               "Test send",
 };
 
 // ── Fetch recipient emails for a segment ─────────────────────────────────────
@@ -144,7 +145,7 @@ export async function logEmailSend({
 }: {
   templateId: string;
   scheduleId?: string;
-  segmentType: SegmentType;
+  segmentType: SegmentType | "test";
   result: SendEmailsResult;
 }) {
   const supabase = createAdminClient();

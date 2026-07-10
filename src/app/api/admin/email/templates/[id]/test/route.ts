@@ -3,6 +3,7 @@ import { checkIsAdmin, getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Resend } from "resend";
 import { RMSTEmailTemplate } from "@/app/emails/RMSTEmailTemplate";
+import { logEmailSend } from "@/lib/email/send";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -44,8 +45,19 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (sendError) {
     console.error("[email test] Resend error:", sendError);
-    return NextResponse.json({ error: (sendError as any).message ?? "Send failed" }, { status: 500 });
+    await logEmailSend({
+      templateId:  template.id,
+      segmentType: "test",
+      result: { recipientCount: 0, status: "failed", errorMessage: (sendError as { message?: string }).message ?? "Send failed" },
+    });
+    return NextResponse.json({ error: (sendError as { message?: string }).message ?? "Send failed" }, { status: 500 });
   }
+
+  await logEmailSend({
+    templateId:  template.id,
+    segmentType: "test",
+    result: { recipientCount: 1, status: "sent" },
+  });
 
   return NextResponse.json({ ok: true, sentTo: user.email });
 }

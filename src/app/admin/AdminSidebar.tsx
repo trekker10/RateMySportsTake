@@ -131,6 +131,14 @@ function IconMail() {
     </svg>
   );
 }
+function IconInbox() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <path d="M22 12h-6l-2 3H10l-2-3H2"/>
+      <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+    </svg>
+  );
+}
 
 function IconEval() {
   return (
@@ -191,7 +199,8 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
     {
       heading: "Communications",
       items: [
-        { label: "Email", href: "/admin/email", icon: <IconMail /> },
+        { label: "Email",    href: "/admin/email",    icon: <IconMail /> },
+        { label: "Feedback", href: "/admin/feedback", icon: <IconInbox /> },
       ],
     },
   ];

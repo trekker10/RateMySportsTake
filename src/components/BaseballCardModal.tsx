@@ -169,28 +169,57 @@ export default function BaseballCardModal(props: BaseballCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   async function captureCard() {
+    const el = cardRef.current!;
     const html2canvas = (await import("html2canvas")).default;
-    const canvas = await html2canvas(cardRef.current!, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: null,
-      width: CARD_W,
-      height: CARD_H,
-    });
-    return canvas;
+
+    // The element lives at left:-9999 so browsers skip compositing it — nothing
+    // renders and html2canvas captures a blank canvas. Temporarily move it
+    // on-screen (opacity:0 so it's invisible) for the duration of the capture.
+    el.style.left    = "0px";
+    el.style.opacity = "0";
+    try {
+      return await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null,
+        width: CARD_W,
+        height: CARD_H,
+        logging: false,
+      });
+    } finally {
+      el.style.left    = "-9999px";
+      el.style.opacity = "";
+    }
   }
+
+  async function cardBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+    return new Promise((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob returned null"))), "image/png")
+    );
+  }
+
+  const filename = `${props.first}-${props.last}-rmst.png`.toLowerCase().replace(/\s+/g, "-");
 
   async function handleCopy() {
     setCopying(true);
     try {
       const canvas = await captureCard();
-      // Wrap toBlob in a Promise so errors are catchable and state is correct
-      const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob returned null"))), "image/png")
-      );
+      const blob   = await cardBlob(canvas);
+
+      // iOS Safari doesn't support ClipboardItem at all — use Web Share API
+      // instead so users get the native share sheet (Save Image, AirDrop, etc.)
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isMobile && navigator.share) {
+        const file = new File([blob], filename, { type: "image/png" });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: `${props.first} ${props.last} — RMST` });
+          return;
+        }
+      }
+      // Desktop: write to clipboard
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     } catch (err) {
-      console.error("[baseball card] copy failed:", err);
+      console.error("[baseball card] copy/share failed:", err);
     } finally {
       setCopying(false);
     }
@@ -200,10 +229,9 @@ export default function BaseballCardModal(props: BaseballCardProps) {
     setDownloading(true);
     try {
       const canvas = await captureCard();
-      const link = document.createElement("a");
-      link.download = `${props.first}-${props.last}-rmst.png`.toLowerCase().replace(/\s+/g, "-");
-      link.href = canvas.toDataURL("image/png");
-      // Must be in the DOM for Firefox/Safari to honour the click
+      const link   = document.createElement("a");
+      link.download = filename;
+      link.href     = canvas.toDataURL("image/png");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -211,6 +239,9 @@ export default function BaseballCardModal(props: BaseballCardProps) {
       setDownloading(false);
     }
   }
+
+  // Label adapts: mobile gets "SHARE IMAGE" since it opens the share sheet
+  const isMobileDevice = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
   function fitCard() {
     const s = Math.min(0.62, (window.innerHeight - 200) / CARD_H, (window.innerWidth - 72) / CARD_W);
@@ -309,7 +340,7 @@ export default function BaseballCardModal(props: BaseballCardProps) {
                     cursor: copying ? "not-allowed" : "pointer", opacity: copying ? 0.6 : 1,
                   }}
                 >
-                  {copying ? "COPYING…" : "COPY IMAGE"}
+                  {copying ? (isMobileDevice ? "SHARING…" : "COPYING…") : (isMobileDevice ? "SHARE IMAGE" : "COPY IMAGE")}
                 </button>
                 <button
                   onClick={handleDownload}
@@ -325,7 +356,7 @@ export default function BaseballCardModal(props: BaseballCardProps) {
                 </button>
               </div>
               <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".1em", color: "#b0aca4", textAlign: "center", textTransform: "uppercase" }}>
-                Copy image · paste directly to X / Instagram / iMessage
+                {isMobileDevice ? "Share image · save to photos or send via AirDrop / iMessage" : "Copy image · paste directly to X / Instagram / iMessage"}
               </p>
             </div>
           </div>

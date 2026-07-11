@@ -325,6 +325,70 @@ function computeNflSeason(dateMade: string): { sportSeason: string; resolutionDa
   };
 }
 
+/**
+ * Determine the correct fantasy football season label from the date a take was made.
+ *
+ * Fantasy seasons track the NFL calendar year (e.g. "2026 Fantasy Football"
+ * runs Aug 2026 – Jan 2027). The championship ends ~Jan 1, so:
+ *   Jan 2 – Dec 31 of year Y  → "Y Fantasy Football"  (upcoming or current season)
+ *   Jan 1 of year Y           → "(Y-1) Fantasy Football" (championship still live)
+ */
+function computeFantasySeason(dateMade: string): string {
+  const d = new Date(dateMade + "T00:00:00");
+  const year  = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const day   = d.getDate();
+
+  // Jan 1 only: previous season's championship is still live
+  const seasonYear = (month === 1 && day === 1) ? year - 1 : year;
+  return `${seasonYear} Fantasy Football`;
+}
+
+/**
+ * Look up the correct fantasy football resolution date from sports_calendar
+ * based on the take category:
+ *  - start_sit / waiver_add  → 7 days after take (next week's results)
+ *  - draft_strategy          → Fantasy Regular Season End (~Wk 14, ~Dec 14)
+ *  - breakout_call / bust_call / sleeper_pick → Fantasy Championship End (~Wk 17, ~Jan 1)
+ */
+async function computeFantasyResolutionDate(
+  category: string,
+  dateMade: string,
+): Promise<string> {
+  // Short-window categories: resolve one week after the take
+  if (category === "start_sit" || category === "waiver_add") {
+    const d = new Date(dateMade + "T00:00:00");
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split("T")[0];
+  }
+
+  // draft_strategy resolves at Regular Season End; everything else at Championship End
+  const eventFragment = category === "draft_strategy"
+    ? "Regular Season End"
+    : "Championship End";
+
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("sports_calendar")
+      .select("event_date")
+      .eq("league", "Fantasy Football")
+      .ilike("event_name", `%${eventFragment}%`)
+      .gte("event_date", dateMade)
+      .order("event_date")
+      .limit(1)
+      .single();
+
+    if (data?.event_date) return data.event_date as string;
+  } catch {
+    // fall through to fallback
+  }
+
+  // Fallback: use the old NFL playoff start date
+  const { resolutionDate } = computeNflSeason(dateMade);
+  return resolutionDate;
+}
+
 export async function rateSingleFantasyTake(
   fantasyTakeId: string,
 ): Promise<{ success: boolean; boldness_score?: number; grading_criteria?: string; error?: string }> {
@@ -342,9 +406,11 @@ export async function rateSingleFantasyTake(
   if (!take) return { success: false, error: "Take not found" };
 
   try {
-    // Compute correct season/date deterministically — don't rely on AI for this
-    const { sportSeason: correctSeason, resolutionDate: correctDate } =
-      computeNflSeason(take.date_made);
+    // Compute correct season label and resolution date.
+    // Season: "2026 Fantasy Football" based on when the take was made.
+    // Date: category-aware lookup against sports_calendar milestones.
+    const correctSeason = computeFantasySeason(take.date_made);
+    const correctDate   = await computeFantasyResolutionDate(take.category, take.date_made);
 
     const result = await aiRateFantasyTake({
       rawText:        take.raw_text,
@@ -353,7 +419,7 @@ export async function rateSingleFantasyTake(
       playerAdp:      take.player_adp,
       category:       take.category,
       timingWindow:   take.timing_window,
-      sportSeason:    correctSeason, // pass the corrected season so AI context is accurate
+      sportSeason:    correctSeason, // e.g. "2026 Fantasy Football" — corrected by code, not AI
       dateMade:       take.date_made,
     });
 

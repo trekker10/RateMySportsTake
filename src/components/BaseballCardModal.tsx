@@ -33,10 +33,10 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
   const gradeC = GRADE_C[(grade || "C")[0]] ?? "#d6a312";
 
   const cells: [string, string, boolean][] = [
-    ["TAKESCORE", score > 0 ? score.toFixed(1) : "—", false],
-    ["ACCURACY",  acc  > 0 ? `${acc}%`         : "—", false],
-    ["RECORD",    record,                               true],
-    ["RANK",      rank > 0 ? `#${rank}`         : "—", false],
+    ["GRADE",    grade || "—",                         false],
+    ["ACCURACY", acc  > 0 ? `${acc}%`          : "—", false],
+    ["RECORD",   record,                               true],
+    ["RANK",     rank > 0 ? `#${rank}`          : "—", false],
   ];
 
   const CREAM = "#f3efdf";
@@ -89,18 +89,6 @@ function BaseballCard({ first, last, beat, grade, score, acc, record, rank, netw
             padding: "11px 72px", boxShadow: "0 2px 6px rgba(0,0,0,.3)",
           }}>ANALYST</div>
 
-          {/* Grade bubble — bottom left */}
-          <div style={{
-            position: "absolute", bottom: 14, left: 14,
-            width: 96, height: 96, borderRadius: "50%",
-            background: CREAM, border: `4px solid ${gradeC}`,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            lineHeight: .82, boxShadow: "0 3px 0 rgba(0,0,0,.25)",
-          }}>
-            <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 42, color: gradeC }}>{grade || "—"}</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".12em", color: "#857d68" }}>GRADE</span>
-          </div>
         </div>
 
         {/* ── Name banner ── */}

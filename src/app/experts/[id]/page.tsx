@@ -192,7 +192,7 @@ export default async function ExpertProfilePage({
   const cardBeat   = expert.sport_focus?.[0] ?? "NBA";
   const cardGrade  = expert.overall_rating > 0 ? scoreToGrade(expert.overall_rating, gradeConfig) : "—";
   const cardScore  = expert.overall_rating ?? 0;
-  const cardAcc    = expert.accuracy_rate > 0 ? Math.round(expert.accuracy_rate) : 0;
+  const cardAcc    = expert.graded_takes > 0 ? Math.round(expert.accuracy_rate) : 0;
   const cardLogoUrl = (showRow as { logo_url?: string | null } | null)?.logo_url ?? null;
 
   function boldnessTier(avg: number): { label: string; color: string } {
@@ -218,7 +218,7 @@ export default async function ExpertProfilePage({
 
   const flipCount = expert.flip_count ?? 0;
   const subMetrics: Array<{ label: string; value: string | number; sub: string; color: string; href?: string }> = [
-    { label: "ACCURACY",  value: expert.accuracy_rate > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed", color: "#111827" },
+    { label: "ACCURACY",  value: expert.graded_takes > 0 ? `${Math.round(expert.accuracy_rate)}%` : "—", sub: "takes that landed", color: "#111827" },
     { label: "BOLDNESS",  value: boldness.label,       sub: "",               color: boldness.color },
     { label: "VOLUME",    value: expert.graded_takes,  sub: "graded takes",   color: "#111827" },
     {

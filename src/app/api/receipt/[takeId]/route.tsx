@@ -303,9 +303,12 @@ export async function GET(
           )
         ) : (
           /* ── Graded: side-by-side grade (left) + crowd (right) ── */
-          <div style={{ display: "flex", alignItems: "flex-start", marginTop: 28 }}>
-            {/* Left — Final Grade (fixed sizes so it fits in half-width) */}
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+          /* Canvas = 1080px, padding 64px each side = 952px usable.
+             Divider section = 1px + 36px margin each side = 73px.
+             Each column = (952 - 73) / 2 = 439px */
+          <div style={{ display: "flex", alignItems: "flex-start", marginTop: 28, width: 952 }}>
+            {/* Left — Final Grade */}
+            <div style={{ display: "flex", flexDirection: "column", width: 439 }}>
               <span style={{ fontSize: 20, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
               <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 12 }}>
                 <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 120, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "4px 4px 0 rgba(0,0,0,0.08)" }}>{letterGrade ?? "—"}</span>
@@ -313,22 +316,24 @@ export async function GET(
               </div>
             </div>
 
-            {/* Vertical divider + right — Crowd Forecast */}
+            {/* Vertical divider */}
             {hasCrowd && (
-              <>
-                <div style={{ display: "flex", width: 1, alignSelf: "stretch", background: "rgba(0,0,0,0.15)", marginLeft: 40, marginRight: 40 }} />
-                <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 20, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>CROWD FORECAST</span>
-                  <div style={{ display: "flex", marginTop: 12 }}>
-                    <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 48, color: crowdCorrect ? "#1f8a4c" : "#d23b2b", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                      {crowdCorrect ? "CALLED IT" : "MISSED"}
-                    </span>
-                  </div>
-                  <span style={{ fontFamily: "monospace", fontSize: 20, color: "#454b46", marginTop: 10 }}>
-                    {crowdCorrect ? Math.max(hitPct, missPct) : Math.min(hitPct, missPct)}% predicted the take outcome
+              <div style={{ display: "flex", width: 1, alignSelf: "stretch", background: "rgba(0,0,0,0.15)", marginLeft: 36, marginRight: 36 }} />
+            )}
+
+            {/* Right — Crowd Forecast */}
+            {hasCrowd && (
+              <div style={{ display: "flex", flexDirection: "column", width: 439 }}>
+                <span style={{ fontSize: 20, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>CROWD FORECAST</span>
+                <div style={{ display: "flex", marginTop: 12 }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 48, color: crowdCorrect ? "#1f8a4c" : "#d23b2b", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                    {crowdCorrect ? "CALLED IT" : "MISSED"}
                   </span>
                 </div>
-              </>
+                <span style={{ fontFamily: "monospace", fontSize: 20, color: "#454b46", marginTop: 10 }}>
+                  {crowdCorrect ? Math.max(hitPct, missPct) : Math.min(hitPct, missPct)}% predicted the take outcome
+                </span>
+              </div>
             )}
           </div>
         )}

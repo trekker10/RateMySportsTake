@@ -87,11 +87,32 @@ export async function GET(
 
   const { data: take } = await supabase
     .from("takes")
-    .select("*, experts(name, twitter_handle, avatar_url)")
+    .select("*, vote_boost_well, vote_boost_poorly, experts(name, twitter_handle, avatar_url)")
     .eq("take_id", takeId)
     .single();
 
   if (!take) return new Response("Not found", { status: 404 });
+
+  // Crowd forecast vote tallies (include admin boosts)
+  const { data: votes } = await supabase
+    .from("take_votes")
+    .select("vote")
+    .eq("take_id", takeId);
+
+  const rawWell   = (votes ?? []).filter(v => v.vote === "well").length;
+  const rawPoorly = (votes ?? []).filter(v => v.vote === "poorly").length;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = take as any;
+  const crowdWell   = rawWell   + (t.vote_boost_well   ?? 0);
+  const crowdPoorly = rawPoorly + (t.vote_boost_poorly ?? 0);
+  const crowdTotal  = crowdWell + crowdPoorly;
+  const hasCrowd    = crowdTotal > 0;
+  const hitPct      = hasCrowd ? Math.round((crowdWell   / crowdTotal) * 100) : 0;
+  const missPct     = hasCrowd ? Math.round((crowdPoorly / crowdTotal) * 100) : 0;
+  // "crowd was correct" = majority voted well AND take is confirmed_true, OR majority voted poorly AND take is confirmed_false/partially_true
+  const majorityWell = crowdWell >= crowdPoorly;
+  const takeAgedWell = take.outcome_status === "confirmed_true";
+  const crowdCorrect = majorityWell === takeAgedWell;
 
   const gradeConfig = await getTakeScoreConfig();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -257,20 +278,61 @@ export async function GET(
         {/* Divider line */}
         <div style={{ display: "flex", width: "100%", height: 2, backgroundColor: INK, marginTop: dividerMT }} />
 
-        {/* Grade row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: gradeGap, marginTop: 28 }}>
-          <div style={{ display: "flex" }}>
-            <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: gradeFS, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "5px 5px 0 rgba(0,0,0,0.1)" }}>{letterGrade ?? "—"}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex" }}>
-              <span style={{ fontSize: 18, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
+        {isPending ? (
+          /* ── Pending: crowd forecast split bar ── */
+          hasCrowd ? (
+            <div style={{ display: "flex", flexDirection: "column", marginTop: 28 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 18, fontWeight: 600, letterSpacing: "0.24em", color: LABEL }}>CROWD FORECAST</span>
+                <span style={{ fontFamily: "monospace", fontSize: 18, color: LABEL }}>NOT GRADED YET</span>
+              </div>
+              {/* Split bar */}
+              <div style={{ display: "flex", height: 16, borderRadius: 8, overflow: "hidden", border: "1px solid rgba(0,0,0,0.12)" }}>
+                <div style={{ display: "flex", width: `${hitPct}%`, background: "#1f8a4c" }} />
+                <div style={{ display: "flex", width: `${missPct}%`, background: "#d23b2b" }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#1f8a4c" }}>{hitPct}% SAY HIT</span>
+                <span style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#d23b2b" }}>{missPct}% SAY MISS</span>
+              </div>
             </div>
-            <div style={{ display: "flex", marginTop: 8 }}>
-              <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: verdictFS, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
+          ) : (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+              <span style={{ fontFamily: "monospace", fontSize: 18, letterSpacing: "0.2em", color: LABEL }}>AWAITING RESULT</span>
             </div>
-          </div>
-        </div>
+          )
+        ) : (
+          /* ── Graded: grade row + crowd result chip ── */
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: gradeGap, marginTop: 28 }}>
+              <div style={{ display: "flex" }}>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: gradeFS, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "5px 5px 0 rgba(0,0,0,0.1)" }}>{letterGrade ?? "—"}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex" }}>
+                  <span style={{ fontSize: 18, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
+                </div>
+                <div style={{ display: "flex", marginTop: 8 }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: verdictFS, color: gc, letterSpacing: "-0.02em" }}>{verdict}</span>
+                </div>
+              </div>
+            </div>
+            {hasCrowd && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 20, fontFamily: "monospace", fontSize: 20, fontWeight: 700, letterSpacing: "0.06em" }}>
+                <span style={{
+                  display: "flex", padding: "8px 18px", borderRadius: 999,
+                  background: crowdCorrect ? "rgba(31,138,76,0.12)" : "rgba(210,59,43,0.12)",
+                  color: crowdCorrect ? "#1f8a4c" : "#d23b2b",
+                }}>
+                  {crowdCorrect ? "✓ CROWD CALLED IT" : "✗ CROWD MISSED"}
+                </span>
+                <span style={{ color: LABEL, fontWeight: 400 }}>
+                  {crowdCorrect ? Math.max(hitPct, missPct) : Math.min(hitPct, missPct)}% predicted this outcome
+                </span>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Footer */}
         <div style={{ display: "flex", justifyContent: "center", marginTop: footerMT }}>

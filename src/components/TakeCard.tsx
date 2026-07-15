@@ -7,6 +7,7 @@ import type { Take, Expert } from "@/types/database";
 import ShareReceiptButton from "@/components/ShareReceiptButton";
 import { expertUrl } from "@/lib/expert-url";
 import { followTake, unfollowTake } from "@/app/actions/takeFollows";
+import { scoreToGrade } from "@/lib/takescore";
 
 const CrowdForecast = dynamic(() => import("@/components/CrowdForecast"), { ssr: false });
 
@@ -37,29 +38,20 @@ function verdictInfo(status: string): { label: string; bg: string; color: string
 
 function gradeColor(grade: number | null): string {
   if (grade == null) return "#d1d5db";
-  if (grade >= 93) return "#0a7a3b";
-  if (grade >= 90) return "#15803d";
-  if (grade >= 83) return "#16a34a";
-  if (grade >= 80) return "#22c55e";
-  if (grade >= 73) return "#ca8a04";
-  if (grade >= 70) return "#d97706";
-  if (grade >= 63) return "#f59e0b";
-  if (grade >= 60) return "#ea580c";
-  return "#d23b2b";
+  if (grade >= 80) return "#0a7a3b";  // A
+  if (grade >= 70) return "#16a34a";  // B+
+  if (grade >= 60) return "#ca8a04";  // B
+  if (grade >= 50) return "#d97706";  // B−
+  if (grade >= 40) return "#f59e0b";  // C+
+  if (grade >= 30) return "#ea580c";  // C
+  if (grade >= 20) return "#dc2626";  // C−
+  if (grade >= 10) return "#b91c1c";  // D
+  return "#991b1b";                   // F
 }
 
 function gradeChipLetter(grade: number | null): string | null {
   if (grade == null) return null;
-  if (grade >= 93) return "A";
-  if (grade >= 90) return "A−";
-  if (grade >= 83) return "B+";
-  if (grade >= 80) return "B";
-  if (grade >= 73) return "B−";
-  if (grade >= 70) return "C+";
-  if (grade >= 63) return "C";
-  if (grade >= 60) return "C−";
-  if (grade >= 50) return "D";
-  return "F";
+  return scoreToGrade(grade);
 }
 
 function cleanTakeText(raw: string): string {

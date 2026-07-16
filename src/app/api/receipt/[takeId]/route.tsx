@@ -310,9 +310,9 @@ export async function GET(
             {/* Left — Final Grade, centered in column */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 439 }}>
               <span style={{ fontSize: 20, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>FINAL GRADE</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 12 }}>
                 <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 120, color: gc, letterSpacing: "-0.04em", lineHeight: 0.82, textShadow: "4px 4px 0 rgba(0,0,0,0.08)" }}>{letterGrade ?? "—"}</span>
-                <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 48, color: gc, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{verdict}</span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 48, color: gc, letterSpacing: "-0.02em", marginTop: 10 }}>{verdict}</span>
               </div>
             </div>
 
@@ -326,7 +326,7 @@ export async function GET(
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 439 }}>
                 <span style={{ fontSize: 20, letterSpacing: "0.22em", color: LABEL, fontFamily: "monospace" }}>CROWD FORECAST</span>
                 <div style={{ display: "flex", marginTop: 12 }}>
-                  <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 48, color: crowdCorrect ? "#1f8a4c" : "#d23b2b", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 400, fontSize: 62, color: crowdCorrect ? "#1f8a4c" : "#d23b2b", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
                     {crowdCorrect ? "CALLED IT" : "MISSED"}
                   </span>
                 </div>

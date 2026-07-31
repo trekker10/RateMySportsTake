@@ -25,15 +25,46 @@ function gradeColor(grade: string) {
   return "#d23b2b";
 }
 
-function trimAnalysis(text: string): string {
-  if (text.length <= 200) return text;
+const ANALYSIS_WIDTH = 920;
+const ANALYSIS_MAX_FS = 28;
+const ANALYSIS_MIN_FS = 14;
+const ANALYSIS_LINE_HEIGHT = 1.55;
+
+function estimateAnalysisHeight(len: number, fs: number): number {
+  const charsPerLine = Math.max(1, Math.floor(ANALYSIS_WIDTH / (fs * 0.52)));
+  const lines = Math.ceil(len / charsPerLine);
+  return Math.ceil(lines * fs * ANALYSIS_LINE_HEIGHT);
+}
+
+function trimToSentences(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
   let result = "";
   for (const s of sentences) {
-    if ((result + s).length > 200) break;
+    if ((result + s).length > maxChars) break;
     result += s;
   }
-  return result.trim() || text.slice(0, 200).trim();
+  if (result.trim()) return result.trim();
+  const hardCut = text.slice(0, maxChars);
+  const lastSpace = hardCut.lastIndexOf(" ");
+  return (lastSpace > 0 ? hardCut.slice(0, lastSpace) : hardCut).trim() + "…";
+}
+
+function fitAnalysisText(raw: string, availableH: number): { text: string; fontSize: number } {
+  const cleaned = trimToSentences(raw.trim(), 400);
+  for (let fs = ANALYSIS_MAX_FS; fs >= ANALYSIS_MIN_FS; fs -= 1) {
+    if (estimateAnalysisHeight(cleaned.length, fs) <= availableH) {
+      return { text: cleaned, fontSize: fs };
+    }
+  }
+  // Even the smallest readable size doesn't fit — truncate at that size, with ellipsis
+  const charsPerLine = Math.max(1, Math.floor(ANALYSIS_WIDTH / (ANALYSIS_MIN_FS * 0.52)));
+  const maxLines = Math.floor(availableH / (ANALYSIS_MIN_FS * ANALYSIS_LINE_HEIGHT));
+  const maxChars = Math.max(20, charsPerLine * maxLines);
+  const hardCut = cleaned.slice(0, maxChars);
+  const lastSpace = hardCut.lastIndexOf(" ");
+  const safe = (lastSpace > 20 ? hardCut.slice(0, lastSpace) : hardCut).trim();
+  return { text: safe + "…", fontSize: ANALYSIS_MIN_FS };
 }
 
 async function generatePendingTeaser(
@@ -56,7 +87,7 @@ async function generatePendingTeaser(
     });
     const json = await res.json() as { content?: Array<{ text?: string }> };
     const t = json?.content?.[0]?.text?.trim() ?? "";
-    return t.length > 0 ? trimAnalysis(t) : null;
+    return t.length > 0 ? t : null;
   } catch {
     return null;
   }
@@ -136,11 +167,23 @@ export async function GET(
 
   const isPending = take.outcome_status === "pending";
   let analysisText: string | null = null;
+  let analysisFS = ANALYSIS_MAX_FS;
+  const analysisBudget = 260 - 70; // 260 = ANALYSIS_H when text is present; reserve 70 for label + margins
+
   if (!isPending) {
     const raw = take.outcome_notes?.trim() || take.grade_notes?.trim() || null;
-    if (raw) analysisText = trimAnalysis(raw);
+    if (raw) {
+      const fitted = fitAnalysisText(raw, analysisBudget);
+      analysisText = fitted.text;
+      analysisFS = fitted.fontSize;
+    }
   } else if (take.grading_criteria?.trim()) {
-    analysisText = await generatePendingTeaser(expertName, displayText, take.grading_criteria.trim());
+    const teaser = await generatePendingTeaser(expertName, displayText, take.grading_criteria.trim());
+    if (teaser) {
+      const fitted = fitAnalysisText(teaser, analysisBudget);
+      analysisText = fitted.text;
+      analysisFS = fitted.fontSize;
+    }
   }
   const analysisLabel = isPending ? "WHAT WE'RE WATCHING" : "THE ANALYSIS";
 
@@ -270,7 +313,7 @@ export async function GET(
               <div style={{ flexGrow: 1, height: 1, backgroundColor: "rgba(0,0,0,0.2)" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
-              <span style={{ fontSize: 28, lineHeight: 1.5, color: ANALC, fontFamily: "Inter, sans-serif", textAlign: "center" }}>{analysisText}</span>
+              <span style={{ fontSize: analysisFS, lineHeight: 1.5, color: ANALC, fontFamily: "Inter, sans-serif", textAlign: "center" }}>{analysisText}</span>
             </div>
           </div>
         )}

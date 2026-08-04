@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 
 const NAV_LINKS = [
   { label: "Analysts", href: "/experts",       color: "#e2241a" },
-  { label: "Takes",    href: "/experts?view=takes", color: "#e2241a" },
+  { label: "Takes",    href: "/takes",              color: "#0a5b73" },
   { label: "Fantasy",  href: "/fantasy",       color: "#15803d" },
 ];
 

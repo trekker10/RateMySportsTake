@@ -5,6 +5,7 @@ import { signOut } from "@/app/auth/actions";
 
 const NAV_LINKS = [
   { label: "Analysts", href: "/experts", color: "#e2241a" },
+  { label: "Takes",    href: "/takes",   color: "#0a5b73" },
   { label: "Fantasy",  href: "/fantasy", color: "#15803d" },
 ];
 

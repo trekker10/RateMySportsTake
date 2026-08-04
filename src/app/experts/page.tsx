@@ -73,7 +73,21 @@ export default async function ExpertsPage({
     graded_takes: e.graded_takes ?? 0,
   }));
 
-  const rows = (experts ?? []).map((e, i) => ({
+  const GRADE_ORDER = ["A", "B+", "B", "B−", "C+", "C", "C−", "D", "F"];
+
+  const sortedExperts = curveModeEnabled && curvedGrades.size > 0
+    ? [...(experts ?? [])].sort((a, b) => {
+        const ga = curvedGrades.get(a.expert_id) ?? scoreToGrade(a.overall_rating, gradeConfig);
+        const gb = curvedGrades.get(b.expert_id) ?? scoreToGrade(b.overall_rating, gradeConfig);
+        const ia = GRADE_ORDER.indexOf(ga);
+        const ib = GRADE_ORDER.indexOf(gb);
+        // Within the same curved grade, preserve the DB's overall_rating order
+        if (ia !== ib) return ia - ib;
+        return b.overall_rating - a.overall_rating;
+      })
+    : (experts ?? []);
+
+  const rows = sortedExperts.map((e, i) => ({
     ...e,
     rank: i + 1,
     accolades: computeAccolades(e.expert_id, e.overall_rating, allExpertSnaps, recentTakes ?? []),

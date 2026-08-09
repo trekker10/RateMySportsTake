@@ -149,6 +149,15 @@ function IconImage() {
   );
 }
 
+function IconInstagram() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <rect x="2" y="2" width="20" height="20" rx="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
 function IconEval() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -176,7 +185,8 @@ export default function AdminSidebar({ reviewCount }: { reviewCount: number }) {
         { label: "Review Takes",  href: "/admin/takes",  icon: <IconCheck />, badge: reviewCount > 0 ? reviewCount : undefined },
         { label: "Import Takes",   href: "/import",               icon: <IconDownload /> },
         { label: "Submit a Take", href: "/submit",               icon: <IconUpload /> },
-        { label: "Show Accounts", href: "/admin/show-accounts",  icon: <IconTv /> },
+        { label: "Show Accounts",       href: "/admin/show-accounts",    icon: <IconTv /> },
+        { label: "Instagram Takes",      href: "/admin/instagram-takes",  icon: <IconInstagram /> },
       ],
     },
     {

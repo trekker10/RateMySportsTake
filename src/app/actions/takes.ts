@@ -363,6 +363,89 @@ export async function importFantasyTake(params: {
   return { success: true };
 }
 
+// ── Import a fantasy take extracted from an Instagram video ──────────────────
+// Like importFantasyTake but preserves player_name, player_position, and
+// source_url that come back from the take-extractor-api response.
+export async function importInstagramFantasyTake(params: {
+  expertName: string;
+  rawText: string;
+  dateMade: string;
+  category: string;
+  timingWindow: string;
+  format: string;
+  playerName: string | null;
+  playerPosition: string | null;
+  sourceUrl: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
+  const supabase = createAdminClient();
+
+  // Find or create expert
+  const { data: existingExpert } = await supabase
+    .from("experts")
+    .select("expert_id")
+    .ilike("name", params.expertName)
+    .maybeSingle();
+
+  let expertId: string;
+  if (existingExpert) {
+    expertId = existingExpert.expert_id;
+  } else {
+    const { data: newExpert, error } = await supabase
+      .from("experts")
+      .insert({ name: params.expertName, is_fantasy_guru: true })
+      .select("expert_id")
+      .single();
+    if (error || !newExpert) return { success: false, error: error?.message };
+    expertId = newExpert.expert_id;
+  }
+
+  // Compute timing modifier
+  const { getFantasyConfig } = await import("@/app/actions/fantasy-takescore");
+  const cfg = await getFantasyConfig();
+  const mods: Record<string, number> = {
+    preseason:    cfg.timing_preseason_mod,
+    post_draft:   cfg.timing_post_draft_mod,
+    early_season: cfg.timing_early_season_mod,
+    midseason:    cfg.timing_midseason_mod,
+    late_season:  cfg.timing_late_season_mod,
+    playoffs:     cfg.timing_playoffs_mod,
+  };
+  const timingModifier = mods[params.timingWindow] ?? 0;
+
+  const { data: insertedTake, error: takeError } = await supabase
+    .from("fantasy_takes")
+    .insert({
+      expert_id:       expertId,
+      category:        params.category,
+      raw_text:        params.rawText,
+      player_name:     params.playerName || null,
+      player_position: params.playerPosition || null,
+      timing_window:   params.timingWindow || null,
+      timing_modifier: timingModifier,
+      date_made:       params.dateMade,
+      outcome_status:  "pending",
+      source_url:      params.sourceUrl || null,
+    })
+    .select("fantasy_take_id")
+    .single();
+
+  if (takeError) return { success: false, error: takeError.message };
+
+  if (insertedTake?.fantasy_take_id && params.format) {
+    await supabase
+      .from("fantasy_takes")
+      .update({ format: params.format })
+      .eq("fantasy_take_id", insertedTake.fantasy_take_id)
+      .then(() => {/* ignore if column missing */});
+  }
+
+  const { recalculateFantasyScore } = await import("@/app/actions/fantasy-takescore");
+  await recalculateFantasyScore(expertId);
+
+  return { success: true };
+}
+
 // Used by batch import — same logic but returns result instead of redirecting
 export async function importTake(params: {
   expertName: string;

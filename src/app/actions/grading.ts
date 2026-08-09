@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkIsAdmin } from "@/lib/auth";
 import { gradeTake } from "@/lib/ai/grade-take";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { recalculateTakeScore } from "@/app/actions/takescore";
@@ -48,6 +49,10 @@ export async function getPendingTakes(): Promise<PendingTake[]> {
 export async function gradeSingleTake(
   takeId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(await checkIsAdmin())) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   const supabase = createAdminClient();
 
   const { data: take } = await supabase
@@ -202,7 +207,9 @@ export async function getAllTakesForAdmin(): Promise<AdminTake[]> {
   }));
 }
 
-// Used by the cron API route — grades all overdue pending takes
+// Used by the cron API route (/api/grade-takes) — protected there via GRADE_API_SECRET.
+// Not called from any client component; intentionally no checkIsAdmin() here since
+// cron invocations have no user session. Do not call this from client-facing code.
 export async function gradeAllPendingTakes(): Promise<{
   graded: number;
   failed: number;

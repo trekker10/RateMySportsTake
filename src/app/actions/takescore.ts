@@ -142,6 +142,7 @@ export async function recalculateTakeScore(expertId: string): Promise<void> {
 }
 
 export async function recalculateAllTakeScores(): Promise<void> {
+  if (!(await checkIsAdmin())) return;
   const supabase = createAdminClient();
   const { data: experts } = await supabase.from("experts").select("expert_id");
   for (const e of experts ?? []) {
@@ -316,6 +317,7 @@ export async function getAnalystTakeDetail(expertId: string) {
 // ─── Accolades ────────────────────────────────────────────────────────────────
 
 export async function syncAllAccolades(): Promise<void> {
+  if (!(await checkIsAdmin())) return;
   const supabase = createAdminClient();
   const { data: experts } = await supabase
     .from("experts")

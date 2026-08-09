@@ -151,6 +151,7 @@ export async function recalculateFantasyScore(expertId: string): Promise<void> {
 }
 
 export async function recalculateAllFantasyScores(): Promise<void> {
+  if (!(await checkIsAdmin())) return;
   const supabase = createAdminClient();
   const { data: experts } = await supabase.from("experts").select("expert_id");
   for (const e of experts ?? []) {
@@ -160,6 +161,7 @@ export async function recalculateAllFantasyScores(): Promise<void> {
 }
 
 export async function syncFantasyAccolades(): Promise<void> {
+  if (!(await checkIsAdmin())) return;
   const supabase = createAdminClient();
 
   const { data: experts } = await supabase

@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkIsAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export interface Show {
@@ -23,6 +24,7 @@ export async function getShows(): Promise<Show[]> {
 export async function upsertShow(
   show: { show_id?: string; name: string; network: string | null; logo_url: string | null }
 ): Promise<{ success: true; show_id: string } | { success: false; error: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
 
   if (show.show_id) {
@@ -50,6 +52,7 @@ export async function upsertShow(
 export async function deleteShow(
   showId: string
 ): Promise<{ success: true } | { success: false; error: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
   const { error } = await supabase.from("shows").delete().eq("show_id", showId);
   if (error) return { success: false, error: error.message };

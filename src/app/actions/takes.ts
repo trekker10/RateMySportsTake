@@ -1,6 +1,8 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkIsAdmin } from "@/lib/auth";
+import { checkImportAccess } from "@/app/actions/auth";
 import { rateTake } from "@/lib/ai/rate-take";
 import { redirect } from "next/navigation";
 import type { SourceType } from "@/types/database";
@@ -46,6 +48,7 @@ export async function getExpertTakesPage(
 }
 
 export async function deleteTake(takeId: string): Promise<{ success: true } | { success: false; error: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
   const { error } = await supabase.from("takes").delete().eq("take_id", takeId);
   if (error) return { success: false, error: error.message };
@@ -53,6 +56,7 @@ export async function deleteTake(takeId: string): Promise<{ success: true } | { 
 }
 
 export async function rateSingleTake(takeId: string): Promise<{ success: true } | { success: false; error: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
   const { data: take } = await supabase
     .from("takes")
@@ -86,6 +90,7 @@ export async function rateSingleTake(takeId: string): Promise<{ success: true } 
 }
 
 export async function updateGradingCriteria(takeId: string, criteria: string): Promise<void> {
+  if (!(await checkIsAdmin())) return;
   const supabase = createAdminClient();
   await supabase.from("takes").update({ grading_criteria: criteria.trim() }).eq("take_id", takeId);
 }
@@ -100,6 +105,7 @@ export async function saveTakeEdits(takeId: string, edits: {
   outcome_notes?: string | null;
   player_tags?: string[] | null;
 }): Promise<{ success: true } | { success: false; error: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
   const { error } = await supabase.from("takes").update(edits).eq("take_id", takeId);
   if (error) return { success: false, error: error.message };
@@ -107,6 +113,7 @@ export async function saveTakeEdits(takeId: string, edits: {
 }
 
 export async function submitTake(formData: FormData) {
+  if (!(await checkIsAdmin())) throw new Error("Unauthorized");
   const supabase = createAdminClient();
 
   const expertName = (formData.get("expert_name") as string).trim();
@@ -191,6 +198,7 @@ export async function submitTake(formData: FormData) {
 
 // ── Submit a fantasy take from the public submit form ─────────────────────────
 export async function submitFantasyTake(formData: FormData) {
+  if (!(await checkIsAdmin())) throw new Error("Unauthorized");
   const supabase = createAdminClient();
 
   const expertName   = (formData.get("expert_name") as string).trim();
@@ -294,6 +302,7 @@ export async function importFantasyTake(params: {
   timingWindow: string;
   format: string;
 }): Promise<{ success: boolean; error?: string }> {
+  if (!(await checkImportAccess())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
 
   // Find or create expert
@@ -363,6 +372,7 @@ export async function importTake(params: {
   sport: string;
   dateMade: string;
 }): Promise<{ success: true; takeId: string } | { success: false; error: string }> {
+  if (!(await checkImportAccess())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
   const { expertName, rawText, sourceType, sourceUrl, sport, dateMade } = params;
 
@@ -413,6 +423,7 @@ export async function importTakeForExpert(params: {
   sport: string;
   dateMade: string;
 }): Promise<{ success: true; takeId: string } | { success: false; error: string }> {
+  if (!(await checkImportAccess())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
   const { expertId, rawText, sourceType, sourceUrl, sport, dateMade } = params;
 

@@ -75,6 +75,17 @@ export async function POST(req: NextRequest) {
   const update = await req.json().catch(() => null);
   if (!update) return NextResponse.json({ ok: true });
 
+  // ── Second layer: verify the update came from our chat ───────────────────
+  const incomingChatId = String(
+    update.callback_query?.message?.chat?.id ??
+    update.message?.chat?.id ??
+    ""
+  );
+  if (CHAT_ID && incomingChatId && incomingChatId !== CHAT_ID) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const supabase = createAdminClient();
 
   // ── Handle inline button taps (Approve / Edit / Skip) ──────────────────

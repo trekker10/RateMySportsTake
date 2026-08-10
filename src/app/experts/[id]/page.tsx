@@ -10,6 +10,8 @@ import TakeLogSection from "./TakeLogSection";
 import FantasyTakeLogSection from "./FantasyTakeLogSection";
 import BaseballCardModal from "@/components/BaseballCardModal";
 import ReelCard from "./ReelCard";
+import { getExpertPlayerBoard } from "@/app/actions/player-board";
+import PlayerBoard from "./PlayerBoard";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
@@ -116,6 +118,7 @@ export default async function ExpertProfilePage({
     { data: showRow },
     { data: reelTakes },
     { data: takeFollowsData },
+    playerBoardRows,
   ] = await Promise.all([
     takesQuery,
     countQuery,
@@ -133,6 +136,7 @@ export default async function ExpertProfilePage({
     user
       ? supabase.from("take_follows").select("take_id").eq("user_id", user.id)
       : Promise.resolve({ data: [] }),
+    getExpertPlayerBoard(expertId),
   ]);
 
   const followedTakeIds = (takeFollowsData ?? []).map((r: { take_id: string }) => r.take_id);
@@ -569,6 +573,7 @@ export default async function ExpertProfilePage({
                     key={fantasyVerdict}
                     takes={filteredFt}
                   />
+                  <PlayerBoard rows={playerBoardRows ?? []} />
                 </>
               );
             })() : (

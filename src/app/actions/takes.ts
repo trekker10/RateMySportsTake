@@ -376,6 +376,8 @@ export async function importInstagramFantasyTake(params: {
   playerName: string | null;
   playerPosition: string | null;
   sourceUrl: string | null;
+  playerRating: number | null;
+  videoUploadDate: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
   const supabase = createAdminClient();
@@ -400,6 +402,9 @@ export async function importInstagramFantasyTake(params: {
     expertId = newExpert.expert_id;
   }
 
+  const RATING_TO_BOLDNESS: Record<number, number> = { 1: 20, 2: 35, 3: 50, 4: 65, 5: 85 };
+  const boldnessScore = params.playerRating != null ? (RATING_TO_BOLDNESS[params.playerRating] ?? null) : null;
+
   // Compute timing modifier
   const { getFantasyConfig } = await import("@/app/actions/fantasy-takescore");
   const cfg = await getFantasyConfig();
@@ -423,9 +428,11 @@ export async function importInstagramFantasyTake(params: {
       player_position: params.playerPosition || null,
       timing_window:   params.timingWindow || null,
       timing_modifier: timingModifier,
-      date_made:       params.dateMade,
+      date_made:       params.videoUploadDate || params.dateMade,
       outcome_status:  "pending",
       source_url:      params.sourceUrl || null,
+      player_rating:   params.playerRating || null,
+      boldness_score:  boldnessScore,
     })
     .select("fantasy_take_id")
     .single();

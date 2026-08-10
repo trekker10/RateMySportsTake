@@ -12,6 +12,7 @@ interface ExtractedTake {
   confidence: string;
   reasoning: string;
   quote_paraphrase: string;
+  rating: number | null;
 }
 
 interface ExtractionResult {
@@ -19,6 +20,44 @@ interface ExtractionResult {
   takes: ExtractedTake[];
   transcript: string;
   source_url: string;
+  upload_date: string | null;
+}
+
+function RatingArrows({ rating }: { rating: number | null }) {
+  if (rating == null) return null;
+  if (rating === 5) return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-green-400 font-bold text-sm">↑↑</span>
+      <span className="text-xs font-semibold text-green-400">Buy</span>
+      <span className="text-[10px] bg-green-900 text-green-300 px-1.5 py-0.5 rounded font-bold">BREAKOUT</span>
+    </span>
+  );
+  if (rating === 4) return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-green-400 font-bold text-sm">↑</span>
+      <span className="text-xs font-semibold text-green-400">Buy</span>
+    </span>
+  );
+  if (rating === 3) return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-zinc-400 font-bold text-sm">→</span>
+      <span className="text-xs font-semibold text-zinc-400">Neutral</span>
+    </span>
+  );
+  if (rating === 2) return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-red-400 font-bold text-sm">↓</span>
+      <span className="text-xs font-semibold text-red-400">Avoid</span>
+    </span>
+  );
+  // rating === 1
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-red-400 font-bold text-sm">↓↓</span>
+      <span className="text-xs font-semibold text-red-400">Avoid</span>
+      <span className="text-[10px] bg-red-900 text-red-300 px-1.5 py-0.5 rounded font-bold">BUST</span>
+    </span>
+  );
 }
 
 // ── Staged loading messages — cycles during the 2-4 min wait ─────────────────
@@ -157,6 +196,8 @@ export default function InstagramTakesPanel() {
       playerName:    take.player || null,
       playerPosition: take.position || null,
       sourceUrl:     result?.source_url ?? null,
+      playerRating:  take.rating ?? null,
+      videoUploadDate: result?.upload_date ?? null,
     });
 
     if (res.success) {
@@ -262,6 +303,7 @@ export default function InstagramTakesPanel() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400 mb-3">
               {result.takes.length} Take{result.takes.length !== 1 ? "s" : ""} Extracted
+              {result.upload_date && <span className="text-zinc-500 text-xs ml-2 normal-case font-normal">· video from {result.upload_date}</span>}
             </p>
             <div className="space-y-4">
               {result.takes.map((take, idx) => {
@@ -285,6 +327,7 @@ export default function InstagramTakesPanel() {
                           <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${confidenceBadge(take.confidence)}`}>
                             {take.confidence}
                           </span>
+                          <RatingArrows rating={take.rating} />
                         </div>
                       </div>
 

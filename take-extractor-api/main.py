@@ -72,20 +72,29 @@ def check_auth(x_api_key: str | None):
         raise HTTPException(401, "Invalid or missing API key")
 
 
-def download_video(url: str, workdir: Path) -> Path:
+def download_video(url: str, workdir: Path) -> tuple[Path, str | None]:
     out_template = str(workdir / "video.%(ext)s")
     result = subprocess.run(
-        ["yt-dlp", "-o", out_template, "--merge-output-format", "mp4", url],
+        ["yt-dlp", "-o", out_template, "--merge-output-format", "mp4", "--print", "%(upload_date)s", url],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
         raise RuntimeError(f"yt-dlp failed: {result.stderr[-1000:]}")
 
+    # Parse upload date from stdout (format: YYYYMMDD)
+    upload_date: str | None = None
+    try:
+        raw = result.stdout.strip()
+        if raw and raw != "NA" and len(raw) == 8:
+            upload_date = f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
+    except Exception:
+        upload_date = None
+
     video_files = list(workdir.glob("video.*"))
     if not video_files:
         raise RuntimeError("Download succeeded but no video file was found.")
-    return video_files[0]
+    return video_files[0], upload_date
 
 
 def extract_audio(video_path: Path, workdir: Path) -> Path:
@@ -125,10 +134,19 @@ Return ONLY valid JSON (no markdown fences, no preamble) matching this shape:
       "stance": "buy | sell | hold | avoid | breakout | bust | start | sit | other",
       "confidence": "how confidently they state it, e.g. 'strong', 'moderate', 'hedged'",
       "reasoning": "brief paraphrase of why, in your own words",
-      "quote_paraphrase": "a short paraphrase of the key line (do not quote verbatim)"
+      "quote_paraphrase": "a short paraphrase of the key line (do not quote verbatim)",
+      "rating": 3
     }
   ]
 }
+
+The rating field is an integer 1-5 reflecting the analyst's ADP-relative conviction:
+5 = Way in — would draft above current ADP (strong Buy / Breakout)
+4 = Likes them — good value at current ADP (Buy)
+3 = Neutral — neither avoid nor seek out
+2 = Not in — slightly overrated at current ADP (Avoid)
+1 = Won't draft — significant fade (Avoid / Bust)
+Infer this from their language and enthusiasm, not just the stance label.
 
 If the transcript is unclear, garbled, or not actually about fantasy football, \
 still return valid JSON with an empty takes array and note that in video_summary."""
@@ -160,7 +178,7 @@ def extract(req: ExtractRequest, x_api_key: str | None = Header(default=None)):
     with tempfile.TemporaryDirectory() as tmp:
         workdir = Path(tmp)
         try:
-            video_path = download_video(req.url, workdir)
+            video_path, upload_date = download_video(req.url, workdir)
             audio_path = extract_audio(video_path, workdir)
             transcript = transcribe_audio(audio_path)
             result = extract_fantasy_takes(transcript)
@@ -169,4 +187,5 @@ def extract(req: ExtractRequest, x_api_key: str | None = Header(default=None)):
 
     result["transcript"] = transcript
     result["source_url"] = req.url
+    result["upload_date"] = upload_date
     return result

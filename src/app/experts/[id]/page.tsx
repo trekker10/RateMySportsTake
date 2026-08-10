@@ -7,11 +7,10 @@ import Avatar from "@/components/Avatar";
 import { getTakeScoreConfig } from "@/app/actions/takescore";
 import { scoreToGrade, gradeColor } from "@/lib/takescore";
 import TakeLogSection from "./TakeLogSection";
-import FantasyTakeLogSection from "./FantasyTakeLogSection";
 import BaseballCardModal from "@/components/BaseballCardModal";
 import ReelCard from "./ReelCard";
 import { getExpertPlayerBoard } from "@/app/actions/player-board";
-import PlayerBoard from "./PlayerBoard";
+import FantasyAnalystTabs from "./FantasyAnalystTabs";
 
 const VERDICT_FILTERS = ["all", "right", "wrong", "pending"] as const;
 type VerdictFilter = typeof VERDICT_FILTERS[number];
@@ -538,45 +537,15 @@ export default async function ExpertProfilePage({
 
           {/* Take Log — analyst takes OR fantasy takes depending on expert type */}
           <div>
-            {expert.is_fantasy_guru ? (() => {
-              // Apply verdict filter server-side before passing to client component
-              const allFt = fantasyTakes ?? [];
-              const filteredFt = allFt.filter(ft => {
-                if (fantasyVerdict === "right")   return ft.outcome_status === "resolved" && (ft.accuracy_score ?? 0) >= 50;
-                if (fantasyVerdict === "wrong")   return ft.outcome_status === "resolved" && (ft.accuracy_score ?? 0) < 50;
-                if (fantasyVerdict === "pending") return ft.outcome_status !== "resolved";
-                return true;
-              });
-
-              return (
-                <>
-                  {/* Header + filter chips */}
-                  <div className="flex flex-wrap items-baseline gap-3 mb-3">
-                    <h2 className="font-black text-2xl tracking-tight">THE TAKE LOG</h2>
-                    {FANTASY_VERDICT_FILTERS.map((v) => (
-                      <Link
-                        key={v}
-                        href={`/experts/${id}?fv=${v}`}
-                        className={`px-3 py-1 font-mono text-[11px] tracking-widest uppercase border-2 transition-colors ${
-                          fantasyVerdict === v
-                            ? "text-white border-gray-900"
-                            : "bg-white text-gray-500 border-gray-300 hover:border-gray-600"
-                        }`}
-                        style={fantasyVerdict === v ? { backgroundColor: "#15803d", borderColor: "#15803d" } : {}}
-                      >
-                        {v}
-                      </Link>
-                    ))}
-                  </div>
-
-                  <FantasyTakeLogSection
-                    key={fantasyVerdict}
-                    takes={filteredFt}
-                  />
-                  <PlayerBoard rows={playerBoardRows ?? []} />
-                </>
-              );
-            })() : (
+            {expert.is_fantasy_guru ? (
+              <FantasyAnalystTabs
+                takes={fantasyTakes ?? []}
+                playerBoardRows={playerBoardRows ?? []}
+                fantasyVerdict={fantasyVerdict}
+                expertId={expertId}
+                expertSlugOrId={id}
+              />
+            ) : (
               <>
                 <div className="flex flex-wrap items-baseline gap-3 mb-3">
                   <h2 className="font-black text-2xl tracking-tight">THE TAKE LOG</h2>

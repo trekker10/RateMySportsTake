@@ -72,16 +72,30 @@ def check_auth(x_api_key: str | None):
         raise HTTPException(401, "Invalid or missing API key")
 
 
-def download_video(url: str, workdir: Path) -> tuple[Path, str | None]:
-    out_template = str(workdir / "video.%(ext)s")
+def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
+    """Download audio directly from the URL using yt-dlp's built-in extractor.
+
+    This avoids codec issues (VP9 video-only streams, etc.) by skipping
+    video download entirely and letting yt-dlp + ffmpeg handle the
+    audio-only pipeline in one step.
+    """
+    audio_path = workdir / "audio.mp3"
     result = subprocess.run(
-        ["yt-dlp", "-o", out_template, "-f", "bestvideo+bestaudio/best",
-         "--merge-output-format", "mp4", "--print", "%(upload_date)s", url],
+        [
+            "yt-dlp",
+            "-o", str(audio_path),          # write straight to audio.mp3
+            "-f", "bestaudio/best",          # audio-only track
+            "--extract-audio",
+            "--audio-format", "mp3",
+            "--audio-quality", "2",
+            "--print", "%(upload_date)s",    # capture upload date
+            url,
+        ],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
-        raise RuntimeError(f"yt-dlp failed: {result.stderr[-1000:]}")
+        raise RuntimeError(f"yt-dlp audio download failed: {result.stderr[-1000:]}")
 
     # Parse upload date from stdout (format: YYYYMMDD)
     upload_date: str | None = None
@@ -92,26 +106,11 @@ def download_video(url: str, workdir: Path) -> tuple[Path, str | None]:
     except Exception:
         upload_date = None
 
-    video_files = list(workdir.glob("video.*"))
-    if not video_files:
-        raise RuntimeError("Download succeeded but no video file was found.")
-    return video_files[0], upload_date
-
-
-def extract_audio(video_path: Path, workdir: Path) -> Path:
-    audio_path = workdir / "audio.mp3"
-    result = subprocess.run(
-        [
-            "ffmpeg", "-y", "-i", str(video_path),
-            "-vn", "-acodec", "libmp3lame", "-q:a", "2", "-f", "mp3",
-            str(audio_path),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"ffmpeg failed: {result.stderr[-1000:]}")
-    return audio_path
+    # yt-dlp may write audio.mp3 or audio.mp3.mp3 depending on version
+    candidates = list(workdir.glob("audio.*"))
+    if not candidates:
+        raise RuntimeError("Audio download succeeded but no audio file was found.")
+    return candidates[0], upload_date
 
 
 def transcribe_audio(audio_path: Path) -> str:
@@ -179,8 +178,7 @@ def extract(req: ExtractRequest, x_api_key: str | None = Header(default=None)):
     with tempfile.TemporaryDirectory() as tmp:
         workdir = Path(tmp)
         try:
-            video_path, upload_date = download_video(req.url, workdir)
-            audio_path = extract_audio(video_path, workdir)
+            audio_path, upload_date = download_audio(req.url, workdir)
             transcript = transcribe_audio(audio_path)
             result = extract_fantasy_takes(transcript)
         except Exception as e:

@@ -113,6 +113,17 @@ export default function InstagramTakesPanel() {
   const [error, setError]     = useState<string | null>(null);
   const [transcript, setTranscript] = useState(false);
 
+  // Per-take editable fields (player name, position, reasoning)
+  const [edits, setEdits] = useState<Record<number, Partial<ExtractedTake>>>({});
+
+  function getEditedTake(idx: number, take: ExtractedTake): ExtractedTake {
+    return { ...take, ...edits[idx] };
+  }
+
+  function updateEdit(idx: number, field: keyof ExtractedTake, value: string) {
+    setEdits(prev => ({ ...prev, [idx]: { ...prev[idx], [field]: value } }));
+  }
+
   // Per-take save state: "idle" | "saving" | "saved" | "error"
   const [saveState, setSaveState] = useState<Record<number, "idle" | "saving" | "saved" | "error">>({});
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
@@ -179,6 +190,7 @@ export default function InstagramTakesPanel() {
   }
 
   async function handleSave(idx: number, take: ExtractedTake) {
+    take = getEditedTake(idx, take);
     if (!expertName.trim()) {
       setSaveErrors(prev => ({ ...prev, [idx]: "Enter a creator/expert name above before saving." }));
       return;
@@ -308,26 +320,36 @@ export default function InstagramTakesPanel() {
             <div className="space-y-4">
               {result.takes.map((take, idx) => {
                 const state = saveState[idx] ?? "idle";
+                const edited = getEditedTake(idx, take);
                 return (
                   <div key={idx} className="rounded-xl bg-zinc-900 border border-zinc-700 p-5 space-y-3">
 
                     {/* Header row */}
                     <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-bold text-zinc-100">{take.player}</span>
-                          {take.position && (
-                            <span className="text-xs bg-zinc-700 text-zinc-300 px-2 py-0.5 rounded font-mono">
-                              {take.position}
-                            </span>
-                          )}
-                          <span className={`text-sm font-bold uppercase ${stanceColor(take.stance)}`}>
-                            {take.stance}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <span className={`text-sm font-bold uppercase ${stanceColor(edited.stance)}`}>
+                            {edited.stance}
                           </span>
-                          <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${confidenceBadge(take.confidence)}`}>
-                            {take.confidence}
+                          <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${confidenceBadge(edited.confidence)}`}>
+                            {edited.confidence}
                           </span>
-                          <RatingArrows rating={take.rating} />
+                          <RatingArrows rating={edited.rating} />
+                        </div>
+                        {/* Editable player name + position */}
+                        <div className="flex gap-2">
+                          <input
+                            value={edited.player}
+                            onChange={e => updateEdit(idx, "player", e.target.value)}
+                            className="flex-1 bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-sm font-bold text-zinc-100 focus:outline-none focus:ring-1 focus:ring-green-600"
+                            placeholder="Player name"
+                          />
+                          <input
+                            value={edited.position ?? ""}
+                            onChange={e => updateEdit(idx, "position", e.target.value)}
+                            className="w-16 bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:ring-1 focus:ring-green-600"
+                            placeholder="POS"
+                          />
                         </div>
                       </div>
 
@@ -353,13 +375,18 @@ export default function InstagramTakesPanel() {
                       </div>
                     </div>
 
-                    {/* Reasoning */}
-                    <p className="text-sm text-zinc-300 leading-relaxed">{take.reasoning}</p>
+                    {/* Editable reasoning */}
+                    <textarea
+                      value={edited.reasoning}
+                      onChange={e => updateEdit(idx, "reasoning", e.target.value)}
+                      rows={3}
+                      className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-300 leading-relaxed focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
+                    />
 
                     {/* Quote paraphrase */}
-                    {take.quote_paraphrase && take.quote_paraphrase !== take.reasoning && (
+                    {edited.quote_paraphrase && edited.quote_paraphrase !== edited.reasoning && (
                       <blockquote className="border-l-2 border-zinc-600 pl-3 text-sm text-zinc-400 italic">
-                        {take.quote_paraphrase}
+                        {edited.quote_paraphrase}
                       </blockquote>
                     )}
 

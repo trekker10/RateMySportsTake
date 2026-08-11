@@ -79,10 +79,15 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
     video download entirely and letting yt-dlp + ffmpeg handle the
     audio-only pipeline in one step.
     """
+    # Write Instagram cookies to a temp file if available
+    cookies_txt = os.environ.get("INSTAGRAM_COOKIES_TXT")
+    cookies_file = workdir / "cookies.txt"
+    if cookies_txt:
+        cookies_file.write_text(cookies_txt)
+
     # Use %(ext)s so yt-dlp controls the extension after --extract-audio conversion
     out_template = str(workdir / "audio.%(ext)s")
-    result = subprocess.run(
-        [
+    cmd = [
             "yt-dlp",
             "-o", out_template,
             "-f", "bestaudio/best",
@@ -90,8 +95,12 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
             "--audio-format", "mp3",
             "--audio-quality", "2",
             "--print", "%(upload_date)s",
-            url,
-        ],
+    ]
+    if cookies_txt:
+        cmd += ["--cookies", str(cookies_file)]
+    cmd.append(url)
+    result = subprocess.run(
+        cmd,
         capture_output=True,
         text=True,
     )

@@ -102,7 +102,7 @@ def extract_audio(video_path: Path, workdir: Path) -> Path:
     result = subprocess.run(
         [
             "ffmpeg", "-y", "-i", str(video_path),
-            "-vn", "-acodec", "libmp3lame", "-q:a", "2",
+            "-vn", "-acodec", "libmp3lame", "-q:a", "2", "-f", "mp3",
             str(audio_path),
         ],
         capture_output=True,

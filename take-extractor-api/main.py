@@ -43,7 +43,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",  # local dev
 ]
 
-app = FastAPI(title="Take Extractor API")
+app = FastAPI(title="Take Extractor API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,

@@ -94,6 +94,7 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
             "--extract-audio",
             "--audio-format", "mp3",
             "--audio-quality", "2",
+            "--no-simulate",          # --print implies --simulate in newer yt-dlp; force actual download
             "--print", "%(upload_date)s",
     ]
     if cookies_txt:

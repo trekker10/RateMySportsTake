@@ -52,6 +52,31 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await upstream.json();
+
+    // If the Railway service is running old code that doesn't return a numeric
+    // rating, derive one from the qualitative stance so the Player Board always
+    // gets populated without manual SQL intervention.
+    const STANCE_TO_RATING: Record<string, number> = {
+      breakout: 5,
+      buy:      4,
+      start:    4,
+      hold:     3,
+      other:    3,
+      sit:      2,
+      avoid:    2,
+      sell:     1,
+      bust:     1,
+    };
+
+    if (Array.isArray(data.takes)) {
+      data.takes = data.takes.map((take: Record<string, unknown>) => ({
+        ...take,
+        rating: take.rating != null
+          ? take.rating
+          : (STANCE_TO_RATING[(take.stance as string)?.toLowerCase()] ?? 3),
+      }));
+    }
+
     return NextResponse.json(data);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

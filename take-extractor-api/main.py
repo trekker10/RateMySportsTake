@@ -79,16 +79,17 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
     video download entirely and letting yt-dlp + ffmpeg handle the
     audio-only pipeline in one step.
     """
-    audio_path = workdir / "audio.mp3"
+    # Use %(ext)s so yt-dlp controls the extension after --extract-audio conversion
+    out_template = str(workdir / "audio.%(ext)s")
     result = subprocess.run(
         [
             "yt-dlp",
-            "-o", str(audio_path),          # write straight to audio.mp3
-            "-f", "bestaudio/best",          # audio-only track
+            "-o", out_template,
+            "-f", "bestaudio/best",
             "--extract-audio",
             "--audio-format", "mp3",
             "--audio-quality", "2",
-            "--print", "%(upload_date)s",    # capture upload date
+            "--print", "%(upload_date)s",
             url,
         ],
         capture_output=True,
@@ -106,10 +107,10 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
     except Exception:
         upload_date = None
 
-    # yt-dlp may write audio.mp3 or audio.mp3.mp3 depending on version
-    candidates = list(workdir.glob("audio.*"))
+    # Find whatever audio file yt-dlp wrote (audio.mp3, audio.m4a, etc.)
+    candidates = list(workdir.iterdir())
     if not candidates:
-        raise RuntimeError("Audio download succeeded but no audio file was found.")
+        raise RuntimeError(f"Audio download succeeded but no audio file was found. stderr: {result.stderr[-500:]}")
     return candidates[0], upload_date
 
 

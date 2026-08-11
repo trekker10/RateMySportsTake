@@ -75,7 +75,8 @@ def check_auth(x_api_key: str | None):
 def download_video(url: str, workdir: Path) -> tuple[Path, str | None]:
     out_template = str(workdir / "video.%(ext)s")
     result = subprocess.run(
-        ["yt-dlp", "-o", out_template, "--merge-output-format", "mp4", "--print", "%(upload_date)s", url],
+        ["yt-dlp", "-o", out_template, "-f", "bestvideo+bestaudio/best",
+         "--merge-output-format", "mp4", "--print", "%(upload_date)s", url],
         capture_output=True,
         text=True,
     )

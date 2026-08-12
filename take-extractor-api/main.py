@@ -73,11 +73,10 @@ def check_auth(x_api_key: str | None):
 
 
 def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
-    """Download audio directly from the URL using yt-dlp's built-in extractor.
+    """Download video+audio from Instagram then extract audio via ffmpeg -map 0:a:0.
 
-    This avoids codec issues (VP9 video-only streams, etc.) by skipping
-    video download entirely and letting yt-dlp + ffmpeg handle the
-    audio-only pipeline in one step.
+    bestvideo+bestaudio ensures we always get an audio stream.
+    ffmpeg -map 0:a:0 explicitly selects it, avoiding VP9 video-only issues.
     """
     # Write Instagram cookies to a temp file if available
     cookies_txt = os.environ.get("INSTAGRAM_COOKIES_TXT")
@@ -85,27 +84,24 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
     if cookies_txt:
         cookies_file.write_text(cookies_txt)
 
-    # Use %(ext)s so yt-dlp controls the extension after --extract-audio conversion
-    out_template = str(workdir / "audio.%(ext)s")
+    video_path = workdir / "video.mp4"
     cmd = [
-            "yt-dlp",
-            "-o", out_template,
-            "-f", "bestaudio/best",  # download best audio track, no conversion
-            "--no-simulate",          # --print implies --simulate in newer yt-dlp; force actual download
-            "--print", "%(upload_date)s",
+        "yt-dlp",
+        "-o", str(video_path),
+        "-f", "bestvideo+bestaudio/best",
+        "--merge-output-format", "mp4",
+        "--no-simulate",
+        "--print", "%(upload_date)s",
     ]
     if cookies_txt:
         cmd += ["--cookies", str(cookies_file)]
     cmd.append(url)
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"yt-dlp audio download failed: {result.stderr[-1000:]}")
 
-    # Parse upload date from stdout (format: YYYYMMDD)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"yt-dlp download failed: {result.stderr[-1000:]}")
+
+    # Parse upload date
     upload_date: str | None = None
     try:
         raw = result.stdout.strip()
@@ -114,11 +110,27 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
     except Exception:
         upload_date = None
 
-    # Find whatever audio file yt-dlp wrote (audio.mp3, audio.m4a, etc.)
-    candidates = list(workdir.iterdir())
+    # Find the downloaded file
+    candidates = [f for f in workdir.iterdir() if f.name.startswith("video")]
     if not candidates:
-        raise RuntimeError(f"Audio download succeeded but no audio file was found. stderr: {result.stderr[-500:]}")
-    return candidates[0], upload_date
+        raise RuntimeError("Download succeeded but no video file found.")
+    video_file = candidates[0]
+
+    # Extract audio stream explicitly — -map 0:a:0 selects first audio track
+    audio_path = workdir / "audio.mp3"
+    ff = subprocess.run(
+        [
+            "ffmpeg", "-y", "-i", str(video_file),
+            "-map", "0:a:0",
+            "-acodec", "libmp3lame", "-q:a", "2",
+            "-f", "mp3", str(audio_path),
+        ],
+        capture_output=True, text=True,
+    )
+    if ff.returncode != 0:
+        raise RuntimeError(f"ffmpeg audio extraction failed: {ff.stderr[-1000:]}")
+
+    return audio_path, upload_date
 
 
 def transcribe_audio(audio_path: Path) -> str:

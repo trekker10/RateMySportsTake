@@ -90,10 +90,7 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
     cmd = [
             "yt-dlp",
             "-o", out_template,
-            "-f", "bestaudio/best",
-            "--extract-audio",
-            "--audio-format", "mp3",
-            "--audio-quality", "2",
+            "-f", "bestaudio/best",  # download best audio track, no conversion
             "--no-simulate",          # --print implies --simulate in newer yt-dlp; force actual download
             "--print", "%(upload_date)s",
     ]

@@ -116,6 +116,23 @@ def download_audio(url: str, workdir: Path) -> tuple[Path, str | None]:
         raise RuntimeError("Download succeeded but no video file found.")
     video_file = candidates[0]
 
+    # Check if the downloaded file actually has an audio stream
+    probe = subprocess.run(
+        [
+            "ffprobe", "-v", "error",
+            "-select_streams", "a",
+            "-show_entries", "stream=codec_type",
+            "-of", "csv=p=0",
+            str(video_file),
+        ],
+        capture_output=True, text=True,
+    )
+    if not probe.stdout.strip():
+        raise RuntimeError(
+            "This video has no audio track — it may be a silent reel or "
+            "Instagram served a video-only stream. Try a different reel."
+        )
+
     # Extract audio stream explicitly — -map 0:a:0 selects first audio track
     audio_path = workdir / "audio.mp3"
     ff = subprocess.run(

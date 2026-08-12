@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { proxyImage } from "@/lib/proxy-image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Take, Expert } from "@/types/database";
@@ -345,7 +346,7 @@ export default function TakeCard({ take, showExpert = false, showSave = false, i
           <div className="tfc-expert">
             <div className="tfc-avatar" style={largeByline ? { width: 57, height: 57, fontSize: 16 } : {}}>
               {expert.avatar_url
-                ? <img src={expert.avatar_url} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img src={proxyImage(expert.avatar_url)} alt={expert.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : initials(expert.name)}
             </div>
             <div style={{ flex: 1 }}>

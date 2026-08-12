@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { proxyImage } from "@/lib/proxy-image";
 
 function initials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -22,7 +23,7 @@ export default function Avatar({
   if (avatarUrl && !failed) {
     return (
       <img
-        src={avatarUrl}
+        src={proxyImage(avatarUrl)}
         alt={name}
         className={className}
         onError={() => setFailed(true)}

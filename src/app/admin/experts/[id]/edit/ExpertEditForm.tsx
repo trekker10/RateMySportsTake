@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { proxyImage } from "@/lib/proxy-image";
 import { useRouter } from "next/navigation";
 import { updateExpert, deleteExpert } from "@/app/actions/experts";
 
@@ -19,6 +20,7 @@ export default function ExpertEditForm({ expert }: { expert: Record<string, unkn
   const id = expert.expert_id as string;
   const avatarUrl = expert.avatar_url as string | null;
   const [previewUrl, setPreviewUrl] = useState(avatarUrl ?? "");
+
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,7 +50,7 @@ export default function ExpertEditForm({ expert }: { expert: Record<string, unkn
       <div className="flex items-center gap-5">
         <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center text-2xl font-bold text-zinc-300">
           {previewUrl ? (
-            <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+            <img src={proxyImage(previewUrl)} alt="" className="h-full w-full object-cover" />
           ) : (
             initials
           )}
@@ -65,7 +67,7 @@ export default function ExpertEditForm({ expert }: { expert: Record<string, unkn
             className={inputClass}
             onChange={(e) => setPreviewUrl(e.target.value)}
           />
-          <p className="mt-1 text-xs text-zinc-600">Paste any public image URL — Twitter profile pics work great.</p>
+          <p className="mt-1 text-xs text-zinc-600">Paste any image URL — Twitter, Instagram, or direct image links all work.</p>
         </div>
       </div>
 

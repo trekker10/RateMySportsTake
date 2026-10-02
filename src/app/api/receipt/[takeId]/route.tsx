@@ -86,7 +86,9 @@ async function generatePendingTeaser(
       }),
     });
     const json = await res.json() as { content?: Array<{ text?: string }> };
-    const t = json?.content?.[0]?.text?.trim() ?? "";
+    const t = (json?.content?.[0]?.text?.trim() ?? "")
+      .replace(/\*\*[^*]+\*\*:?\s*/g, "")  // strip **markdown** labels
+      .trim();
     return t.length > 0 ? t : null;
   } catch {
     return null;
@@ -341,7 +343,7 @@ export async function GET(
             </div>
           ) : (
             <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
-              <span style={{ fontFamily: "monospace", fontSize: 18, letterSpacing: "0.2em", color: LABEL }}>AWAITING RESULT</span>
+              <span style={{ fontFamily: DISPLAY, fontSize: 64, fontWeight: 900, letterSpacing: "0.08em", color: INK }}>AWAITING RESULT</span>
             </div>
           )
         ) : (

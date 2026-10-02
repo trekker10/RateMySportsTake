@@ -294,8 +294,8 @@ export async function GET(
           </div>
 
           {/* Tweet text */}
-          <div style={{ display: "flex" }}>
-            <span style={{ fontSize: tweetFS, lineHeight: 1.35, letterSpacing: "-0.01em", color: "#0f1419", fontFamily: "Inter, sans-serif", fontWeight: 400 }}>{displayText}</span>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: tweetFS, lineHeight: 1.35, letterSpacing: "-0.01em", color: "#0f1419", fontFamily: "Inter, sans-serif", fontWeight: 400, textAlign: "left", wordBreak: "break-word" }}>{displayText}</span>
           </div>
 
           {/* Date */}

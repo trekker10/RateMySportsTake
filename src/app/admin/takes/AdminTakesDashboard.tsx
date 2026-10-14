@@ -425,6 +425,7 @@ export default function AdminTakesDashboard() {
             ...fresh,
             gradeStatus: t.take_id === takeId ? "done" : t.gradeStatus,
             rateStatus: t.rateStatus,
+            resetStatus: t.resetStatus,
             // If we locally marked this as rated, keep that even if the server hasn't flushed yet
             rating_status: t.rateStatus === "done" ? "rated" : fresh.rating_status,
             errorMsg: t.errorMsg,

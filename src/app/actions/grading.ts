@@ -232,3 +232,42 @@ export async function gradeAllPendingTakes(): Promise<{
 
   return { graded, failed, errors };
 }
+
+/**
+ * Reset a take's grade back to pending so it can be re-graded with new criteria.
+ * Clears all outcome/grade fields but preserves the take's rating metadata.
+ */
+export async function resetTakeGrade(takeId: string): Promise<{ success: boolean; error?: string }> {
+  if (!(await checkIsAdmin())) return { success: false, error: "Unauthorized" };
+
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("takes")
+    .update({
+      outcome_status:   "pending",
+      outcome_date:     null,
+      outcome_notes:    null,
+      grade:            null,
+      grade_breakdown:  null,
+      grade_notes:      null,
+      aging_verdict:    null,
+      accuracy_score:   null,
+    })
+    .eq("take_id", takeId);
+
+  if (error) return { success: false, error: error.message };
+
+  // Recalculate expert's TakeScore now that one grade is removed
+  const { data: take } = await supabase
+    .from("takes")
+    .select("expert_id")
+    .eq("take_id", takeId)
+    .single();
+
+  if (take?.expert_id) {
+    await recalculateTakeScore(take.expert_id);
+  }
+
+  return { success: true };
+}

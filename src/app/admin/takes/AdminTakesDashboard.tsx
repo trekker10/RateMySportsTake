@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { getAllTakesForAdmin, gradeSingleTake, type AdminTake } from "@/app/actions/grading";
+import { getAllTakesForAdmin, gradeSingleTake, resetTakeGrade, type AdminTake } from "@/app/actions/grading";
 import { saveTakeEdits, rateSingleTake, deleteTake } from "@/app/actions/takes";
 import { getAllFantasyTakesAdmin, gradeFantasyTake, gradeFantasyTakeSingle, rateSingleFantasyTake, deleteFantasyTake, saveFantasyTakeEdits } from "@/app/actions/fantasy-takes";
 import { searchPlayers, getPlayerByCanonicalName } from "@/app/actions/players";
@@ -104,6 +104,7 @@ function PlayerSearchInput({
 type TakeState = AdminTake & {
   gradeStatus: "idle" | "grading" | "done" | "error";
   rateStatus: "idle" | "rating" | "done" | "error";
+  resetStatus: "idle" | "resetting" | "done" | "error";
   errorMsg?: string;
 };
 type Filter = "all" | "pending" | "graded" | "unrated" | "overdue" | "no_date";
@@ -381,7 +382,7 @@ export default function AdminTakesDashboard() {
   useEffect(() => {
     startLoad(async () => {
       const all = await getAllTakesForAdmin();
-      setTakes(all.map((t) => ({ ...t, gradeStatus: "idle", rateStatus: "idle" })));
+      setTakes(all.map((t) => ({ ...t, gradeStatus: "idle", rateStatus: "idle", resetStatus: "idle" })));
       const pf = searchParams.get("playerFilter");
       if (pf) {
         const player = await getPlayerByCanonicalName(pf);
@@ -486,6 +487,18 @@ export default function AdminTakesDashboard() {
     }
     setSelectedIds(new Set());
     setBulking(false);
+  }
+
+  async function resetOne(takeId: string) {
+    if (!confirm("Reset this grade back to pending? The take will need to be re-graded.")) return;
+    setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, resetStatus: "resetting" } : t));
+    const result = await resetTakeGrade(takeId);
+    if (result.success) {
+      refreshTake(takeId);
+      setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, resetStatus: "idle", gradeStatus: "idle" } : t));
+    } else {
+      setTakes(prev => prev!.map(t => t.take_id === takeId ? { ...t, resetStatus: "error", errorMsg: result.error } : t));
+    }
   }
 
   async function bulkRate() {
@@ -831,6 +844,13 @@ export default function AdminTakesDashboard() {
                     {take.gradeStatus === "grading" && <span className="text-xs text-gray-400 animate-pulse">Searching web…</span>}
                     {take.gradeStatus === "done" && <span className="text-xs text-emerald-400">✓ Done</span>}
                     {take.gradeStatus === "error" && <span className="text-xs text-red-400">Failed</span>}
+                    {isGraded && take.resetStatus === "idle" && take.gradeStatus === "idle" && (
+                      <button onClick={() => resetOne(take.take_id)} className="rounded-lg border border-orange-200 text-orange-400 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 px-3 py-1 text-xs transition-colors" title="Reset grade to pending">
+                        Reset
+                      </button>
+                    )}
+                    {take.resetStatus === "resetting" && <span className="text-xs text-orange-400 animate-pulse">Resetting…</span>}
+                    {take.resetStatus === "error" && <span className="text-xs text-red-400" title={take.errorMsg}>Reset failed</span>}
                   </div>
                 </div>
 
